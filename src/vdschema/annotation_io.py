@@ -1,0 +1,193 @@
+"""
+JSONL reader/writer for annotation records.
+
+Paths are bound at construction time via ``task_dir``. Vocabulary files are
+written or read automatically according to ``task_type``.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any, Iterable, Iterator
+
+from .annotation_dict import (
+    ANNOTATION_DATA_FILENAME,
+    ANNOTATION_DICT_FILENAME,
+    NoLabelDict,
+    TaskLabelDict,
+    build_label_dict,
+    dict_path_for,
+    load_label_dict,
+    meta_path_for,
+)
+from .annotation_format import AnnotationFormatError, BaseAnnotation, TaskType
+
+
+DEFAULT_OUTPUT_DIR = "output"
+
+
+def resolve_task_dir(
+    task_type: TaskType,
+    task_dir: str | Path = DEFAULT_OUTPUT_DIR,
+) -> Path:
+    """Resolve output directory: default ``output`` → ``output/{task_type}``."""
+    path = Path(task_dir)
+    if path == Path(DEFAULT_OUTPUT_DIR):
+        return path / task_type.value
+    return path
+
+
+class AnnotationWriter:
+    """Write annotation records and optional label dictionary under ``task_dir``."""
+
+    def __init__(
+        self,
+        task_type: TaskType,
+        task_dict: dict[str, Any] | dict[int, str] | None = None,
+        task_dir: str | Path = DEFAULT_OUTPUT_DIR,
+        *,
+        task_meta_filename: str = ANNOTATION_DATA_FILENAME,
+        task_dict_name: str = ANNOTATION_DICT_FILENAME,
+    ) -> None:
+        self.task_type = task_type
+        self.task_dir = resolve_task_dir(task_type, task_dir)
+        self.task_meta_filename = task_meta_filename
+        self.task_dict_name = task_dict_name
+        self.annotation_cls = task_type.annotation_class
+        self.label_dict = build_label_dict(task_type, task_dict)
+        self.records: list[BaseAnnotation] = []
+
+    def save_dir(self) -> Path:
+        """Return the resolved output directory for this writer."""
+        return self.task_dir
+
+    @property
+    def meta_path(self) -> Path:
+        return meta_path_for(self.task_dir, self.task_meta_filename)
+
+    @property
+    def dict_path(self) -> Path:
+        return dict_path_for(self.task_dir, self.task_dict_name)
+
+    def append_annotation(self, annotation: BaseAnnotation) -> BaseAnnotation:
+        if not isinstance(annotation, self.annotation_cls):
+            raise AnnotationFormatError(
+                f"Expected {self.annotation_cls.__name__}, got "
+                f"{type(annotation).__name__}"
+            )
+        annotation.validate()
+        self.label_dict.validate_annotation(annotation)
+        self.records.append(annotation)
+        return annotation
+
+    def append(
+        self,
+        annotation: BaseAnnotation | None = None,
+        **kwargs: Any,
+    ) -> BaseAnnotation:
+        if annotation is None:
+            annotation = self.annotation_cls(**kwargs)
+        return self.append_annotation(annotation)
+
+    def save(self) -> None:
+        """Write JSONL and label dictionary (when applicable) under ``task_dir``."""
+        self.task_dir.mkdir(parents=True, exist_ok=True)
+        with self.meta_path.open("w", encoding="utf-8") as f:
+            for annotation in self.records:
+                f.write(
+                    json.dumps(
+                        annotation.to_dict(),
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                )
+        if not isinstance(self.label_dict, NoLabelDict):
+            self.label_dict.save(self.dict_path)
+
+    def write(
+        self,
+        annotations: Iterable[BaseAnnotation | dict[str, Any]],
+    ) -> None:
+        self.records = []
+        for item in annotations:
+            if isinstance(item, dict):
+                self.append(**item)
+            else:
+                self.append(item)
+        self.save()
+
+
+class AnnotationReader:
+    """Read annotation JSONL and optional label dictionary from ``task_dir``."""
+
+    def __init__(
+        self,
+        task_type: TaskType,
+        task_dir: str | Path,
+        *,
+        task_meta_filename: str = ANNOTATION_DATA_FILENAME,
+        task_dict_name: str = ANNOTATION_DICT_FILENAME,
+    ) -> None:
+        self.task_type = task_type
+        self.task_dir = resolve_task_dir(task_type, task_dir)
+        self.task_meta_filename = task_meta_filename
+        self.task_dict_name = task_dict_name
+        self.annotation_cls = task_type.annotation_class
+
+    @property
+    def meta_path(self) -> Path:
+        return meta_path_for(self.task_dir, self.task_meta_filename)
+
+    @property
+    def dict_path(self) -> Path:
+        return dict_path_for(self.task_dir, self.task_dict_name)
+
+    def iter_raw(self) -> Iterator[dict[str, Any]]:
+        path = self.meta_path
+        if not path.is_file():
+            return
+        with path.open(encoding="utf-8") as f:
+            for lineno, line in enumerate(f, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    yield json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise AnnotationFormatError(
+                        f"{path}:{lineno} failed to parse JSON"
+                    ) from exc
+
+    def _parse_annotations(
+        self,
+        label_dict: TaskLabelDict,
+    ) -> list[BaseAnnotation]:
+        annotations: list[BaseAnnotation] = []
+        for record in self.iter_raw():
+            annotation = self.annotation_cls.from_dict(record)
+            annotation.validate()
+            label_dict.validate_annotation(annotation)
+            annotations.append(annotation)
+        return annotations
+
+    def iter_annotations(self) -> Iterator[BaseAnnotation]:
+        loaded = load_label_dict(
+            self.task_type,
+            self.task_dir,
+            task_dict_name=self.task_dict_name,
+        )
+        label_dict = loaded if loaded is not None else NoLabelDict()
+        yield from self._parse_annotations(label_dict)
+
+    def load(self) -> tuple[list[BaseAnnotation], dict[str, Any] | None]:
+        """Return parsed annotations and plain ``task_dict`` (``None`` if not used)."""
+        loaded = load_label_dict(
+            self.task_type,
+            self.task_dir,
+            task_dict_name=self.task_dict_name,
+        )
+        label_dict = loaded if loaded is not None else NoLabelDict()
+        task_dict = None if loaded is None else loaded.to_task_dict()
+        return self._parse_annotations(label_dict), task_dict

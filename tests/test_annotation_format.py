@@ -1,0 +1,526 @@
+from __future__ import annotations
+
+from typing import Any, TypeVar
+
+import numpy as np
+
+from vdschema import (
+    ActionAnnotation,
+    AnnotationReader,
+    AnnotationWriter,
+    BaseAnnotation,
+    Bbox,
+    ClassificationAnnotation,
+    ConversationAnnotation,
+    ConversationRole,
+    ConversationTurn,
+    DetectionAnnotation,
+    KeypointAnnotation,
+    RelationshipAnnotation,
+    SegmentationRLE,
+    SegmentationAnnotation,
+    TaskType,
+    VlmAnnotation,
+)
+
+TAnnotation = TypeVar("TAnnotation", bound=BaseAnnotation)
+
+
+def _read_annotations(
+    writer: AnnotationWriter,
+    *,
+    expected_count: int,
+) -> tuple[list[TAnnotation], dict | None, list[dict[str, Any]]]:
+    """Exercise AnnotationReader.iter_raw / iter_annotations / load."""
+    reader = AnnotationReader(writer.task_type, writer.save_dir())
+    raw_rows = list(reader.iter_raw())
+    assert len(raw_rows) == expected_count
+    via_iter = list(reader.iter_annotations())
+    assert len(via_iter) == expected_count
+    via_load, task_dict = reader.load()
+    assert len(via_load) == expected_count
+    assert via_load == via_iter
+    return via_load, task_dict, raw_rows
+
+
+def _mask(height: int = 480, width: int = 640) -> np.ndarray:
+    mask = np.zeros((height, width), dtype=np.uint8)
+    mask[20:80, 30:120] = 1
+    return mask
+
+
+def test_detection_annotation_format():
+    writer = AnnotationWriter(
+        TaskType.DETECTION,
+        task_dict={1: "person", 2: "car", 3: "bus", 4: "truck"},
+    )
+
+    # bbox convert from multiple formats, the default list parameter is xyxy format
+    writer.append(
+        filename="images/detection_001.jpg",
+        width=640,
+        height=480,
+        instances=[
+            {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
+            {"id": 1, "category_id": 1, "bbox": Bbox.from_xyxy([120, 30, 200, 180])},
+            {"id": 2, "category_id": 2, "bbox": Bbox.from_xywh([120, 30, 80, 150])},
+            {"id": 3, "category_id": 4, "bbox": Bbox.from_cxcywh([160, 105, 80, 150])},
+        ],
+    )
+    writer.append(
+        filename="images/detection_002.jpg",
+        width=800,
+        height=600,
+        instances=[
+            {"id": 0, "category_id": 3, "bbox": [50, 60, 180, 260], "text": "AB0000EF"},
+            {
+                "id": 1,
+                "category_id": 4,
+                "bbox": Bbox.from_cxcywh([290, 190, 140, 220]),
+                "text": "AB0000FF"
+            },
+        ],
+    )
+    writer.append(
+        filename="images/detection_002.jpg",
+        width=800,
+        height=600,
+        instances=[],
+    )
+    writer.save()
+
+    annotations, task_dict, rows = _read_annotations(writer, expected_count=3)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["instances"][1]["bbox"] == [120.0, 30.0, 200.0, 180.0]
+    assert rows[0]["instances"][2]["bbox"] == [120.0, 30.0, 200.0, 180.0]
+    assert rows[0]["instances"][3]["bbox"] == [120.0, 30.0, 200.0, 180.0]
+    assert rows[1]["instances"][1]["bbox"] == [220.0, 80.0, 360.0, 300.0]
+    assert isinstance(annotations[0], DetectionAnnotation)
+    assert annotations[0].instances[1].bbox.to_list() == [120.0, 30.0, 200.0, 180.0]
+    assert annotations[1].instances[1].text == "AB0000FF"
+    assert annotations[2].instances == []
+    assert task_dict[1] == "person"
+    assert task_dict[4] == "truck"
+
+
+def test_keypoint_annotation_format():
+    writer = AnnotationWriter(
+        TaskType.KEYPOINT,
+        task_dict={1: "person", 2: "car", 3: "bus", 4: "truck"},
+    )
+
+    # bbox convert from multiple formats, the default list parameter is xyxy format
+    writer.append(
+        filename="images/keypoint_001.jpg",
+        width=640,
+        height=480,
+        instances=[
+            {
+                "id": 0,
+                "category_id": 1,
+                "bbox": [200, 100, 380, 420],
+                "keypoints": {
+                    "body": [
+                        [210, 120, 2],
+                        [230, 140, 2],
+                    ]
+                },
+                "text": "body keypoints",
+            }
+        ],
+    )
+    writer.append(
+        filename="images/keypoint_002.jpg",
+        width=640,
+        height=480,
+        instances=[
+            {
+                "id": 1,
+                "category_id": 1,
+                "bbox": [100, 100, 220, 360],
+                "keypoints": {"face": [[110, 120, 2], [130, 120, 2]]},
+            }
+        ],
+    )
+    writer.save()
+
+    annotations, _, rows = _read_annotations(writer, expected_count=2)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["instances"][0]["keypoints"]["body"] == [
+        [210, 120, 2],
+        [230.0, 140.0, 2],
+    ]
+    assert rows[1]["instances"][0]["keypoints"]["face"][1] == [130.0, 120.0, 2]
+    assert isinstance(annotations[0], KeypointAnnotation)
+    assert annotations[0].instances[0].keypoints["body"][0].visibility == 2
+    assert annotations[0].instances[0].text == "body keypoints"
+    assert list(annotations[1].instances[0].keypoints["face"][1].to_list()) == [
+        130.0,
+        120.0,
+        2,
+    ]
+
+
+def test_segmentation_annotation_format():
+    writer = AnnotationWriter(
+        TaskType.SEGMENTATION,
+        task_dict={1: "person", 2: "car", 3: "bus", 4: "truck"},
+    )
+    seg_a = SegmentationRLE.from_mask(_mask())
+    seg_b = SegmentationRLE.from_mask(_mask())
+
+    # bbox convert from multiple formats, the default list parameter is xyxy format
+    writer.append(
+        filename="images/segmentation_001.jpg",
+        width=640,
+        height=480,
+        instances=[
+            {
+                "id": 0,
+                "category_id": 1,
+                "bbox": [10, 20, 100, 200],
+                "segmentation": seg_a,
+            }
+        ],
+    )
+    writer.append(
+        filename="images/segmentation_002.jpg",
+        width=640,
+        height=480,
+        instances=[
+            {
+                "id": 1,
+                "category_id": 1,
+                "bbox": Bbox.from_xywh([120, 30, 200, 180]),
+                "segmentation": seg_b,
+            }
+        ],
+    )
+    writer.append(
+        filename="images/segmentation_003.jpg",
+        width=640,
+        height=480,
+        instances=[],
+    )
+    writer.save()
+
+    annotations, _, rows = _read_annotations(writer, expected_count=3)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["instances"][0]["segmentation"]["size"] == [480, 640]
+    assert rows[1]["instances"][0]["segmentation"]["counts"]
+    assert isinstance(annotations[0], SegmentationAnnotation)
+    assert annotations[0].instances[0].segmentation.to_mask().shape == (480, 640)
+    assert annotations[2].instances == []
+
+
+def test_classification_annotation_format():
+    writer = AnnotationWriter(
+        TaskType.CLASSIFICATION,
+        task_dict={
+            "hair_color": {1: "black", 2: "brown", 3: "blonde", 4: "red"},
+            "age": {1: "young", 2: "middle-aged", 3: "elderly"},
+        },
+    )
+
+    writer.append(
+        filename="images/classification_001.jpg",
+        width=640,
+        height=480,
+        categories=[
+            {"category_type": "hair_color", "category_ids": [1]},
+            {"category_type": "age", "category_ids": [1]},
+        ],
+    )
+    writer.append(
+        filename="images/classification_002.jpg",
+        width=800,
+        height=600,
+        categories=[{"category_type": "age", "category_ids": [2]}],
+    )
+    writer.save()
+
+    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["categories"][1]["category_ids"] == [1]
+    assert rows[1]["categories"][0]["category_ids"] == [2]
+    assert isinstance(annotations[0], ClassificationAnnotation)
+    assert annotations[0].categories[0].category_type == "hair_color"
+    assert annotations[0].categories[1].category_ids == [1]
+    assert annotations[1].categories[0].category_ids == [2]
+
+    assert task_dict["hair_color"][1] == "black"
+    assert task_dict["age"][2] == "middle-aged"
+
+
+def test_relationship_annotation_format():
+    writer = AnnotationWriter(
+        TaskType.RELATIONSHIP,
+        task_dict={
+            "detection": {1: "person", 2: "car"},
+            "relationship": {0: "near", 1: "left_of"},
+        },
+    )
+
+    # bbox convert from multiple formats, the default list parameter is xyxy format
+    writer.append(
+        filename="images/relationship_001.jpg",
+        width=640,
+        height=480,
+        instances=[
+            {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
+            {"id": 1, "category_id": 2, "bbox": [120, 30, 200, 180]},
+        ],
+        relationships=[
+            {"subject_id": 0, "object_id": 1, "relation_type": "near"}
+        ],
+    )
+    writer.append(
+        filename="images/relationship_002.jpg",
+        width=640,
+        height=480,
+        instances=[
+            {"id": 0, "category_id": 1, "bbox": [20, 20, 110, 210]},
+            {"id": 1, "category_id": 2, "bbox": [140, 40, 240, 190]},
+        ],
+        relationships=[
+            {"subject_id": 1, "object_id": 0, "relation_type": "left_of"}
+        ],
+    )
+    writer.append(
+        filename="images/relationship_003.jpg",
+        width=640,
+        height=480,
+        instances=[],
+        relationships=[],
+    )
+    writer.save()
+
+    annotations, _, rows = _read_annotations(writer, expected_count=3)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["relationships"][0]["relation_type"] == "near"
+    assert rows[1]["relationships"][0]["relation_type"] == "left_of"
+    assert isinstance(annotations[0], RelationshipAnnotation)
+    assert annotations[0].relationships[0].relation_type == "near"
+    assert annotations[1].relationships[0].relation_type == "left_of"
+    assert annotations[2].instances == []
+    assert annotations[2].relationships == []
+
+
+def test_vlm_annotation_format():
+    writer = AnnotationWriter(TaskType.VLM)
+
+    writer.append(
+        filename="images/vlm_001.jpg",
+        width=640,
+        height=480,
+        description="A street intersection with three people crossing.",
+    )
+    writer.append(
+        filename="images/vlm_002.jpg",
+        width=800,
+        height=600,
+        description="A computer is on an indoor desk.",
+    )
+    writer.save()
+
+    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["description"].startswith("A street")
+    assert rows[1]["description"].startswith("A computer")
+    assert isinstance(annotations[0], VlmAnnotation)
+    assert annotations[0].description.startswith("A street")
+    assert annotations[1].width == 800
+    assert task_dict is None
+
+
+def test_conversation_annotation_format():
+    writer = AnnotationWriter(TaskType.CONVERSATION)
+
+    writer.append(
+        filename="images/conversation_001.jpg",
+        width=640,
+        height=480,
+        conversations=[
+            ConversationTurn(
+                role=ConversationRole.USER,
+                image="images/conversation_001.jpg",
+                text="Describe the image.",
+            ),
+            ConversationTurn(
+                role=ConversationRole.ASSISTANT,
+                text="A street scene.",
+            ),
+        ],
+    )
+    writer.append(
+        filename="images/conversation_002.jpg",
+        width=640,
+        height=480,
+        conversations=[
+            ConversationTurn(
+                role=ConversationRole.USER,
+                image="images/conversation_002.jpg",
+                text="Describe the image.",
+            ),
+            ConversationTurn(
+                role=ConversationRole.ASSISTANT,
+                text="A computer is on an indoor desk.",
+            ),
+        ],
+    )
+    writer.save()
+
+    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["conversations"][0]["content"][1]["type"] == "text"
+    assert rows[1]["conversations"][1]["role"] == ConversationRole.ASSISTANT.value
+    assert isinstance(annotations[0], ConversationAnnotation)
+    assert annotations[0].conversations[0].role == ConversationRole.USER
+    assert annotations[1].conversations[1].content[0].text.startswith("A computer")
+    assert task_dict is None
+
+
+def test_action_annotation_format():
+    writer = AnnotationWriter(
+        TaskType.ACTION,
+        task_dict={2: "fall", 4: "walk", 5: "stand"},
+    )
+
+    # bbox convert from multiple formats, the default list parameter is xyxy format
+    writer.append(
+        filename="videos/action_001.mp4",
+        width=1920,
+        height=1080,
+        description="An elderly person falls down.",
+        actions=[
+            {
+                "action_id": 2,
+                "track_id": 0,
+                "start_idx": 4,
+                "end_idx": 6,
+                "description": "An elderly person falls down.",
+                "tracks": [
+                    {
+                        "frame_idx": 0,
+                        "bbox": [520, 300, 620, 380],
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                    {
+                        "frame_idx": 1,
+                        "bbox": Bbox.from_xyxy([528, 302, 628, 382]),
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                    {
+                        "frame_idx": 2,
+                        "bbox": Bbox.from_xyxy([536, 304, 636, 384]),
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                    {
+                        "frame_idx": 3,
+                        "bbox": Bbox.from_xyxy([544, 306, 644, 386]),
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                    {
+                        "frame_idx": 4,
+                        "bbox": Bbox.from_xyxy([552, 308, 652, 388]),
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                    {
+                        "frame_idx": 5,
+                        "bbox": Bbox.from_xyxy([560, 310, 660, 390]),
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                    {
+                        "frame_idx": 6,
+                        "bbox": Bbox.from_xyxy([568, 312, 668, 392]),
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                    {
+                        "frame_idx": 7,
+                        "bbox": Bbox.from_xyxy([576, 314, 676, 394]),
+                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                    },
+                ],
+            }
+        ],
+    )
+    writer.append(
+        filename="videos/action_002.mp4",
+        width=1280,
+        height=720,
+        description="A pedestrian is walking.",
+        actions=[
+            {
+                "action_id": 4,
+                "track_id": 1,
+                "start_idx": 1,
+                "end_idx": 5,
+                "description": "A pedestrian is walking.",
+                "tracks": [
+                    {"frame_idx": 1, "bbox": [100, 120, 180, 320]},
+                    {"frame_idx": 2, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                    {"frame_idx": 3, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                    {"frame_idx": 4, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                    {"frame_idx": 5, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                ],
+            },
+            {
+                "action_id": 5,
+                "track_id": 2,
+                "start_idx": 1,
+                "end_idx": 5,
+                "description": "A pedestrian is walking.",
+                "tracks": [
+                    {"frame_idx": 1, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                    {"frame_idx": 2, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                    {"frame_idx": 3, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                    {"frame_idx": 4, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                    {"frame_idx": 5, "bbox": Bbox.from_xyxy([100, 120, 180, 320])},
+                ],
+            },
+        ],
+    )
+    writer.save()
+
+    annotations, _, rows = _read_annotations(writer, expected_count=2)
+    assert "task_type" not in rows[0]
+    assert "schema_version" not in rows[0]
+    assert rows[0]["actions"][0]["tracks"][0]["bbox"] == [
+        520.0,
+        300.0,
+        620.0,
+        380.0,
+    ]
+    assert rows[1]["actions"][0]["action_id"] == 4
+    assert isinstance(annotations[0], ActionAnnotation)
+    assert annotations[0].actions[0].tracks[0].bbox.to_list() == [
+        520.0,
+        300.0,
+        620.0,
+        380.0,
+    ]
+    assert annotations[1].actions[0].action_id == 4
+    assert len(annotations[1].actions) == 2
+
+
+def run_all():
+    test_detection_annotation_format()
+    test_keypoint_annotation_format()
+    test_segmentation_annotation_format()
+    test_classification_annotation_format()
+    test_relationship_annotation_format()
+    test_vlm_annotation_format()
+    test_conversation_annotation_format()
+    test_action_annotation_format()
+
+
+if __name__ == "__main__":
+    run_all()
+    print("all annotation format tests passed")

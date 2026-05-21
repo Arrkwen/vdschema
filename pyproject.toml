@@ -1,0 +1,51 @@
+[project]
+name = "vdschema"
+dynamic = ["version"]
+description = "Unified annotation schema and JSONL IO for vision datasets."
+readme = "README.md"
+authors = [
+    { name = "Arrkwen", email = "Arrkwen@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pycocotools>=2.0.7",
+]
+
+[project.urls]
+Homepage = "https://github.com/Arrkwen/vdschema"
+Repository = "https://github.com/Arrkwen/vdschema"
+Issues = "https://github.com/Arrkwen/vdschema/issues"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8.0",
+    "build>=1.2.0",
+    "twine>=5.0.0",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["vdschema"]
+
+[tool.setuptools.dynamic]
+version = { attr = "vdschema._version.__version__" }
+
+[tool.setuptools.package-data]
+vdschema = ["schema/*.json", "schema/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+filterwarnings = [
+    # pycocotools + NumPy 2.x: RLE decode via __array__(copy=False)
+    "ignore:__array__ implementation doesn't accept a copy keyword:DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 88

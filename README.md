@@ -52,16 +52,20 @@ pip install -e .
 ```
 
 ## Basic Usage
-
-### Detection
+Expand a task below for a full example:
+<details open>
+<summary><strong>Detection</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
 
+# step1: create annotation object
 writer = AnnotationWriter(
     TaskType.DETECTION,
     task_dict={1: "person", 2: "car"},
 )
+
+# step2: add annotation info
 writer.append(
     filename="images/sample.jpg",
     width=640,
@@ -70,31 +74,22 @@ writer.append(
         {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
     ],
 )
-# default writes to output/detection/
+# step3: save annotation info, by default, written to output/{task_type}/,can override by setting task_dir in AnnotationWriter.
 writer.save()
 
-# annotations: list[DetectionAnnotation]; task_dict: plain dict (id -> name)
+# step4(option): load annotation info.
 annotations, task_dict = AnnotationReader(
     TaskType.DETECTION, writer.save_dir()
 ).load()
+
 print(task_dict)  # {1: "person", 2: "car"}
-
-# custom output directory
-output_dir="my_dataset/detection"
-writer = AnnotationWriter(
-    TaskType.DETECTION,
-    task_dict={1: "person", 2: "car"},
-    task_dir=output_dir
-)
-writer.save()
-
-# raw JSON objects per line
-annotations_raw = list(
-    AnnotationReader(TaskType.DETECTION, output_dir).iter_raw()
-)
+print(annotations) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
 ```
 
-### Keypoint
+</details>
+
+<details>
+<summary><strong>Keypoint</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
@@ -119,7 +114,10 @@ annotations, task_dict = AnnotationReader(
 ).load()
 ```
 
-### Segmentation
+</details>
+
+<details>
+<summary><strong>Segmentation</strong></summary>
 
 ```python
 from vdschema import (
@@ -157,7 +155,10 @@ writer.save()
 annotations, task_dict = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
-### Classification
+</details>
+
+<details>
+<summary><strong>Classification</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
@@ -184,7 +185,10 @@ annotations, task_dict = AnnotationReader(
 ).load()
 ```
 
-### Relationship
+</details>
+
+<details>
+<summary><strong>Relationship</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
@@ -212,7 +216,10 @@ annotations, task_dict = AnnotationReader(
 ).load()
 ```
 
-### VLM
+</details>
+
+<details>
+<summary><strong>VLM</strong></summary>
 
 No label dictionary file. Omit `task_dict` for tasks without vocabulary.
 
@@ -233,7 +240,10 @@ annotations, task_dict = AnnotationReader(
 assert task_dict is None
 ```
 
-### Conversation
+</details>
+
+<details>
+<summary><strong>Conversation</strong></summary>
 
 ```python
 from vdschema import (
@@ -264,7 +274,10 @@ annotations, task_dict = AnnotationReader(
 ).load()
 ```
 
-### Action
+</details>
+
+<details>
+<summary><strong>Action</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
@@ -295,6 +308,8 @@ annotations, task_dict = AnnotationReader(
 ).load()
 ```
 
+</details>
+
 ### More examples
 
 Full runnable tests: [tests/test_annotation_format.py](tests/test_annotation_format.py). Run:
@@ -302,8 +317,6 @@ Full runnable tests: [tests/test_annotation_format.py](tests/test_annotation_for
 ```bash
 uv run pytest
 ```
-
-Each task follows the same pattern: pick a `TaskType`, pass a plain `task_dict` (when needed), `writer.append(...)`, `writer.save()`, then `annotations, task_dict = AnnotationReader(task_type, writer.save_dir()).load()`. By default, files go to `output/{task_type}/`; pass `task_dir` to override.
 
 ## Development
 

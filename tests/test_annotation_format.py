@@ -31,7 +31,7 @@ def _read_annotations(
     *,
     expected_count: int,
 ) -> tuple[list[TAnnotation], dict | None, list[dict[str, Any]]]:
-    """Exercise AnnotationReader.iter_raw / iter_annotations / load."""
+    """Exercise AnnotationReader.iter_raw / iter_annotations / load / validate."""
     reader = AnnotationReader(writer.task_type, writer.save_dir())
     raw_rows = list(reader.iter_raw())
     assert len(raw_rows) == expected_count
@@ -40,6 +40,7 @@ def _read_annotations(
     via_load, task_dict = reader.load()
     assert len(via_load) == expected_count
     assert via_load == via_iter
+    assert reader.validate() is True
     return via_load, task_dict, raw_rows
 
 
@@ -510,7 +511,35 @@ def test_action_annotation_format():
     assert len(annotations[1].actions) == 2
 
 
+def test_reader_validate_returns_false_on_invalid_data(tmp_path):
+    writer = AnnotationWriter(
+        TaskType.DETECTION,
+        task_dict={1: "person"},
+        task_dir=tmp_path / "detection",
+    )
+    writer.append(
+        filename="images/ok.jpg",
+        width=640,
+        height=480,
+        instances=[{"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]}],
+    )
+    writer.save()
+
+    # Corrupt JSONL with unknown category_id
+    data_path = writer.data_path
+    data_path.write_text(
+        '{"filename":"images/bad.jpg","width":640,"height":480,'
+        '"instances":[{"id":0,"category_id":99,"bbox":[10,20,100,200]}]}\n',
+        encoding="utf-8",
+    )
+    reader = AnnotationReader(TaskType.DETECTION, writer.save_dir())
+    assert reader.validate() is False
+
+
 def run_all():
+    from pathlib import Path
+    import tempfile
+
     test_detection_annotation_format()
     test_keypoint_annotation_format()
     test_segmentation_annotation_format()
@@ -519,6 +548,8 @@ def run_all():
     test_vlm_annotation_format()
     test_conversation_annotation_format()
     test_action_annotation_format()
+    with tempfile.TemporaryDirectory() as tmp:
+        test_reader_validate_returns_false_on_invalid_data(Path(tmp))
 
 
 if __name__ == "__main__":

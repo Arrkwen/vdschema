@@ -9,22 +9,20 @@ It supports two primary workflows:
 
 ## Supported tasks
 
-
-| Task           | `TaskType`                | `Task_dict`                               | Python type                |
-| -------------- | ------------------------- | ----------------------------------------- | -------------------------- |
+| Task           | `TaskType`                | `Task_dict`                               | Python type                  |
+| -------------- | --------------------------- | ------------------------------------------- | ---------------------------- |
 | detection      | `TaskType.DETECTION`      | `{id: name}`                              | `DetectionAnnotation`      |
 | keypoint       | `TaskType.KEYPOINT`       | `{id: name}`                              | `KeypointAnnotation`       |
 | segmentation   | `TaskType.SEGMENTATION`   | `{id: name}`                              | `SegmentationAnnotation`   |
 | classification | `TaskType.CLASSIFICATION` | `{head: {id: name}}`                      | `ClassificationAnnotation` |
 | relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}` | `RelationshipAnnotation`   |
-| vlm            | `TaskType.VLM`            | —                                         | `VlmAnnotation`            |
-| conversation   | `TaskType.CONVERSATION`   | —                                         | `ConversationAnnotation`   |
+| vlm            | `TaskType.VLM`            | —                                          | `VlmAnnotation`            |
+| conversation   | `TaskType.CONVERSATION`   | —                                          | `ConversationAnnotation`   |
 | action         | `TaskType.ACTION`         | `{id: name}`                              | `ActionAnnotation`         |
-
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
 
-Schema definitions: [annotation_schema.json](src/vdschema/schema/annotation_schema.json), [annotation_dict.json](src/vdschema/schema/annotation_dict.json).
+Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json).
 
 ## Install
 
@@ -52,7 +50,9 @@ pip install -e .
 ```
 
 ## Basic Usage
+
 Expand a task below for a full example:
+
 <details open>
 <summary><strong>Detection</strong></summary>
 

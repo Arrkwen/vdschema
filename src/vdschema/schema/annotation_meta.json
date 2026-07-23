@@ -1,104 +1,77 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_schema.json",
-  "title": "统一感知标注元信息",
-  "description": "描述图片或视频的统一标注信息。图片任务可包含实例、分类、关系、对话或描述；视频任务可包含动作事件与逐帧轨迹。",
+  "$id": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_meta.json",
+  "title": "标注标签词典",
+  "description": "数据集级检测类别、图像分类、关系类型、动作标签等 ID 与名称对照。",
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "filename": {
+    "annotation_schema_ref": {
       "type": "string",
-      "description": "图片或视频文件名、相对路径标识。",
-      "minLength": 1
+      "description": "对应标注 schema 的 $id 或版本摘要。",
+      "examples": [
+        "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json"
+      ]
     },
-    "width": {
-      "type": "integer",
-      "description": "像素宽度。",
-      "minimum": 1
-    },
-    "height": {
-      "type": "integer",
-      "description": "像素高度。",
-      "minimum": 1
-    },
-    "instances": {
+    "detection": {
       "type": "array",
-      "description": "实例级标注（检测、分割、关键点等）。",
-      "items": {
-        "$ref": "#/$defs/instance"
-      }
-    },
-    "categories": {
-      "type": "array",
-      "description": "图片级分类信息。",
-      "items": {
-        "$ref": "#/$defs/classification"
-      }
-    },
-    "relationships": {
-      "type": "array",
-      "description": "实例间关系标注。",
-      "items": {
-        "$ref": "#/$defs/relationship"
-      }
-    },
-    "conversations": {
-      "type": "array",
-      "description": "多模态对话标注。",
-      "items": {
-        "$ref": "#/$defs/conversation_turn"
-      }
-    },
-    "actions": {
-      "type": "array",
-      "description": "视频动作事件列表；每条事件绑定一条逐帧轨迹。",
+      "description": "检测/实例类别词表；与标注 **`instances[].category_id`** 对应。",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/video_event"
+        "$ref": "#/$defs/category_entry"
       }
     },
-    "description": {
-      "type": "string",
-      "description": "图片或视频的简短文本摘要。"
+    "classification": {
+      "type": "array",
+      "description": "图像级多分类词表；与标注顶层 **`categories[]`**（按 **`category_type`**）对应。",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/classification_entry"
+      }
+    },
+    "relationship": {
+      "type": "array",
+      "description": "关系类型；标注 **`relationships[].relation_type`** 等与词表对齐（字段含义见 **`relationship_entry`**）。",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/relationship_entry"
+      }
+    },
+    "action": {
+      "type": "array",
+      "description": "动作/事件类标签词表（若标注侧含对应 ID 字段则与之对齐）。",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/action_entry"
+      }
+    },
+    "dataset_metadata": {
+      "$ref": "#/$defs/dataset_metadata",
+      "description": "数据来源与许可等（可选）。"
     }
   },
-  "required": [
-    "filename",
-    "width",
-    "height"
-  ],
   "allOf": [
     {
-      "description": "至少包含一种标注内容。",
+      "description": "下列词表至少须出现其一，且出现时数组须非空：**`detection`** / **`classification`** / **`relationship`** / **`action`**。",
       "anyOf": [
         {
           "required": [
-            "instances"
+            "detection"
           ]
         },
         {
           "required": [
-            "categories"
+            "classification"
           ]
         },
         {
           "required": [
-            "relationships"
+            "relationship"
           ]
         },
         {
           "required": [
-            "conversations"
-          ]
-        },
-        {
-          "required": [
-            "actions"
-          ]
-        },
-        {
-          "required": [
-            "description"
+            "action"
           ]
         }
       ]
@@ -106,444 +79,187 @@
   ],
   "examples": [
     {
-      "filename": "dataset/images/sample.jpg",
-      "width": 640,
-      "height": 480,
-      "instances": [
+      "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_meta.json",
+      "detection": [
         {
-          "id": 0,
-          "bbox": [
-            10,
-            20,
-            100,
-            200
-          ],
           "category_id": 1,
-          "keypoints": {
-            "body": [
-              [
-                55,
-                40,
-                2
-              ]
-            ]
-          },
-          "segmentation": {
-            "size": [
-              480,
-              640
-            ],
-            "counts": "6320004"
-          },
-          "text": "人体实例（body）"
+          "category_name": "person"
+        },
+        {
+          "category_id": 2,
+          "category_name": "car"
         }
       ],
-      "categories": [
+      "classification": [
         {
           "category_type": "scene",
-          "category_ids": [
-            10
-          ]
-        }
-      ],
-      "relationships": [
-        {
-          "subject_id": 0,
-          "object_id": 0,
-          "relation_type": "self"
-        }
-      ],
-      "conversations": [
-        {
-          "role": "user",
-          "content": [
+          "category_map": [
             {
-              "type": "image",
-              "filename": "sample.jpg"
+              "category_id": 10,
+              "category_name": "intersection"
+            }
+          ]
+        },
+        {
+          "category_type": "weather",
+          "category_map": [
+            {
+              "category_id": 3,
+              "category_name": "sunny"
             },
             {
-              "type": "text",
-              "text": "Describe the image."
+              "category_id": 4,
+              "category_name": "cloudy"
             }
           ]
         }
       ],
-      "description": "整图描述：图片中显示了一个交通路口。"
-    },
-    {
-      "filename": "dataset/videos/street_scene.mp4",
-      "width": 1920,
-      "height": 1080,
-      "actions": [
+      "relationship": [
         {
-          "action_id": 2,
-          "track_id": 0,
-          "start_idx": 0,
-          "end_idx": 10,
-          "description": "一个红色衣服的老人摔倒了",
-          "tracks": [
-            {
-              "frame_idx": 0,
-              "bbox": [
-                520,
-                300,
-                620,
-                380
-              ],
-              "segmentation": {
-                "size": [
-                  1080,
-                  1920
-                ],
-                "counts": "BusFrame0Mask..."
-              }
-            }
-          ]
+          "relationship_id": 0,
+          "relationship_name": "左边"
+        },
+        {
+          "relationship_id": 1,
+          "relationship_name": "右边"
         }
       ],
-      "description": "一个红色衣服的老人摔倒了。"
+      "action": [
+        {
+          "action_id": 3,
+          "action_name": "walking"
+        },
+        {
+          "action_id": 4,
+          "action_name": "talking"
+        }
+      ],
+      "dataset_metadata": {
+        "source": "internal_lab",
+        "language": "zh-CN",
+        "license": "CC-BY-4.0",
+        "difficulty": "medium",
+        "quality_score": 0.92
+      }
     }
   ],
   "$defs": {
-    "instance": {
+    "category_entry": {
       "type": "object",
       "additionalProperties": false,
-      "description": "单实例：`bbox` 轴对齐框；可选 `keypoints`、pycocotools `segmentation` RLE 和 `text`。",
       "properties": {
-        "id": {
-          "type": "integer",
-          "description": "实例唯一整数 ID；`relationships[].subject_id` / `object_id` 引用该字段。",
-          "minimum": 0
-        },
         "category_id": {
           "type": "integer",
-          "description": "物体类别 ID。",
+          "description": "类别 ID（≥0）。",
           "minimum": 0
         },
-        "bbox": {
-          "description": "轴对齐框 `[x1, y1, x2, y2]`。",
-          "allOf": [
-            {
-              "$ref": "#/$defs/bbox_xyxy"
-            }
-          ]
-        },
-        "keypoints": {
-          "type": "object",
-          "description": "可选。`部位键 → [[x,y,v], ...]`；部位名建议 snake_case；visibility 建议 COCO 0/1/2。",
-          "minProperties": 1,
-          "propertyNames": {
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "additionalProperties": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "$ref": "#/$defs/keypoint_xyv"
-            }
-          }
-        },
-        "segmentation": {
-          "description": "可选。COCO / pycocotools RLE。",
-          "allOf": [
-            {
-              "$ref": "#/$defs/segmentation_rle"
-            }
-          ]
-        },
-        "text": {
+        "category_name": {
           "type": "string",
-          "description": "该实例的简短文本描述或对应 OCR 的文字（可选）。"
+          "description": "类别名称。",
+          "minLength": 1
         }
       },
       "required": [
-        "id",
-        "bbox",
-        "category_id"
+        "category_id",
+        "category_name"
       ]
     },
-    "classification": {
+    "classification_entry": {
       "type": "object",
-      "description": "图片级分类信息。",
       "additionalProperties": false,
       "properties": {
         "category_type": {
           "type": "string",
-          "description": "分类头键（如天气、衣服颜色等）。",
-          "minLength": 1
-        },
-        "category_ids": {
-          "type": "array",
-          "description": "该分类头下的具体类别 ID；语义由 category_type 决定，支持多标签。",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "minItems": 1,
-          "uniqueItems": true
-        }
-      },
-      "required": [
-        "category_type",
-        "category_ids"
-      ]
-    },
-    "relationship": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "subject_id": {
-          "type": "integer",
-          "description": "主体实例，引用 `instances[].id`。",
-          "minimum": 0
-        },
-        "object_id": {
-          "type": "integer",
-          "description": "客体实例，引用 `instances[].id`。",
-          "minimum": 0
-        },
-        "relation_type": {
-          "type": "string",
-          "description": "关系类型。",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "subject_id",
-        "object_id",
-        "relation_type"
-      ]
-    },
-    "conversation_turn": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "对话一轮：`content` 为若干 image / text 片段的顺序列表。",
-      "properties": {
-        "role": {
-          "type": "string",
-          "description": "对话角色。",
-          "enum": [
-            "user",
-            "assistant",
-            "system"
+          "description": "分类头键，须与标注 **`categories[].category_type`** 一致。",
+          "minLength": 1,
+          "examples": [
+            "scene",
+            "weather"
           ]
         },
-        "content": {
+        "category_map": {
           "type": "array",
-          "description": "该轮多模态片段序列；每项为 `{ type: \"image\", filename }` 或 `{ type: \"text\", text }`。",
+          "description": "该头下允许的取值（结构与 **`category_entry`** 相同）。",
           "minItems": 1,
           "items": {
-            "oneOf": [
-              {
-                "$ref": "#/$defs/content_part_image"
-              },
-              {
-                "$ref": "#/$defs/content_part_text"
-              }
-            ]
+            "$ref": "#/$defs/category_entry"
           }
         }
       },
       "required": [
-        "role",
-        "content"
+        "category_type",
+        "category_map"
       ]
     },
-    "video_event": {
+    "relationship_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "relationship_id": {
+          "type": "integer",
+          "description": "关系 ID（≥0）。",
+          "minimum": 0
+        },
+        "relationship_name": {
+          "type": "string",
+          "description": "关系名称。",
+          "minLength": 1,
+          "examples": [
+            "靠近",
+            "左边"
+          ]
+        }
+      },
+      "required": [
+        "relationship_id",
+        "relationship_name"
+      ]
+    },
+    "action_entry": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "action_id": {
           "type": "integer",
-          "description": "动作类别 ID。",
+          "description": "动作标签 ID（≥0）。",
           "minimum": 0
         },
-        "track_id": {
-          "type": "integer",
-          "description": "本条轨迹在片段内的实例或轨迹编号。",
-          "minimum": 0
-        },
-        "start_idx": {
-          "type": "integer",
-          "description": "事件在时间轴上的起始帧下标。",
-          "minimum": 0
-        },
-        "end_idx": {
-          "type": "integer",
-          "description": "事件在时间轴上的结束帧下标；须满足 end_idx >= start_idx。",
-          "minimum": 0
-        },
-        "description": {
+        "action_name": {
           "type": "string",
-          "description": "该事件的自然语言描述。",
+          "description": "动作名称。",
           "minLength": 1
-        },
-        "tracks": {
-          "type": "array",
-          "description": "按帧展开的观测序列；通常覆盖 `[start_idx, end_idx]` 内全部或抽样帧。",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/track_item"
-          }
         }
       },
       "required": [
         "action_id",
-        "track_id",
-        "start_idx",
-        "end_idx",
-        "description",
-        "tracks"
+        "action_name"
       ]
     },
-    "track_item": {
+    "dataset_metadata": {
       "type": "object",
       "additionalProperties": false,
-      "description": "单帧上对该事件主体的几何标注。",
       "properties": {
-        "frame_idx": {
-          "type": "integer",
-          "description": "帧下标（从 0 或与数据集约定一致）。",
-          "minimum": 0
-        },
-        "bbox": {
-          "description": "该帧内主体的 bbox 框。",
-          "allOf": [
-            {
-              "$ref": "#/$defs/bbox_xyxy"
-            }
-          ]
-        },
-        "segmentation": {
-          "description": "可选。该主体的实例掩码（与 bbox 同语义）。",
-          "allOf": [
-            {
-              "$ref": "#/$defs/segmentation_rle"
-            }
-          ]
-        }
-      },
-      "required": [
-        "frame_idx",
-        "bbox"
-      ]
-    },
-    "bbox_xyxy": {
-      "type": "array",
-      "description": "轴对齐框 `[x1, y1, x2, y2]`，左上与右下像素坐标；约定 x2>x1、y2>y1。",
-      "minItems": 4,
-      "maxItems": 4,
-      "prefixItems": [
-        {
-          "type": "number",
-          "description": "x1"
-        },
-        {
-          "type": "number",
-          "description": "y1"
-        },
-        {
-          "type": "number",
-          "description": "x2"
-        },
-        {
-          "type": "number",
-          "description": "y2"
-        }
-      ],
-      "items": false
-    },
-    "keypoint_xyv": {
-      "type": "array",
-      "description": "单点 `[x, y, visibility]`。",
-      "minItems": 3,
-      "maxItems": 3,
-      "prefixItems": [
-        {
-          "type": "number",
-          "description": "x"
-        },
-        {
-          "type": "number",
-          "description": "y"
-        },
-        {
-          "type": "integer",
-          "description": "visibility",
-          "minimum": 0,
-          "maximum": 2
-        }
-      ],
-      "items": false
-    },
-    "segmentation_rle": {
-      "type": "object",
-      "description": "掩码，由 pycocotools RLE 生成。",
-      "additionalProperties": false,
-      "properties": {
-        "size": {
-          "type": "array",
-          "description": "`[height, width]`。",
-          "minItems": 2,
-          "maxItems": 2,
-          "prefixItems": [
-            {
-              "type": "integer",
-              "minimum": 1,
-              "description": "height"
-            },
-            {
-              "type": "integer",
-              "minimum": 1,
-              "description": "width"
-            }
-          ],
-          "items": false
-        },
-        "counts": {
+        "source": {
           "type": "string",
-          "description": "pycocotools 压缩 RLE 字符串。",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "size",
-        "counts"
-      ]
-    },
-    "content_part_image": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "const": "image"
+          "description": "数据来源。"
         },
-        "filename": {
+        "language": {
           "type": "string",
-          "description": "对话中引用的图像路径（可与根级 filename 相同）。",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "type",
-        "filename"
-      ]
-    },
-    "content_part_text": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "const": "text"
+          "description": "主语言，如 zh-CN。"
         },
-        "text": {
-          "type": "string"
+        "license": {
+          "type": "string",
+          "description": "许可证。"
+        },
+        "difficulty": {
+          "type": "string",
+          "description": "难度（自定义枚举）。"
+        },
+        "quality_score": {
+          "type": "number",
+          "description": "质量分（可选）。"
         }
-      },
-      "required": [
-        "type",
-        "text"
-      ]
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 # Annotation format examples
 
-Each task stores one JSON object per line in `annotation_meta.jsonl`. When a task uses a label vocabulary, `annotation_dict.json` is saved in the same directory.
+Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory.
 
 `bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` entries are `[x, y, visibility]` (`visibility`: 0/1/2). `segmentation` follows pycocotools RLE (`size`: `[height, width]`).
 
@@ -8,11 +8,11 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 
 ## detection
 
-**annotation_dict.json**
+**annotation_meta.json**
 
 ```json
 {
-  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_schema.json",
+  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
   "detection": [
     {"category_id": 1, "category_name": "person"},
     {"category_id": 2, "category_name": "car"}
@@ -20,7 +20,7 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 }
 ```
 
-**annotation_meta.jsonl** (one line)
+**annotation_data.jsonl** (one line)
 
 ```json
 {
@@ -38,9 +38,9 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 
 ## keypoint
 
-**annotation_dict.json** — same structure as detection.
+**annotation_meta.json** — same structure as detection.
 
-**annotation_meta.jsonl**
+**annotation_data.jsonl**
 
 ```json
 {
@@ -64,9 +64,9 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 
 ## segmentation
 
-**annotation_dict.json** — same structure as detection.
+**annotation_meta.json** — same structure as detection.
 
-**annotation_meta.jsonl**
+**annotation_data.jsonl**
 
 ```json
 {
@@ -88,11 +88,11 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 
 ## classification
 
-**annotation_dict.json**
+**annotation_meta.json**
 
 ```json
 {
-  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_schema.json",
+  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
   "classification": [
     {
       "category_type": "scene",
@@ -112,7 +112,7 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 }
 ```
 
-**annotation_meta.jsonl**
+**annotation_data.jsonl**
 
 ```json
 {
@@ -130,11 +130,11 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 
 ## relationship
 
-**annotation_dict.json**
+**annotation_meta.json**
 
 ```json
 {
-  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_schema.json",
+  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
   "detection": [
     {"category_id": 1, "category_name": "person"},
     {"category_id": 2, "category_name": "car"}
@@ -146,7 +146,7 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 }
 ```
 
-**annotation_meta.jsonl**
+**annotation_data.jsonl**
 
 ```json
 {
@@ -167,9 +167,9 @@ Each task stores one JSON object per line in `annotation_meta.jsonl`. When a tas
 
 ## vlm
 
-No `annotation_dict.json`.
+No `annotation_meta.json`.
 
-**annotation_meta.jsonl**
+**annotation_data.jsonl**
 
 ```json
 {
@@ -184,9 +184,9 @@ No `annotation_dict.json`.
 
 ## conversation
 
-No `annotation_dict.json`.
+No `annotation_meta.json`.
 
-**annotation_meta.jsonl**
+**annotation_data.jsonl**
 
 ```json
 {
@@ -213,11 +213,11 @@ No `annotation_dict.json`.
 
 ## action
 
-**annotation_dict.json**
+**annotation_meta.json**
 
 ```json
 {
-  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_schema.json",
+  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
   "action": [
     {"action_id": 2, "action_name": "fall"},
     {"action_id": 4, "action_name": "walk"}
@@ -225,7 +225,7 @@ No `annotation_dict.json`.
 }
 ```
 
-**annotation_meta.jsonl**
+**annotation_data.jsonl**
 
 ```json
 {

@@ -13,11 +13,11 @@ from typing import Any, Iterable, Iterator
 
 from .annotation_dict import (
     ANNOTATION_DATA_FILENAME,
-    ANNOTATION_DICT_FILENAME,
+    ANNOTATION_META_FILENAME,
     NoLabelDict,
     TaskLabelDict,
     build_label_dict,
-    dict_path_for,
+    data_path_for,
     load_label_dict,
     meta_path_for,
 )
@@ -47,13 +47,13 @@ class AnnotationWriter:
         task_dict: dict[str, Any] | dict[int, str] | None = None,
         task_dir: str | Path = DEFAULT_OUTPUT_DIR,
         *,
-        task_meta_filename: str = ANNOTATION_DATA_FILENAME,
-        task_dict_name: str = ANNOTATION_DICT_FILENAME,
+        task_data_filename: str = ANNOTATION_DATA_FILENAME,
+        task_meta_filename: str = ANNOTATION_META_FILENAME,
     ) -> None:
         self.task_type = task_type
         self.task_dir = resolve_task_dir(task_type, task_dir)
+        self.task_data_filename = task_data_filename
         self.task_meta_filename = task_meta_filename
-        self.task_dict_name = task_dict_name
         self.annotation_cls = task_type.annotation_class
         self.label_dict = build_label_dict(task_type, task_dict)
         self.records: list[BaseAnnotation] = []
@@ -63,12 +63,14 @@ class AnnotationWriter:
         return self.task_dir
 
     @property
-    def meta_path(self) -> Path:
-        return meta_path_for(self.task_dir, self.task_meta_filename)
+    def data_path(self) -> Path:
+        """Path to the annotation JSONL file."""
+        return data_path_for(self.task_dir, self.task_data_filename)
 
     @property
-    def dict_path(self) -> Path:
-        return dict_path_for(self.task_dir, self.task_dict_name)
+    def meta_path(self) -> Path:
+        """Path to the label-meta (vocabulary) file."""
+        return meta_path_for(self.task_dir, self.task_meta_filename)
 
     def append_annotation(self, annotation: BaseAnnotation) -> BaseAnnotation:
         if not isinstance(annotation, self.annotation_cls):
@@ -91,9 +93,9 @@ class AnnotationWriter:
         return self.append_annotation(annotation)
 
     def save(self) -> None:
-        """Write JSONL and label dictionary (when applicable) under ``task_dir``."""
+        """Write JSONL and label meta (when applicable) under ``task_dir``."""
         self.task_dir.mkdir(parents=True, exist_ok=True)
-        with self.meta_path.open("w", encoding="utf-8") as f:
+        with self.data_path.open("w", encoding="utf-8") as f:
             for annotation in self.records:
                 f.write(
                     json.dumps(
@@ -104,7 +106,7 @@ class AnnotationWriter:
                     + "\n"
                 )
         if not isinstance(self.label_dict, NoLabelDict):
-            self.label_dict.save(self.dict_path)
+            self.label_dict.save(self.meta_path)
 
     def write(
         self,
@@ -127,25 +129,27 @@ class AnnotationReader:
         task_type: TaskType,
         task_dir: str | Path,
         *,
-        task_meta_filename: str = ANNOTATION_DATA_FILENAME,
-        task_dict_name: str = ANNOTATION_DICT_FILENAME,
+        task_data_filename: str = ANNOTATION_DATA_FILENAME,
+        task_meta_filename: str = ANNOTATION_META_FILENAME,
     ) -> None:
         self.task_type = task_type
         self.task_dir = resolve_task_dir(task_type, task_dir)
+        self.task_data_filename = task_data_filename
         self.task_meta_filename = task_meta_filename
-        self.task_dict_name = task_dict_name
         self.annotation_cls = task_type.annotation_class
 
     @property
-    def meta_path(self) -> Path:
-        return meta_path_for(self.task_dir, self.task_meta_filename)
+    def data_path(self) -> Path:
+        """Path to the annotation JSONL file."""
+        return data_path_for(self.task_dir, self.task_data_filename)
 
     @property
-    def dict_path(self) -> Path:
-        return dict_path_for(self.task_dir, self.task_dict_name)
+    def meta_path(self) -> Path:
+        """Path to the label-meta (vocabulary) file."""
+        return meta_path_for(self.task_dir, self.task_meta_filename)
 
     def iter_raw(self) -> Iterator[dict[str, Any]]:
-        path = self.meta_path
+        path = self.data_path
         if not path.is_file():
             return
         with path.open(encoding="utf-8") as f:
@@ -176,7 +180,7 @@ class AnnotationReader:
         loaded = load_label_dict(
             self.task_type,
             self.task_dir,
-            task_dict_name=self.task_dict_name,
+            task_meta_filename=self.task_meta_filename,
         )
         label_dict = loaded if loaded is not None else NoLabelDict()
         yield from self._parse_annotations(label_dict)
@@ -186,8 +190,16 @@ class AnnotationReader:
         loaded = load_label_dict(
             self.task_type,
             self.task_dir,
-            task_dict_name=self.task_dict_name,
+            task_meta_filename=self.task_meta_filename,
         )
         label_dict = loaded if loaded is not None else NoLabelDict()
         task_dict = None if loaded is None else loaded.to_task_dict()
         return self._parse_annotations(label_dict), task_dict
+
+    def validate(self) -> bool:
+        """Return ``True`` if all records and label meta are valid, else ``False``."""
+        try:
+            self.load()
+        except AnnotationFormatError:
+            return False
+        return True

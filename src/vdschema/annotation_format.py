@@ -1,5 +1,5 @@
 """
-Internal data structures aligned with annotation_schema.
+Internal data structures aligned with annotation_data.
 
 Application code usually does not need to instantiate these classes directly.
 annotation_format.py converts plain bbox lists, dicts, mask arrays, and other
@@ -192,7 +192,7 @@ class Keypoint:
 @dataclass
 class Instance:
     """
-    image_schema instance。
+    annotation_data instance。
     Required: id / category_id / bbox. Optional: keypoints / segmentation / text.
     """
 
@@ -261,7 +261,7 @@ class Instance:
 
 @dataclass
 class ClassificationHead:
-    """One item in image_schema categories[]."""
+    """One item in annotation_data categories[]."""
 
     category_type: str
     category_ids: list[int]
@@ -291,7 +291,7 @@ class ClassificationHead:
 
 @dataclass
 class Relationship:
-    """One item in image_schema relationships[]."""
+    """One item in annotation_data relationships[]."""
 
     subject_id: int
     object_id: int
@@ -353,7 +353,7 @@ ContentPart = Union[ContentImage, ContentText]
 
 @dataclass(init=False)
 class ConversationTurn:
-    """One item in image_schema conversations[]."""
+    """One item in annotation_data conversations[]."""
 
     role: ConversationRole
     content: list[ContentPart]
@@ -402,7 +402,7 @@ class ConversationTurn:
 
 @dataclass
 class TrackItem:
-    """video_schema track_item。"""
+    """annotation_data track_item。"""
 
     frame_idx: int
     bbox: Bbox
@@ -441,7 +441,7 @@ class TrackItem:
 
 @dataclass
 class ActionEvent:
-    """One item in video_schema actions[]."""
+    """One item in annotation_data actions[]."""
 
     action_id: int
     track_id: int

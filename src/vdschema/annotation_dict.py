@@ -1,4 +1,4 @@
-"""Per-task label vocabularies aligned with annotation_dict.json."""
+"""Per-task label vocabularies aligned with annotation_meta.json."""
 
 from __future__ import annotations
 
@@ -19,25 +19,25 @@ from .annotation_format import (
 SCHEMA_BASE_URL = (
     "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema"
 )
-ANNOTATION_SCHEMA_ID = f"{SCHEMA_BASE_URL}/annotation_schema.json"
-ANNOTATION_DATA_FILENAME = "annotation_meta.jsonl"
-ANNOTATION_DICT_FILENAME = "annotation_dict.json"
+ANNOTATION_SCHEMA_ID = f"{SCHEMA_BASE_URL}/annotation_data.json"
+ANNOTATION_DATA_FILENAME = "annotation_data.jsonl"
+ANNOTATION_META_FILENAME = "annotation_meta.json"
+
+
+def data_path_for(
+    task_dir: str | Path,
+    task_data_filename: str = ANNOTATION_DATA_FILENAME,
+) -> Path:
+    """Default annotation JSONL path under a task directory."""
+    return Path(task_dir) / task_data_filename
 
 
 def meta_path_for(
     task_dir: str | Path,
-    task_meta_filename: str = ANNOTATION_DATA_FILENAME,
+    task_meta_filename: str = ANNOTATION_META_FILENAME,
 ) -> Path:
-    """Default JSONL path under a task directory."""
+    """Default label-meta (vocabulary) path under a task directory."""
     return Path(task_dir) / task_meta_filename
-
-
-def dict_path_for(
-    task_dir: str | Path,
-    task_dict_name: str = ANNOTATION_DICT_FILENAME,
-) -> Path:
-    """Default label dictionary path under a task directory."""
-    return Path(task_dir) / task_dict_name
 
 
 @dataclass(frozen=True)
@@ -391,15 +391,15 @@ def load_label_dict(
     task_type: TaskType,
     task_dir: str | Path,
     *,
-    task_dict_name: str = ANNOTATION_DICT_FILENAME,
+    task_meta_filename: str = ANNOTATION_META_FILENAME,
 ) -> TaskLabelDict | None:
-    """Load ``task_dict_name`` under ``task_dir``; return ``None`` when not applicable."""
+    """Load ``task_meta_filename`` under ``task_dir``; return ``None`` when not applicable."""
     if not task_type.has_label_dict:
         return None
-    dict_path = dict_path_for(task_dir, task_dict_name)
-    if not dict_path.is_file():
-        raise AnnotationFormatError(f"missing label dictionary: {dict_path}")
-    return _LABEL_DICT_BY_TASK[task_type].load(dict_path)  # type: ignore[attr-defined]
+    meta_path = meta_path_for(task_dir, task_meta_filename)
+    if not meta_path.is_file():
+        raise AnnotationFormatError(f"missing label dictionary: {meta_path}")
+    return _LABEL_DICT_BY_TASK[task_type].load(meta_path)  # type: ignore[attr-defined]
 
 
 def _read_json_object(path: str | Path) -> dict[str, Any]:

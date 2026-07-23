@@ -17,6 +17,7 @@ from .annotation_format import (
     RelationshipAnnotation,
     SegmentationAnnotation,
     SegmentationRLE,
+    SequenceAnnotation,
     TaskType,
     VlmAnnotation,
 )
@@ -35,6 +36,7 @@ __all__ = [
     "RelationshipAnnotation",
     "VlmAnnotation",
     "ConversationAnnotation",
+    "SequenceAnnotation",
     "ActionAnnotation",
     "Bbox",
     "Keypoint",

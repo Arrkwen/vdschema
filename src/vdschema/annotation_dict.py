@@ -357,6 +357,7 @@ _LABEL_DICT_BY_TASK: dict[TaskType, type[TaskLabelDict]] = {
     TaskType.ACTION: ActionLabelDict,
     TaskType.VLM: NoLabelDict,
     TaskType.CONVERSATION: NoLabelDict,
+    TaskType.SEQUENCE: NoLabelDict,
 }
 
 

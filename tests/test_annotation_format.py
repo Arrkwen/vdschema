@@ -19,6 +19,7 @@ from vdschema import (
     RelationshipAnnotation,
     SegmentationRLE,
     SegmentationAnnotation,
+    SequenceAnnotation,
     TaskType,
     VlmAnnotation,
 )
@@ -536,6 +537,23 @@ def test_reader_validate_returns_false_on_invalid_data(tmp_path):
     assert reader.validate() is False
 
 
+def test_sequence_annotation_format():
+    writer = AnnotationWriter(TaskType.SEQUENCE)
+    writer.append(
+        filename="batch1_crop_plate/27993412_car0_inst0.jpg",
+        width=224,
+        height=128,
+        sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
+    )
+    writer.save()
+
+    annotations, task_dict, rows = _read_annotations(writer, expected_count=1)
+    assert task_dict is None
+    assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
+    assert isinstance(annotations[0], SequenceAnnotation)
+    assert annotations[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
+
+
 def run_all():
     from pathlib import Path
     import tempfile
@@ -547,6 +565,7 @@ def run_all():
     test_relationship_annotation_format()
     test_vlm_annotation_format()
     test_conversation_annotation_format()
+    test_sequence_annotation_format()
     test_action_annotation_format()
     with tempfile.TemporaryDirectory() as tmp:
         test_reader_validate_returns_false_on_invalid_data(Path(tmp))

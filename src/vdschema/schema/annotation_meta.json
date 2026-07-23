@@ -79,7 +79,7 @@
   ],
   "examples": [
     {
-      "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_meta.json",
+      "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
       "detection": [
         {
           "category_id": 1,

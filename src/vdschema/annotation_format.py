@@ -840,6 +840,31 @@ class ConversationAnnotation(BaseAnnotation):
 
 
 @dataclass(kw_only=True)
+class SequenceAnnotation(BaseAnnotation):
+    """Ordered token sequence associated with an image."""
+
+    sequences: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.sequences = [str(item) for item in self.sequences]
+
+    def validate(self) -> None:
+        self.validate_base()
+        if not self.sequences:
+            raise AnnotationFormatError("sequences must not be empty")
+        if any(not item for item in self.sequences):
+            raise AnnotationFormatError("sequences must contain non-empty strings")
+
+    def to_dict(self) -> dict[str, Any]:
+        self.validate()
+        return {**self.base_dict(), "sequences": list(self.sequences)}
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> SequenceAnnotation:
+        return cls(**cls._base_kwargs(raw), sequences=raw["sequences"])
+
+
+@dataclass(kw_only=True)
 class ActionAnnotation(BaseAnnotation):
     actions: list[Any] = field(default_factory=list)
     description: str | None = None
@@ -883,6 +908,7 @@ class TaskType(str, Enum):
     RELATIONSHIP = "relationship"
     VLM = "vlm"
     CONVERSATION = "conversation"
+    SEQUENCE = "sequence"
     ACTION = "action"
 
     @property
@@ -897,7 +923,9 @@ class TaskType(str, Enum):
         return self not in _TASKS_WITHOUT_LABEL_DICT
 
 
-_TASKS_WITHOUT_LABEL_DICT = frozenset({TaskType.VLM, TaskType.CONVERSATION})
+_TASKS_WITHOUT_LABEL_DICT = frozenset(
+    {TaskType.VLM, TaskType.CONVERSATION, TaskType.SEQUENCE}
+)
 
 _TASK_ANNOTATION: dict[TaskType, type[BaseAnnotation]] = {
     TaskType.DETECTION: DetectionAnnotation,
@@ -907,5 +935,6 @@ _TASK_ANNOTATION: dict[TaskType, type[BaseAnnotation]] = {
     TaskType.RELATIONSHIP: RelationshipAnnotation,
     TaskType.VLM: VlmAnnotation,
     TaskType.CONVERSATION: ConversationAnnotation,
+    TaskType.SEQUENCE: SequenceAnnotation,
     TaskType.ACTION: ActionAnnotation,
 }

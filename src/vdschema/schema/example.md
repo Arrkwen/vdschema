@@ -211,6 +211,23 @@ No `annotation_meta.json`.
 
 ---
 
+## sequence
+
+No `annotation_meta.json`.
+
+**annotation_data.jsonl**
+
+```json
+{
+  "filename": "batch1_crop_plate/27993412_car0_inst0.jpg",
+  "width": 224,
+  "height": 128,
+  "sequences": ["B", "1", "0", "7", "7", "P", "D", "V"]
+}
+```
+
+---
+
 ## action
 
 **annotation_meta.json**

@@ -18,6 +18,7 @@ It supports two primary workflows:
 | relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}` | `RelationshipAnnotation`   |
 | vlm            | `TaskType.VLM`            | —                                          | `VlmAnnotation`            |
 | conversation   | `TaskType.CONVERSATION`   | —                                          | `ConversationAnnotation`   |
+| sequence       | `TaskType.SEQUENCE`       | —                                          | `SequenceAnnotation`       |
 | action         | `TaskType.ACTION`         | `{id: name}`                              | `ActionAnnotation`         |
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
@@ -271,6 +272,27 @@ writer.append(
 writer.save()
 annotations, task_dict = AnnotationReader(
     TaskType.CONVERSATION, writer.save_dir()
+).load()
+```
+
+</details>
+
+<details>
+<summary><strong>Sequence</strong></summary>
+
+```python
+from vdschema import AnnotationReader, AnnotationWriter, TaskType
+
+writer = AnnotationWriter(TaskType.SEQUENCE)
+writer.append(
+    filename="batch1_crop_plate/27993412_car0_inst0.jpg",
+    width=224,
+    height=128,
+    sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
+)
+writer.save()
+annotations, task_dict = AnnotationReader(
+    TaskType.SEQUENCE, writer.save_dir()
 ).load()
 ```
 

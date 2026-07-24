@@ -545,13 +545,21 @@ def test_sequence_annotation_format():
         height=128,
         sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
     )
+    writer.append(
+        filename="batch1_crop_plate/empty_seq.jpg",
+        width=224,
+        height=128,
+        sequences=[],
+    )
     writer.save()
 
-    annotations, task_dict, rows = _read_annotations(writer, expected_count=1)
+    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
     assert task_dict is None
     assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
+    assert rows[1]["sequences"] == []
     assert isinstance(annotations[0], SequenceAnnotation)
     assert annotations[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
+    assert annotations[1].sequences == []
 
 
 def run_all():

@@ -52,7 +52,6 @@
     "sequences": {
       "type": "array",
       "description": "与图片关联的有序字符或词元序列。",
-      "minItems": 1,
       "items": {
         "type": "string",
         "minLength": 1

@@ -850,8 +850,6 @@ class SequenceAnnotation(BaseAnnotation):
 
     def validate(self) -> None:
         self.validate_base()
-        if not self.sequences:
-            raise AnnotationFormatError("sequences must not be empty")
         if any(not item for item in self.sequences):
             raise AnnotationFormatError("sequences must contain non-empty strings")
 

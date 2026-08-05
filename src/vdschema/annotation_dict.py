@@ -247,7 +247,7 @@ class DetectionLabelDict(TaskLabelDict):
 
 
 class ClassificationLabelDict(TaskLabelDict):
-    """Vocabulary for image-level classification: ``{category_type: {id: Category}}``."""
+    """Vocabulary for image-level classification: ``{category_attr: {id: Category}}``."""
 
     def __init__(
         self,
@@ -257,14 +257,14 @@ class ClassificationLabelDict(TaskLabelDict):
     ) -> None:
         self.annotation_schema_ref = annotation_schema_ref
         self.heads = {
-            category_type: CategoryMap.from_dict(category_map)
-            for category_type, category_map in heads.items()
+            category_attr: CategoryMap.from_dict(category_map)
+            for category_attr, category_map in heads.items()
         }
 
     def to_label(self) -> dict[str, dict[int, Category]]:
         return {
-            category_type: vocab.to_label()
-            for category_type, vocab in self.heads.items()
+            category_attr: vocab.to_label()
+            for category_attr, vocab in self.heads.items()
         }
 
     def to_data(self) -> dict[str, Any]:
@@ -272,10 +272,10 @@ class ClassificationLabelDict(TaskLabelDict):
             "annotation_schema_ref": self.annotation_schema_ref,
             "classification": [
                 {
-                    "category_type": category_type,
-                    "category_map": vocab.to_category_entries(),
+                    "category_attr": category_attr,
+                    "category_label": vocab.to_category_entries(),
                 }
-                for category_type, vocab in sorted(self.heads.items())
+                for category_attr, vocab in sorted(self.heads.items())
             ],
         }
 
@@ -285,8 +285,8 @@ class ClassificationLabelDict(TaskLabelDict):
         if not raw.get("classification"):
             raise AnnotationFormatError(f"{path}: missing classification vocabulary")
         heads = {
-            str(head["category_type"]): _entries_to_label(
-                head["category_map"],
+            str(head["category_attr"]): _entries_to_label(
+                head["category_label"],
                 id_key="category_id",
                 name_key="category_name",
                 alias_key="category_alias",
@@ -305,16 +305,16 @@ class ClassificationLabelDict(TaskLabelDict):
         if not isinstance(annotation, ClassificationAnnotation):
             return
         for head in annotation.categories:
-            vocab = self.heads.get(head.category_type)
+            vocab = self.heads.get(head.category_attr)
             if vocab is None:
                 raise AnnotationFormatError(
-                    f"unknown category_type={head.category_type!r}"
+                    f"unknown category_attr={head.category_attr!r}"
                 )
             for category_id in head.category_ids:
                 if category_id not in vocab.id_to_category:
                     raise AnnotationFormatError(
                         f"unknown category_id={category_id} "
-                        f"for category_type={head.category_type!r}"
+                        f"for category_attr={head.category_attr!r}"
                     )
 
 

@@ -153,7 +153,7 @@
       ],
       "categories": [
         {
-          "category_type": "scene",
+          "category_attr": "scene",
           "category_ids": [
             10
           ]
@@ -280,14 +280,14 @@
       "description": "图片级分类信息。",
       "additionalProperties": false,
       "properties": {
-        "category_type": {
+        "category_attr": {
           "type": "string",
-          "description": "分类头键（如天气、衣服颜色等）。",
+          "description": "分类属性名（如天气、衣服颜色等）。",
           "minLength": 1
         },
         "category_ids": {
           "type": "array",
-          "description": "该分类头下的具体类别 ID；语义由 category_type 决定，支持多标签。",
+          "description": "该分类属性下的具体类别 ID；语义由 category_attr 决定，支持多标签。",
           "items": {
             "type": "integer",
             "minimum": 0
@@ -297,7 +297,7 @@
         }
       },
       "required": [
-        "category_type",
+        "category_attr",
         "category_ids"
       ]
     },

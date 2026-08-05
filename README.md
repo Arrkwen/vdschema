@@ -180,8 +180,8 @@ writer.append(
     width=640,
     height=480,
     categories=[
-        {"category_type": "hair_color", "category_ids": [1]},
-        {"category_type": "age", "category_ids": [1]},
+        {"category_attr": "hair_color", "category_ids": [1]},
+        {"category_attr": "age", "category_ids": [1]},
     ],
 )
 writer.save()

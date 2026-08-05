@@ -249,15 +249,15 @@ def test_classification_annotation_format():
         width=640,
         height=480,
         categories=[
-            {"category_type": "hair_color", "category_ids": [1]},
-            {"category_type": "age", "category_ids": [1]},
+            {"category_attr": "hair_color", "category_ids": [1]},
+            {"category_attr": "age", "category_ids": [1]},
         ],
     )
     writer.append(
         filename="images/classification_002.jpg",
         width=800,
         height=600,
-        categories=[{"category_type": "age", "category_ids": [2]}],
+        categories=[{"category_attr": "age", "category_ids": [2]}],
     )
     writer.save()
 
@@ -267,7 +267,7 @@ def test_classification_annotation_format():
     assert rows[0]["categories"][1]["category_ids"] == [1]
     assert rows[1]["categories"][0]["category_ids"] == [2]
     assert isinstance(annotations[0], ClassificationAnnotation)
-    assert annotations[0].categories[0].category_type == "hair_color"
+    assert annotations[0].categories[0].category_attr == "hair_color"
     assert annotations[0].categories[1].category_ids == [1]
     assert annotations[1].categories[0].category_ids == [2]
 

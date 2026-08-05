@@ -100,15 +100,15 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
   "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
   "classification": [
     {
-      "category_type": "scene",
-      "category_map": [
+      "category_attr": "scene",
+      "category_label": [
         {"category_id": 10, "category_name": "intersection"},
         {"category_id": 11, "category_name": "highway"}
       ]
     },
     {
-      "category_type": "weather",
-      "category_map": [
+      "category_attr": "weather",
+      "category_label": [
         {"category_id": 3, "category_name": "sunny"},
         {"category_id": 4, "category_name": "cloudy"}
       ]
@@ -125,8 +125,8 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
   "width": 640,
   "height": 480,
   "categories": [
-    {"category_type": "scene", "category_ids": [10]},
-    {"category_type": "weather", "category_ids": [3, 4]}
+    {"category_attr": "scene", "category_ids": [10]},
+    {"category_attr": "weather", "category_ids": [3, 4]}
   ]
 }
 ```

@@ -23,7 +23,7 @@
     },
     "classification": {
       "type": "array",
-      "description": "图像级多分类词表；与标注顶层 **`categories[]`**（按 **`category_type`**）对应。",
+      "description": "图像级多分类词表；与标注顶层 **`categories[]`**（按 **`category_attr`**）对应。",
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/classification_entry"
@@ -92,8 +92,8 @@
       ],
       "classification": [
         {
-          "category_type": "scene",
-          "category_map": [
+          "category_attr": "scene",
+          "category_label": [
             {
               "category_id": 10,
               "category_name": "intersection"
@@ -101,8 +101,8 @@
           ]
         },
         {
-          "category_type": "weather",
-          "category_map": [
+          "category_attr": "weather",
+          "category_label": [
             {
               "category_id": 3,
               "category_name": "sunny"
@@ -184,18 +184,18 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "category_type": {
+        "category_attr": {
           "type": "string",
-          "description": "分类头键，须与标注 **`categories[].category_type`** 一致。",
+          "description": "分类属性名，须与标注 **`categories[].category_attr`** 一致。",
           "minLength": 1,
           "examples": [
             "scene",
             "weather"
           ]
         },
-        "category_map": {
+        "category_label": {
           "type": "array",
-          "description": "该头下允许的取值（结构与 **`category_entry`** 相同）。",
+          "description": "该分类属性下允许的取值（结构与 **`category_entry`** 相同）。",
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/category_entry"
@@ -203,8 +203,8 @@
         }
       },
       "required": [
-        "category_type",
-        "category_map"
+        "category_attr",
+        "category_label"
       ]
     },
     "relationship_entry": {

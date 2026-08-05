@@ -263,12 +263,12 @@ class Instance:
 class ClassificationHead:
     """One item in annotation_data categories[]."""
 
-    category_type: str
+    category_attr: str
     category_ids: list[int]
 
     def validate(self) -> None:
-        if not self.category_type:
-            raise AnnotationFormatError("category_type must not be empty")
+        if not self.category_attr:
+            raise AnnotationFormatError("category_attr must not be empty")
         if not self.category_ids:
             raise AnnotationFormatError("category_ids must not be empty")
         if len(set(self.category_ids)) != len(self.category_ids):
@@ -277,14 +277,14 @@ class ClassificationHead:
     def to_dict(self) -> dict[str, Any]:
         self.validate()
         return {
-            "category_type": self.category_type,
+            "category_attr": self.category_attr,
             "category_ids": [int(x) for x in self.category_ids],
         }
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> ClassificationHead:
         return cls(
-            category_type=raw["category_type"],
+            category_attr=raw["category_attr"],
             category_ids=[int(x) for x in raw["category_ids"]],
         )
 
@@ -556,7 +556,7 @@ def _classification_head(raw: Any) -> ClassificationHead:
         return raw
     data = dict(raw)
     return ClassificationHead(
-        category_type=data["category_type"],
+        category_attr=data["category_attr"],
         category_ids=[int(x) for x in data["category_ids"]],
     )
 

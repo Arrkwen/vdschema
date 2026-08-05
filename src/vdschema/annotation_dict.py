@@ -41,8 +41,8 @@ def meta_path_for(
 
 
 @dataclass(frozen=True)
-class Category:
-    """One vocabulary entry: canonical name plus optional alias/prompt lists."""
+class Name:
+    """A canonical label name with optional aliases and prompts."""
 
     name: str
     alias: tuple[str, ...] = field(default_factory=tuple)
@@ -67,29 +67,29 @@ class Category:
             tuple(str(item).strip() for item in (prompt or ())),
         )
         if not self.name:
-            raise AnnotationFormatError("category name must not be empty")
+            raise AnnotationFormatError("name must not be empty")
         if any(not item for item in self.alias):
-            raise AnnotationFormatError("category alias must contain non-empty strings")
+            raise AnnotationFormatError("alias must contain non-empty strings")
         if any(not item for item in self.prompt):
-            raise AnnotationFormatError("category prompt must contain non-empty strings")
+            raise AnnotationFormatError("prompt must contain non-empty strings")
 
 
-def _coerce_category(value: Category | str | Any) -> Category:
-    if isinstance(value, Category):
+def _coerce_category(value: Name | str | Any) -> Name:
+    if isinstance(value, Name):
         return value
     if isinstance(value, str):
-        return Category(value)
+        return Name(value)
     raise AnnotationFormatError(
-        "label values must be Category(...) or str, "
+        "label values must be Name(...) or str, "
         f"got {type(value).__name__}"
     )
 
 
 @dataclass(frozen=True)
 class CategoryMap:
-    """Bidirectional mapping: ``id -> Category``."""
+    """Bidirectional mapping: ``id -> Name``."""
 
-    id_to_category: dict[int, Category]
+    id_to_category: dict[int, Name]
     name_to_id: dict[str, int]
 
     @property
@@ -97,8 +97,8 @@ class CategoryMap:
         return {i: cat.name for i, cat in self.id_to_category.items()}
 
     @classmethod
-    def from_dict(cls, mapping: Mapping[int, Category | str]) -> CategoryMap:
-        id_to_category: dict[int, Category] = {}
+    def from_dict(cls, mapping: Mapping[int, Name | str]) -> CategoryMap:
+        id_to_category: dict[int, Name] = {}
         name_to_id: dict[str, int] = {}
         for raw_id, value in mapping.items():
             label_id = int(raw_id)
@@ -111,7 +111,7 @@ class CategoryMap:
             id_to_category[label_id] = category
         return cls(id_to_category=id_to_category, name_to_id=name_to_id)
 
-    def to_label(self) -> dict[int, Category]:
+    def to_label(self) -> dict[int, Name]:
         return dict(self.id_to_category)
 
     def to_entries(
@@ -166,9 +166,9 @@ def _entries_to_label(
     name_key: str,
     alias_key: str,
     prompt_key: str,
-) -> dict[int, Category]:
+) -> dict[int, Name]:
     return {
-        int(entry[id_key]): Category(
+        int(entry[id_key]): Name(
             entry[name_key],
             alias=entry.get(alias_key) or (),
             prompt=entry.get(prompt_key) or (),
@@ -204,14 +204,14 @@ class DetectionLabelDict(TaskLabelDict):
 
     def __init__(
         self,
-        detection: Mapping[int, Category | str],
+        detection: Mapping[int, Name | str],
         *,
         annotation_schema_ref: str = ANNOTATION_SCHEMA_ID,
     ) -> None:
         self.annotation_schema_ref = annotation_schema_ref
         self.detection = CategoryMap.from_dict(detection)
 
-    def to_label(self) -> dict[int, Category]:
+    def to_label(self) -> dict[int, Name]:
         return self.detection.to_label()
 
     def to_data(self) -> dict[str, Any]:
@@ -247,11 +247,11 @@ class DetectionLabelDict(TaskLabelDict):
 
 
 class ClassificationLabelDict(TaskLabelDict):
-    """Vocabulary for image-level classification: ``{category_attr: {id: Category}}``."""
+    """Vocabulary for image-level classification: ``{category_attr: {id: Name}}``."""
 
     def __init__(
         self,
-        heads: Mapping[str, Mapping[int, Category | str]],
+        heads: Mapping[str, Mapping[int, Name | str]],
         *,
         annotation_schema_ref: str = ANNOTATION_SCHEMA_ID,
     ) -> None:
@@ -261,7 +261,7 @@ class ClassificationLabelDict(TaskLabelDict):
             for category_attr, category_map in heads.items()
         }
 
-    def to_label(self) -> dict[str, dict[int, Category]]:
+    def to_label(self) -> dict[str, dict[int, Name]]:
         return {
             category_attr: vocab.to_label()
             for category_attr, vocab in self.heads.items()
@@ -323,8 +323,8 @@ class RelationshipLabelDict(TaskLabelDict):
 
     def __init__(
         self,
-        detection: Mapping[int, Category | str],
-        relationship: Mapping[int, Category | str],
+        detection: Mapping[int, Name | str],
+        relationship: Mapping[int, Name | str],
         *,
         annotation_schema_ref: str = ANNOTATION_SCHEMA_ID,
     ) -> None:
@@ -332,7 +332,7 @@ class RelationshipLabelDict(TaskLabelDict):
         self.detection = CategoryMap.from_dict(detection)
         self.relationship = CategoryMap.from_dict(relationship)
 
-    def to_label(self) -> dict[str, dict[int, Category]]:
+    def to_label(self) -> dict[str, dict[int, Name]]:
         return {
             "detection": self.detection.to_label(),
             "relationship": self.relationship.to_label(),
@@ -392,14 +392,14 @@ class ActionLabelDict(TaskLabelDict):
 
     def __init__(
         self,
-        action: Mapping[int, Category | str],
+        action: Mapping[int, Name | str],
         *,
         annotation_schema_ref: str = ANNOTATION_SCHEMA_ID,
     ) -> None:
         self.annotation_schema_ref = annotation_schema_ref
         self.action = CategoryMap.from_dict(action)
 
-    def to_label(self) -> dict[int, Category]:
+    def to_label(self) -> dict[int, Name]:
         return self.action.to_label()
 
     def to_data(self) -> dict[str, Any]:
@@ -463,7 +463,7 @@ _LABEL_DICT_BY_TASK: dict[TaskType, type[TaskLabelDict]] = {
 
 def build_label_dict(
     task_type: TaskType,
-    label: dict[str, Any] | Mapping[int, Category | str] | None,
+    label: dict[str, Any] | Mapping[int, Name | str] | None,
 ) -> TaskLabelDict:
     """Build a task-specific label dictionary from Writer ``label``."""
     if not task_type.has_label_dict:

@@ -10,7 +10,7 @@ from vdschema import (
     AnnotationWriter,
     BaseAnnotation,
     Bbox,
-    Category,
+    Name,
     ClassificationAnnotation,
     ConversationAnnotation,
     ConversationRole,
@@ -56,10 +56,10 @@ def test_detection_annotation_format():
     writer = AnnotationWriter(
         TaskType.DETECTION,
         label={
-            1: Category("person", alias=["human"], prompt=["a human", "人体"]),
-            2: Category("car"),
-            3: Category("bus"),
-            4: Category("truck"),
+            1: Name("person", alias=["human"], prompt=["a human", "人体"]),
+            2: Name("car"),
+            3: Name("bus"),
+            4: Name("truck"),
         },
     )
 

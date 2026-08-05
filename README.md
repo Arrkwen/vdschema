@@ -11,15 +11,15 @@ It supports two primary workflows:
 
 | Task           | `TaskType`                | `label`                               | Python type                  |
 | -------------- | --------------------------- | ------------------------------------------- | ---------------------------- |
-| detection      | `TaskType.DETECTION`      | `{id: Category(...)}`                              | `DetectionAnnotation`      |
-| keypoint       | `TaskType.KEYPOINT`       | `{id: Category(...)}`                              | `KeypointAnnotation`       |
-| segmentation   | `TaskType.SEGMENTATION`   | `{id: Category(...)}`                              | `SegmentationAnnotation`   |
-| classification | `TaskType.CLASSIFICATION` | `{head: {id: Category(...)}}`                      | `ClassificationAnnotation` |
+| detection      | `TaskType.DETECTION`      | `{id: Name(...)}`                              | `DetectionAnnotation`      |
+| keypoint       | `TaskType.KEYPOINT`       | `{id: Name(...)}`                              | `KeypointAnnotation`       |
+| segmentation   | `TaskType.SEGMENTATION`   | `{id: Name(...)}`                              | `SegmentationAnnotation`   |
+| classification | `TaskType.CLASSIFICATION` | `{head: {id: Name(...)}}`                      | `ClassificationAnnotation` |
 | relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}` | `RelationshipAnnotation`   |
 | vlm            | `TaskType.VLM`            | —                                          | `VlmAnnotation`            |
 | conversation   | `TaskType.CONVERSATION`   | —                                          | `ConversationAnnotation`   |
 | sequence       | `TaskType.SEQUENCE`       | —                                          | `SequenceAnnotation`       |
-| action         | `TaskType.ACTION`         | `{id: Category(...)}`                              | `ActionAnnotation`         |
+| action         | `TaskType.ACTION`         | `{id: Name(...)}`                              | `ActionAnnotation`         |
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
 
@@ -58,14 +58,14 @@ Expand a task below for a full example:
 <summary><strong>Detection</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
 
 # step1: create annotation object
 writer = AnnotationWriter(
     TaskType.DETECTION,
     label={
-        1: Category("person", alias=["human"], prompt=["a human", "人体"]),
-        2: Category("car"),
+        1: Name("person", alias=["human"], prompt=["a human", "人体"]),
+        2: Name("car"),
     },
 )
 
@@ -96,9 +96,9 @@ print(data) # [DetectionAnnotation(filename='images/sample.jpg', width=640, heig
 <summary><strong>Keypoint</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
 
-writer = AnnotationWriter(TaskType.KEYPOINT, label={1: Category("person")})
+writer = AnnotationWriter(TaskType.KEYPOINT, label={1: Name("person")})
 writer.append(
     filename="images/keypoint_001.jpg",
     width=640,
@@ -128,7 +128,7 @@ from vdschema import (
     AnnotationReader,
     AnnotationWriter,
     Bbox,
-    Category,
+    Name,
     SegmentationRLE,
     TaskType,
 )
@@ -139,7 +139,7 @@ mask[20:80, 30:120] = 1
 task_dir = "output/segmentation"
 writer = AnnotationWriter(
     TaskType.SEGMENTATION,
-    label={1: Category("person")},
+    label={1: Name("person")},
     task_dir=task_dir,
 )
 # if bbox is not xyxy format, support other format(xywh, cxxywh)
@@ -166,13 +166,13 @@ data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 <summary><strong>Classification</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
 
 writer = AnnotationWriter(
     TaskType.CLASSIFICATION,
     label={
-        "hair_color": {1: Category("black"), 2: Category("brown")},
-        "age": {1: Category("young"), 2: Category("middle-aged")},
+        "hair_color": {1: Name("black"), 2: Name("brown")},
+        "age": {1: Name("young"), 2: Name("middle-aged")},
     },
 )
 writer.append(
@@ -196,13 +196,13 @@ data, label = AnnotationReader(
 <summary><strong>Relationship</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
 
 writer = AnnotationWriter(
     TaskType.RELATIONSHIP,
     label={
-        "detection": {1: Category("person"), 2: Category("car")},
-        "relationship": {0: Category("near"), 1: Category("left_of")},
+        "detection": {1: Name("person"), 2: Name("car")},
+        "relationship": {0: Name("near"), 1: Name("left_of")},
     },
 )
 writer.append(
@@ -306,11 +306,11 @@ data, label = AnnotationReader(
 <summary><strong>Action</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
 
 writer = AnnotationWriter(
     TaskType.ACTION,
-    label={2: Category("fall"), 4: Category("walk")},
+    label={2: Name("fall"), 4: Name("walk")},
 )
 writer.append(
     filename="videos/action_001.mp4",

@@ -1,7 +1,7 @@
 """Unified annotation schema and JSONL IO."""
 
 from ._version import __version__
-from .annotation_dict import Category
+from .annotation_dict import Name
 from .annotation_io import AnnotationReader, AnnotationWriter
 from .annotation_format import (
     ActionAnnotation,
@@ -29,7 +29,7 @@ __all__ = [
     "AnnotationReader",
     "TaskType",
     "AnnotationFormatError",
-    "Category",
+    "Name",
     "BaseAnnotation",
     "DetectionAnnotation",
     "KeypointAnnotation",

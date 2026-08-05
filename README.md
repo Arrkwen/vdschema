@@ -82,12 +82,12 @@ writer.append(
 writer.save()
 
 # step4(option): load annotation info.
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.DETECTION, writer.save_dir()
 ).load()
 
 print(label[1].name, label[1].alias)  # person ('human',)
-print(annotations) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
+print(data) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
 ```
 
 </details>
@@ -113,7 +113,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.KEYPOINT, writer.save_dir()
 ).load()
 ```
@@ -157,7 +157,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
+data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
 </details>
@@ -185,7 +185,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.CLASSIFICATION, writer.save_dir()
 ).load()
 ```
@@ -216,7 +216,7 @@ writer.append(
     relationships=[{"subject_id": 0, "object_id": 1, "relation_type": "near"}],
 )
 writer.save()
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.RELATIONSHIP, writer.save_dir()
 ).load()
 ```
@@ -239,7 +239,7 @@ writer.append(
     description="A street intersection with three people crossing.",
 )
 writer.save()
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.VLM, writer.save_dir()
 ).load()
 assert label is None
@@ -274,7 +274,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.CONVERSATION, writer.save_dir()
 ).load()
 ```
@@ -295,7 +295,7 @@ writer.append(
     sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
 )
 writer.save()
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.SEQUENCE, writer.save_dir()
 ).load()
 ```
@@ -329,7 +329,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, label = AnnotationReader(
+data, label = AnnotationReader(
     TaskType.ACTION, writer.save_dir()
 ).load()
 ```

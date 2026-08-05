@@ -186,7 +186,7 @@ class AnnotationReader:
         yield from self._parse_annotations(label_dict)
 
     def load(self) -> tuple[list[BaseAnnotation], dict[str, Any] | None]:
-        """Return parsed annotations and ``label`` (``None`` if not used)."""
+        """Return parsed annotation ``data`` and ``label`` (``None`` if not used)."""
         loaded = load_label_dict(
             self.task_type,
             self.task_dir,
@@ -194,7 +194,8 @@ class AnnotationReader:
         )
         label_dict = loaded if loaded is not None else NoLabelDict()
         label = None if loaded is None else loaded.to_label()
-        return self._parse_annotations(label_dict), label
+        data = self._parse_annotations(label_dict)
+        return data, label
 
     def validate(self) -> bool:
         """Return ``True`` if all records and label meta are valid, else ``False``."""

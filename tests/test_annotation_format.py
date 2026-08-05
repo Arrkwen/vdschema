@@ -39,11 +39,11 @@ def _read_annotations(
     assert len(raw_rows) == expected_count
     via_iter = list(reader.iter_annotations())
     assert len(via_iter) == expected_count
-    via_load, label = reader.load()
-    assert len(via_load) == expected_count
-    assert via_load == via_iter
+    data, label = reader.load()
+    assert len(data) == expected_count
+    assert data == via_iter
     assert reader.validate() is True
-    return via_load, label, raw_rows
+    return data, label, raw_rows
 
 
 def _mask(height: int = 480, width: int = 640) -> np.ndarray:
@@ -97,17 +97,17 @@ def test_detection_annotation_format():
     )
     writer.save()
 
-    annotations, label, rows = _read_annotations(writer, expected_count=3)
+    data, label, rows = _read_annotations(writer, expected_count=3)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["instances"][1]["bbox"] == [120.0, 30.0, 200.0, 180.0]
     assert rows[0]["instances"][2]["bbox"] == [120.0, 30.0, 200.0, 180.0]
     assert rows[0]["instances"][3]["bbox"] == [120.0, 30.0, 200.0, 180.0]
     assert rows[1]["instances"][1]["bbox"] == [220.0, 80.0, 360.0, 300.0]
-    assert isinstance(annotations[0], DetectionAnnotation)
-    assert annotations[0].instances[1].bbox.to_list() == [120.0, 30.0, 200.0, 180.0]
-    assert annotations[1].instances[1].text == "AB0000FF"
-    assert annotations[2].instances == []
+    assert isinstance(data[0], DetectionAnnotation)
+    assert data[0].instances[1].bbox.to_list() == [120.0, 30.0, 200.0, 180.0]
+    assert data[1].instances[1].text == "AB0000FF"
+    assert data[2].instances == []
     assert label[1].name == "person"
     assert label[1].alias == ("human",)
     assert label[1].prompt == ("a human", "人体")
@@ -164,7 +164,7 @@ def test_keypoint_annotation_format():
     )
     writer.save()
 
-    annotations, _, rows = _read_annotations(writer, expected_count=2)
+    data, _, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["instances"][0]["keypoints"]["body"] == [
@@ -172,10 +172,10 @@ def test_keypoint_annotation_format():
         [230.0, 140.0, 2],
     ]
     assert rows[1]["instances"][0]["keypoints"]["face"][1] == [130.0, 120.0, 2]
-    assert isinstance(annotations[0], KeypointAnnotation)
-    assert annotations[0].instances[0].keypoints["body"][0].visibility == 2
-    assert annotations[0].instances[0].text == "body keypoints"
-    assert list(annotations[1].instances[0].keypoints["face"][1].to_list()) == [
+    assert isinstance(data[0], KeypointAnnotation)
+    assert data[0].instances[0].keypoints["body"][0].visibility == 2
+    assert data[0].instances[0].text == "body keypoints"
+    assert list(data[1].instances[0].keypoints["face"][1].to_list()) == [
         130.0,
         120.0,
         2,
@@ -225,14 +225,14 @@ def test_segmentation_annotation_format():
     )
     writer.save()
 
-    annotations, _, rows = _read_annotations(writer, expected_count=3)
+    data, _, rows = _read_annotations(writer, expected_count=3)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["instances"][0]["segmentation"]["size"] == [480, 640]
     assert rows[1]["instances"][0]["segmentation"]["counts"]
-    assert isinstance(annotations[0], SegmentationAnnotation)
-    assert annotations[0].instances[0].segmentation.to_mask().shape == (480, 640)
-    assert annotations[2].instances == []
+    assert isinstance(data[0], SegmentationAnnotation)
+    assert data[0].instances[0].segmentation.to_mask().shape == (480, 640)
+    assert data[2].instances == []
 
 
 def test_classification_annotation_format():
@@ -261,15 +261,15 @@ def test_classification_annotation_format():
     )
     writer.save()
 
-    annotations, label, rows = _read_annotations(writer, expected_count=2)
+    data, label, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["categories"][1]["category_ids"] == [1]
     assert rows[1]["categories"][0]["category_ids"] == [2]
-    assert isinstance(annotations[0], ClassificationAnnotation)
-    assert annotations[0].categories[0].category_attr == "hair_color"
-    assert annotations[0].categories[1].category_ids == [1]
-    assert annotations[1].categories[0].category_ids == [2]
+    assert isinstance(data[0], ClassificationAnnotation)
+    assert data[0].categories[0].category_attr == "hair_color"
+    assert data[0].categories[1].category_ids == [1]
+    assert data[1].categories[0].category_ids == [2]
 
     assert label["hair_color"][1].name == "black"
     assert label["age"][2].name == "middle-aged"
@@ -318,16 +318,16 @@ def test_relationship_annotation_format():
     )
     writer.save()
 
-    annotations, _, rows = _read_annotations(writer, expected_count=3)
+    data, _, rows = _read_annotations(writer, expected_count=3)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["relationships"][0]["relation_type"] == "near"
     assert rows[1]["relationships"][0]["relation_type"] == "left_of"
-    assert isinstance(annotations[0], RelationshipAnnotation)
-    assert annotations[0].relationships[0].relation_type == "near"
-    assert annotations[1].relationships[0].relation_type == "left_of"
-    assert annotations[2].instances == []
-    assert annotations[2].relationships == []
+    assert isinstance(data[0], RelationshipAnnotation)
+    assert data[0].relationships[0].relation_type == "near"
+    assert data[1].relationships[0].relation_type == "left_of"
+    assert data[2].instances == []
+    assert data[2].relationships == []
 
 
 def test_vlm_annotation_format():
@@ -347,14 +347,14 @@ def test_vlm_annotation_format():
     )
     writer.save()
 
-    annotations, label, rows = _read_annotations(writer, expected_count=2)
+    data, label, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["description"].startswith("A street")
     assert rows[1]["description"].startswith("A computer")
-    assert isinstance(annotations[0], VlmAnnotation)
-    assert annotations[0].description.startswith("A street")
-    assert annotations[1].width == 800
+    assert isinstance(data[0], VlmAnnotation)
+    assert data[0].description.startswith("A street")
+    assert data[1].width == 800
     assert label is None
 
 
@@ -395,14 +395,14 @@ def test_conversation_annotation_format():
     )
     writer.save()
 
-    annotations, label, rows = _read_annotations(writer, expected_count=2)
+    data, label, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["conversations"][0]["content"][1]["type"] == "text"
     assert rows[1]["conversations"][1]["role"] == ConversationRole.ASSISTANT.value
-    assert isinstance(annotations[0], ConversationAnnotation)
-    assert annotations[0].conversations[0].role == ConversationRole.USER
-    assert annotations[1].conversations[1].content[0].text.startswith("A computer")
+    assert isinstance(data[0], ConversationAnnotation)
+    assert data[0].conversations[0].role == ConversationRole.USER
+    assert data[1].conversations[1].content[0].text.startswith("A computer")
     assert label is None
 
 
@@ -508,7 +508,7 @@ def test_action_annotation_format():
     )
     writer.save()
 
-    annotations, _, rows = _read_annotations(writer, expected_count=2)
+    data, _, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["actions"][0]["tracks"][0]["bbox"] == [
@@ -518,15 +518,15 @@ def test_action_annotation_format():
         380.0,
     ]
     assert rows[1]["actions"][0]["category_id"] == 4
-    assert isinstance(annotations[0], ActionAnnotation)
-    assert annotations[0].actions[0].tracks[0].bbox.to_list() == [
+    assert isinstance(data[0], ActionAnnotation)
+    assert data[0].actions[0].tracks[0].bbox.to_list() == [
         520.0,
         300.0,
         620.0,
         380.0,
     ]
-    assert annotations[1].actions[0].category_id == 4
-    assert len(annotations[1].actions) == 2
+    assert data[1].actions[0].category_id == 4
+    assert len(data[1].actions) == 2
 
 
 def test_reader_validate_returns_false_on_invalid_data(tmp_path):
@@ -570,13 +570,13 @@ def test_sequence_annotation_format():
     )
     writer.save()
 
-    annotations, label, rows = _read_annotations(writer, expected_count=2)
+    data, label, rows = _read_annotations(writer, expected_count=2)
     assert label is None
     assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
     assert rows[1]["sequences"] == []
-    assert isinstance(annotations[0], SequenceAnnotation)
-    assert annotations[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
-    assert annotations[1].sequences == []
+    assert isinstance(data[0], SequenceAnnotation)
+    assert data[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
+    assert data[1].sequences == []
 
 
 def run_all():

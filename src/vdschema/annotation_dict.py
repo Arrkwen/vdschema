@@ -74,9 +74,6 @@ class CategoryMap:
     def to_relationship_entries(self) -> list[dict[str, Any]]:
         return self.to_entries(id_key="relationship_id", name_key="relationship_name")
 
-    def to_action_entries(self) -> list[dict[str, Any]]:
-        return self.to_entries(id_key="action_id", name_key="action_name")
-
 
 def _entries_to_dict(
     entries: list[dict[str, Any]],
@@ -307,7 +304,7 @@ class ActionLabelDict(TaskLabelDict):
     def to_data(self) -> dict[str, Any]:
         return {
             "annotation_schema_ref": self.annotation_schema_ref,
-            "action": self.action.to_action_entries(),
+            "action": self.action.to_category_entries(),
         }
 
     @classmethod
@@ -318,8 +315,8 @@ class ActionLabelDict(TaskLabelDict):
         return cls(
             _entries_to_dict(
                 raw["action"],
-                id_key="action_id",
-                name_key="action_name",
+                id_key="category_id",
+                name_key="category_name",
             ),
             annotation_schema_ref=raw.get(
                 "annotation_schema_ref", ANNOTATION_SCHEMA_ID
@@ -330,8 +327,8 @@ class ActionLabelDict(TaskLabelDict):
         if not isinstance(annotation, ActionAnnotation):
             return
         for event in annotation.actions:
-            if event.action_id not in self.action.id_to_name:
-                raise AnnotationFormatError(f"unknown action_id={event.action_id}")
+            if event.category_id not in self.action.id_to_name:
+                raise AnnotationFormatError(f"unknown category_id={event.category_id}")
 
 
 @dataclass(frozen=True)

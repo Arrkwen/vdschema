@@ -403,7 +403,7 @@ def test_action_annotation_format():
         description="An elderly person falls down.",
         actions=[
             {
-                "action_id": 2,
+                "category_id": 2,
                 "track_id": 0,
                 "start_idx": 4,
                 "end_idx": 6,
@@ -460,7 +460,7 @@ def test_action_annotation_format():
         description="A pedestrian is walking.",
         actions=[
             {
-                "action_id": 4,
+                "category_id": 4,
                 "track_id": 1,
                 "start_idx": 1,
                 "end_idx": 5,
@@ -474,7 +474,7 @@ def test_action_annotation_format():
                 ],
             },
             {
-                "action_id": 5,
+                "category_id": 5,
                 "track_id": 2,
                 "start_idx": 1,
                 "end_idx": 5,
@@ -500,7 +500,7 @@ def test_action_annotation_format():
         620.0,
         380.0,
     ]
-    assert rows[1]["actions"][0]["action_id"] == 4
+    assert rows[1]["actions"][0]["category_id"] == 4
     assert isinstance(annotations[0], ActionAnnotation)
     assert annotations[0].actions[0].tracks[0].bbox.to_list() == [
         520.0,
@@ -508,7 +508,7 @@ def test_action_annotation_format():
         620.0,
         380.0,
     ]
-    assert annotations[1].actions[0].action_id == 4
+    assert annotations[1].actions[0].category_id == 4
     assert len(annotations[1].actions) == 2
 
 

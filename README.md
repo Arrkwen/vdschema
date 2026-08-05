@@ -315,7 +315,7 @@ writer.append(
     description="An elderly person falls down.",
     actions=[
         {
-            "action_id": 2,
+            "category_id": 2,
             "track_id": 0,
             "start_idx": 4,
             "end_idx": 6,

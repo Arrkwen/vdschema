@@ -39,10 +39,10 @@
     },
     "action": {
       "type": "array",
-      "description": "动作/事件类标签词表（若标注侧含对应 ID 字段则与之对齐）。",
+      "description": "动作/事件类标签词表；与标注 **`actions[].category_id`** 对应。",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/action_entry"
+        "$ref": "#/$defs/category_entry"
       }
     },
     "dataset_metadata": {
@@ -126,12 +126,12 @@
       ],
       "action": [
         {
-          "action_id": 3,
-          "action_name": "walking"
+          "category_id": 3,
+          "category_name": "walking"
         },
         {
-          "action_id": 4,
-          "action_name": "talking"
+          "category_id": 4,
+          "category_name": "talking"
         }
       ],
       "dataset_metadata": {
@@ -213,26 +213,6 @@
       "required": [
         "relationship_id",
         "relationship_name"
-      ]
-    },
-    "action_entry": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "action_id": {
-          "type": "integer",
-          "description": "动作标签 ID（≥0）。",
-          "minimum": 0
-        },
-        "action_name": {
-          "type": "string",
-          "description": "动作名称。",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "action_id",
-        "action_name"
       ]
     },
     "dataset_metadata": {

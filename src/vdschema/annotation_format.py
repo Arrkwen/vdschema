@@ -443,7 +443,7 @@ class TrackItem:
 class ActionEvent:
     """One item in annotation_data actions[]."""
 
-    action_id: int
+    category_id: int
     track_id: int
     start_idx: int
     end_idx: int
@@ -463,7 +463,7 @@ class ActionEvent:
     def to_dict(self) -> dict[str, Any]:
         self.validate()
         return {
-            "action_id": int(self.action_id),
+            "category_id": int(self.category_id),
             "track_id": int(self.track_id),
             "start_idx": int(self.start_idx),
             "end_idx": int(self.end_idx),
@@ -474,7 +474,7 @@ class ActionEvent:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> ActionEvent:
         return cls(
-            action_id=int(raw["action_id"]),
+            category_id=int(raw["category_id"]),
             track_id=int(raw["track_id"]),
             start_idx=int(raw["start_idx"]),
             end_idx=int(raw["end_idx"]),
@@ -616,7 +616,7 @@ def _action_event(raw: Any) -> ActionEvent:
         return raw
     data = dict(raw)
     return ActionEvent(
-        action_id=int(data["action_id"]),
+        category_id=int(data["category_id"]),
         track_id=int(data["track_id"]),
         start_idx=int(data["start_idx"]),
         end_idx=int(data["end_idx"]),

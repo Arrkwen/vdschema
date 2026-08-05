@@ -236,8 +236,8 @@ No `annotation_meta.json`.
 {
   "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
   "action": [
-    {"action_id": 2, "action_name": "fall"},
-    {"action_id": 4, "action_name": "walk"}
+    {"category_id": 2, "category_name": "fall"},
+    {"category_id": 4, "category_name": "walk"}
   ]
 }
 ```
@@ -252,7 +252,7 @@ No `annotation_meta.json`.
   "description": "An elderly person falls down.",
   "actions": [
     {
-      "action_id": 2,
+      "category_id": 2,
       "track_id": 0,
       "start_idx": 4,
       "end_idx": 6,

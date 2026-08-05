@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, ClassVar, Mapping, Sequence
 
 from .annotation_format import (
     ActionAnnotation,
     AnnotationFormatError,
     BaseAnnotation,
     ClassificationAnnotation,
+    DetectionAnnotation,
     RelationshipAnnotation,
     TaskType,
 )
@@ -22,6 +23,19 @@ SCHEMA_BASE_URL = (
 ANNOTATION_SCHEMA_ID = f"{SCHEMA_BASE_URL}/annotation_data.json"
 ANNOTATION_DATA_FILENAME = "annotation_data.jsonl"
 ANNOTATION_META_FILENAME = "annotation_meta.json"
+
+_CATEGORY_ENTRY_KEYS = {
+    "id_key": "category_id",
+    "name_key": "category_name",
+    "alias_key": "category_alias",
+    "prompt_key": "category_prompt",
+}
+_RELATIONSHIP_ENTRY_KEYS = {
+    "id_key": "relationship_id",
+    "name_key": "relationship_name",
+    "alias_key": "relationship_alias",
+    "prompt_key": "relationship_prompt",
+}
 
 
 def data_path_for(
@@ -74,7 +88,7 @@ class Name:
             raise AnnotationFormatError("prompt must contain non-empty strings")
 
 
-def _coerce_category(value: Name | str | Any) -> Name:
+def _coerce_name(value: Name | str | Any) -> Name:
     if isinstance(value, Name):
         return value
     if isinstance(value, str):
@@ -86,33 +100,29 @@ def _coerce_category(value: Name | str | Any) -> Name:
 
 
 @dataclass(frozen=True)
-class CategoryMap:
+class LabelMap:
     """Bidirectional mapping: ``id -> Name``."""
 
-    id_to_category: dict[int, Name]
+    id_to_entry: dict[int, Name]
     name_to_id: dict[str, int]
 
-    @property
-    def id_to_name(self) -> dict[int, str]:
-        return {i: cat.name for i, cat in self.id_to_category.items()}
-
     @classmethod
-    def from_dict(cls, mapping: Mapping[int, Name | str]) -> CategoryMap:
-        id_to_category: dict[int, Name] = {}
+    def from_id_map(cls, mapping: Mapping[int, Name | str]) -> LabelMap:
+        id_to_entry: dict[int, Name] = {}
         name_to_id: dict[str, int] = {}
         for raw_id, value in mapping.items():
             label_id = int(raw_id)
-            category = _coerce_category(value)
-            if label_id in id_to_category:
+            entry = _coerce_name(value)
+            if label_id in id_to_entry:
                 raise AnnotationFormatError(f"duplicate category id={label_id}")
-            _register_name(name_to_id, category.name, label_id)
-            for alias in category.alias:
+            _register_name(name_to_id, entry.name, label_id)
+            for alias in entry.alias:
                 _register_name(name_to_id, alias, label_id)
-            id_to_category[label_id] = category
-        return cls(id_to_category=id_to_category, name_to_id=name_to_id)
+            id_to_entry[label_id] = entry
+        return cls(id_to_entry=id_to_entry, name_to_id=name_to_id)
 
     def to_label(self) -> dict[int, Name]:
-        return dict(self.id_to_category)
+        return dict(self.id_to_entry)
 
     def to_entries(
         self,
@@ -123,34 +133,24 @@ class CategoryMap:
         prompt_key: str,
     ) -> list[dict[str, Any]]:
         entries: list[dict[str, Any]] = []
-        for label_id in sorted(self.id_to_category):
-            category = self.id_to_category[label_id]
+        for label_id in sorted(self.id_to_entry):
+            item = self.id_to_entry[label_id]
             entry: dict[str, Any] = {
                 id_key: label_id,
-                name_key: category.name,
+                name_key: item.name,
             }
-            if category.alias:
-                entry[alias_key] = list(category.alias)
-            if category.prompt:
-                entry[prompt_key] = list(category.prompt)
+            if item.alias:
+                entry[alias_key] = list(item.alias)
+            if item.prompt:
+                entry[prompt_key] = list(item.prompt)
             entries.append(entry)
         return entries
 
     def to_category_entries(self) -> list[dict[str, Any]]:
-        return self.to_entries(
-            id_key="category_id",
-            name_key="category_name",
-            alias_key="category_alias",
-            prompt_key="category_prompt",
-        )
+        return self.to_entries(**_CATEGORY_ENTRY_KEYS)
 
     def to_relationship_entries(self) -> list[dict[str, Any]]:
-        return self.to_entries(
-            id_key="relationship_id",
-            name_key="relationship_name",
-            alias_key="relationship_alias",
-            prompt_key="relationship_prompt",
-        )
+        return self.to_entries(**_RELATIONSHIP_ENTRY_KEYS)
 
 
 def _register_name(name_to_id: dict[str, int], name: str, label_id: int) -> None:
@@ -177,6 +177,44 @@ def _entries_to_label(
     }
 
 
+def _category_entries_to_label(entries: list[dict[str, Any]]) -> dict[int, Name]:
+    return _entries_to_label(entries, **_CATEGORY_ENTRY_KEYS)
+
+
+def _relationship_entries_to_label(entries: list[dict[str, Any]]) -> dict[int, Name]:
+    return _entries_to_label(entries, **_RELATIONSHIP_ENTRY_KEYS)
+
+
+def _schema_ref(raw: dict[str, Any]) -> str:
+    return raw.get("annotation_schema_ref", ANNOTATION_SCHEMA_ID)
+
+
+def _require_key(raw: dict[str, Any], path: str | Path, key: str) -> Any:
+    value = raw.get(key)
+    if not value:
+        raise AnnotationFormatError(f"{path}: missing {key} vocabulary")
+    return value
+
+
+def _validate_category_ids(
+    category_ids: Sequence[int],
+    vocab: LabelMap,
+    *,
+    context: str | None = None,
+) -> None:
+    for category_id in category_ids:
+        if category_id not in vocab.id_to_entry:
+            suffix = f" {context}" if context else ""
+            raise AnnotationFormatError(f"unknown category_id={category_id}{suffix}")
+
+
+def _validate_instances(instances: Sequence[Any], vocab: LabelMap) -> None:
+    _validate_category_ids(
+        [instance.category_id for instance in instances],
+        vocab,
+    )
+
+
 class TaskLabelDict:
     """Base class for task-scoped label dictionaries."""
 
@@ -199,51 +237,62 @@ class TaskLabelDict:
         return
 
 
-class DetectionLabelDict(TaskLabelDict):
-    """Vocabulary for detection / keypoint / segmentation tasks."""
+class SingleVocabLabelDict(TaskLabelDict):
+    """Shared base for tasks with one flat ``id -> Name`` vocabulary."""
+
+    _vocab_key: ClassVar[str]
 
     def __init__(
         self,
-        detection: Mapping[int, Name | str],
+        mapping: Mapping[int, Name | str],
         *,
         annotation_schema_ref: str = ANNOTATION_SCHEMA_ID,
     ) -> None:
         self.annotation_schema_ref = annotation_schema_ref
-        self.detection = CategoryMap.from_dict(detection)
+        self.vocab = LabelMap.from_id_map(mapping)
 
     def to_label(self) -> dict[int, Name]:
-        return self.detection.to_label()
+        return self.vocab.to_label()
 
     def to_data(self) -> dict[str, Any]:
         return {
             "annotation_schema_ref": self.annotation_schema_ref,
-            "detection": self.detection.to_category_entries(),
+            self._vocab_key: self.vocab.to_category_entries(),
         }
 
     @classmethod
-    def load(cls, path: str | Path) -> DetectionLabelDict:
+    def load(cls, path: str | Path) -> SingleVocabLabelDict:
         raw = _read_json_object(path)
-        if not raw.get("detection"):
-            raise AnnotationFormatError(f"{path}: missing detection vocabulary")
+        entries = _require_key(raw, path, cls._vocab_key)
         return cls(
-            _entries_to_label(
-                raw["detection"],
-                id_key="category_id",
-                name_key="category_name",
-                alias_key="category_alias",
-                prompt_key="category_prompt",
-            ),
-            annotation_schema_ref=raw.get(
-                "annotation_schema_ref", ANNOTATION_SCHEMA_ID
-            ),
+            _category_entries_to_label(entries),
+            annotation_schema_ref=_schema_ref(raw),
         )
 
+
+class DetectionLabelDict(SingleVocabLabelDict):
+    """Vocabulary for detection / keypoint / segmentation tasks."""
+
+    _vocab_key = "detection"
+
     def validate_annotation(self, annotation: BaseAnnotation) -> None:
-        for instance in annotation.instances:  # type: ignore[attr-defined]
-            if instance.category_id not in self.detection.id_to_category:
-                raise AnnotationFormatError(
-                    f"unknown category_id={instance.category_id}"
-                )
+        if not isinstance(annotation, DetectionAnnotation):
+            return
+        _validate_instances(annotation.instances, self.vocab)
+
+
+class ActionLabelDict(SingleVocabLabelDict):
+    """Vocabulary for video action tasks."""
+
+    _vocab_key = "action"
+
+    def validate_annotation(self, annotation: BaseAnnotation) -> None:
+        if not isinstance(annotation, ActionAnnotation):
+            return
+        _validate_category_ids(
+            [event.category_id for event in annotation.actions],
+            self.vocab,
+        )
 
 
 class ClassificationLabelDict(TaskLabelDict):
@@ -257,8 +306,8 @@ class ClassificationLabelDict(TaskLabelDict):
     ) -> None:
         self.annotation_schema_ref = annotation_schema_ref
         self.heads = {
-            category_attr: CategoryMap.from_dict(category_map)
-            for category_attr, category_map in heads.items()
+            category_attr: LabelMap.from_id_map(category_label)
+            for category_attr, category_label in heads.items()
         }
 
     def to_label(self) -> dict[str, dict[int, Name]]:
@@ -282,24 +331,14 @@ class ClassificationLabelDict(TaskLabelDict):
     @classmethod
     def load(cls, path: str | Path) -> ClassificationLabelDict:
         raw = _read_json_object(path)
-        if not raw.get("classification"):
-            raise AnnotationFormatError(f"{path}: missing classification vocabulary")
+        heads_raw = _require_key(raw, path, "classification")
         heads = {
-            str(head["category_attr"]): _entries_to_label(
-                head["category_label"],
-                id_key="category_id",
-                name_key="category_name",
-                alias_key="category_alias",
-                prompt_key="category_prompt",
+            str(head["category_attr"]): _category_entries_to_label(
+                head["category_label"]
             )
-            for head in raw["classification"]
+            for head in heads_raw
         }
-        return cls(
-            heads,
-            annotation_schema_ref=raw.get(
-                "annotation_schema_ref", ANNOTATION_SCHEMA_ID
-            ),
-        )
+        return cls(heads, annotation_schema_ref=_schema_ref(raw))
 
     def validate_annotation(self, annotation: BaseAnnotation) -> None:
         if not isinstance(annotation, ClassificationAnnotation):
@@ -310,12 +349,11 @@ class ClassificationLabelDict(TaskLabelDict):
                 raise AnnotationFormatError(
                     f"unknown category_attr={head.category_attr!r}"
                 )
-            for category_id in head.category_ids:
-                if category_id not in vocab.id_to_category:
-                    raise AnnotationFormatError(
-                        f"unknown category_id={category_id} "
-                        f"for category_attr={head.category_attr!r}"
-                    )
+            _validate_category_ids(
+                head.category_ids,
+                vocab,
+                context=f"for category_attr={head.category_attr!r}",
+            )
 
 
 class RelationshipLabelDict(TaskLabelDict):
@@ -329,8 +367,8 @@ class RelationshipLabelDict(TaskLabelDict):
         annotation_schema_ref: str = ANNOTATION_SCHEMA_ID,
     ) -> None:
         self.annotation_schema_ref = annotation_schema_ref
-        self.detection = CategoryMap.from_dict(detection)
-        self.relationship = CategoryMap.from_dict(relationship)
+        self.detection = LabelMap.from_id_map(detection)
+        self.relationship = LabelMap.from_id_map(relationship)
 
     def to_label(self) -> dict[str, dict[int, Name]]:
         return {
@@ -353,85 +391,20 @@ class RelationshipLabelDict(TaskLabelDict):
                 f"{path}: relationship task requires detection and relationship vocabulary"
             )
         return cls(
-            _entries_to_label(
-                raw["detection"],
-                id_key="category_id",
-                name_key="category_name",
-                alias_key="category_alias",
-                prompt_key="category_prompt",
-            ),
-            _entries_to_label(
-                raw["relationship"],
-                id_key="relationship_id",
-                name_key="relationship_name",
-                alias_key="relationship_alias",
-                prompt_key="relationship_prompt",
-            ),
-            annotation_schema_ref=raw.get(
-                "annotation_schema_ref", ANNOTATION_SCHEMA_ID
-            ),
+            _category_entries_to_label(raw["detection"]),
+            _relationship_entries_to_label(raw["relationship"]),
+            annotation_schema_ref=_schema_ref(raw),
         )
 
     def validate_annotation(self, annotation: BaseAnnotation) -> None:
         if not isinstance(annotation, RelationshipAnnotation):
             return
-        for instance in annotation.instances:
-            if instance.category_id not in self.detection.id_to_category:
-                raise AnnotationFormatError(
-                    f"unknown category_id={instance.category_id}"
-                )
+        _validate_instances(annotation.instances, self.detection)
         for rel in annotation.relationships:
             if rel.relation_type not in self.relationship.name_to_id:
                 raise AnnotationFormatError(
                     f"unknown relation_type={rel.relation_type!r}"
                 )
-
-
-class ActionLabelDict(TaskLabelDict):
-    """Vocabulary for video action tasks."""
-
-    def __init__(
-        self,
-        action: Mapping[int, Name | str],
-        *,
-        annotation_schema_ref: str = ANNOTATION_SCHEMA_ID,
-    ) -> None:
-        self.annotation_schema_ref = annotation_schema_ref
-        self.action = CategoryMap.from_dict(action)
-
-    def to_label(self) -> dict[int, Name]:
-        return self.action.to_label()
-
-    def to_data(self) -> dict[str, Any]:
-        return {
-            "annotation_schema_ref": self.annotation_schema_ref,
-            "action": self.action.to_category_entries(),
-        }
-
-    @classmethod
-    def load(cls, path: str | Path) -> ActionLabelDict:
-        raw = _read_json_object(path)
-        if not raw.get("action"):
-            raise AnnotationFormatError(f"{path}: missing action vocabulary")
-        return cls(
-            _entries_to_label(
-                raw["action"],
-                id_key="category_id",
-                name_key="category_name",
-                alias_key="category_alias",
-                prompt_key="category_prompt",
-            ),
-            annotation_schema_ref=raw.get(
-                "annotation_schema_ref", ANNOTATION_SCHEMA_ID
-            ),
-        )
-
-    def validate_annotation(self, annotation: BaseAnnotation) -> None:
-        if not isinstance(annotation, ActionAnnotation):
-            return
-        for event in annotation.actions:
-            if event.category_id not in self.action.id_to_category:
-                raise AnnotationFormatError(f"unknown category_id={event.category_id}")
 
 
 @dataclass(frozen=True)
@@ -455,9 +428,6 @@ _LABEL_DICT_BY_TASK: dict[TaskType, type[TaskLabelDict]] = {
     TaskType.CLASSIFICATION: ClassificationLabelDict,
     TaskType.RELATIONSHIP: RelationshipLabelDict,
     TaskType.ACTION: ActionLabelDict,
-    TaskType.VLM: NoLabelDict,
-    TaskType.CONVERSATION: NoLabelDict,
-    TaskType.SEQUENCE: NoLabelDict,
 }
 
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterator
 
 from .annotation_dict import (
     ANNOTATION_DATA_FILENAME,
@@ -108,18 +108,6 @@ class AnnotationWriter:
         if not isinstance(self.label_dict, NoLabelDict):
             self.label_dict.save(self.meta_path)
 
-    def write(
-        self,
-        annotations: Iterable[BaseAnnotation | dict[str, Any]],
-    ) -> None:
-        self.records = []
-        for item in annotations:
-            if isinstance(item, dict):
-                self.append(**item)
-            else:
-                self.append(item)
-        self.save()
-
 
 class AnnotationReader:
     """Read annotation JSONL and optional label dictionary from ``task_dir``."""
@@ -164,6 +152,14 @@ class AnnotationReader:
                         f"{path}:{lineno} failed to parse JSON"
                     ) from exc
 
+    def _resolve_label_dict(self) -> TaskLabelDict:
+        loaded = load_label_dict(
+            self.task_type,
+            self.task_dir,
+            task_meta_filename=self.task_meta_filename,
+        )
+        return loaded if loaded is not None else NoLabelDict()
+
     def _parse_annotations(
         self,
         label_dict: TaskLabelDict,
@@ -177,13 +173,7 @@ class AnnotationReader:
         return annotations
 
     def iter_annotations(self) -> Iterator[BaseAnnotation]:
-        loaded = load_label_dict(
-            self.task_type,
-            self.task_dir,
-            task_meta_filename=self.task_meta_filename,
-        )
-        label_dict = loaded if loaded is not None else NoLabelDict()
-        yield from self._parse_annotations(label_dict)
+        yield from self._parse_annotations(self._resolve_label_dict())
 
     def load(self) -> tuple[list[BaseAnnotation], dict[str, Any] | None]:
         """Return parsed annotation ``data`` and ``label`` (``None`` if not used)."""

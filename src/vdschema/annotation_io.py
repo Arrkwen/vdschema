@@ -44,7 +44,7 @@ class AnnotationWriter:
     def __init__(
         self,
         task_type: TaskType,
-        task_dict: dict[str, Any] | dict[int, str] | None = None,
+        label: dict[str, Any] | dict[int, Any] | None = None,
         task_dir: str | Path = DEFAULT_OUTPUT_DIR,
         *,
         task_data_filename: str = ANNOTATION_DATA_FILENAME,
@@ -55,7 +55,7 @@ class AnnotationWriter:
         self.task_data_filename = task_data_filename
         self.task_meta_filename = task_meta_filename
         self.annotation_cls = task_type.annotation_class
-        self.label_dict = build_label_dict(task_type, task_dict)
+        self.label_dict = build_label_dict(task_type, label)
         self.records: list[BaseAnnotation] = []
 
     def save_dir(self) -> Path:
@@ -186,15 +186,15 @@ class AnnotationReader:
         yield from self._parse_annotations(label_dict)
 
     def load(self) -> tuple[list[BaseAnnotation], dict[str, Any] | None]:
-        """Return parsed annotations and plain ``task_dict`` (``None`` if not used)."""
+        """Return parsed annotations and ``label`` (``None`` if not used)."""
         loaded = load_label_dict(
             self.task_type,
             self.task_dir,
             task_meta_filename=self.task_meta_filename,
         )
         label_dict = loaded if loaded is not None else NoLabelDict()
-        task_dict = None if loaded is None else loaded.to_task_dict()
-        return self._parse_annotations(label_dict), task_dict
+        label = None if loaded is None else loaded.to_label()
+        return self._parse_annotations(label_dict), label
 
     def validate(self) -> bool:
         """Return ``True`` if all records and label meta are valid, else ``False``."""

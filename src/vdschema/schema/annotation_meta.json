@@ -157,6 +157,22 @@
           "type": "string",
           "description": "类别名称。",
           "minLength": 1
+        },
+        "category_alias": {
+          "type": "array",
+          "description": "类别别名列表（可选）。",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "category_prompt": {
+          "type": "array",
+          "description": "类别提示词列表（可选）。",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       },
       "required": [
@@ -208,6 +224,22 @@
             "靠近",
             "左边"
           ]
+        },
+        "relationship_alias": {
+          "type": "array",
+          "description": "关系别名列表（可选）。",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "relationship_prompt": {
+          "type": "array",
+          "description": "关系提示词列表（可选）。",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       },
       "required": [

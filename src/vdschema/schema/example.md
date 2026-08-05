@@ -14,7 +14,12 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
 {
   "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
   "detection": [
-    {"category_id": 1, "category_name": "person"},
+    {
+      "category_id": 1,
+      "category_name": "person",
+      "category_alias": ["human"],
+      "category_prompt": ["a human", "人体"]
+    },
     {"category_id": 2, "category_name": "car"}
   ]
 }

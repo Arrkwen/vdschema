@@ -10,6 +10,7 @@ from vdschema import (
     AnnotationWriter,
     BaseAnnotation,
     Bbox,
+    Category,
     ClassificationAnnotation,
     ConversationAnnotation,
     ConversationRole,
@@ -38,11 +39,11 @@ def _read_annotations(
     assert len(raw_rows) == expected_count
     via_iter = list(reader.iter_annotations())
     assert len(via_iter) == expected_count
-    via_load, task_dict = reader.load()
+    via_load, label = reader.load()
     assert len(via_load) == expected_count
     assert via_load == via_iter
     assert reader.validate() is True
-    return via_load, task_dict, raw_rows
+    return via_load, label, raw_rows
 
 
 def _mask(height: int = 480, width: int = 640) -> np.ndarray:
@@ -54,7 +55,12 @@ def _mask(height: int = 480, width: int = 640) -> np.ndarray:
 def test_detection_annotation_format():
     writer = AnnotationWriter(
         TaskType.DETECTION,
-        task_dict={1: "person", 2: "car", 3: "bus", 4: "truck"},
+        label={
+            1: Category("person", alias=["human"], prompt=["a human", "人体"]),
+            2: Category("car"),
+            3: Category("bus"),
+            4: Category("truck"),
+        },
     )
 
     # bbox convert from multiple formats, the default list parameter is xyxy format
@@ -91,7 +97,7 @@ def test_detection_annotation_format():
     )
     writer.save()
 
-    annotations, task_dict, rows = _read_annotations(writer, expected_count=3)
+    annotations, label, rows = _read_annotations(writer, expected_count=3)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["instances"][1]["bbox"] == [120.0, 30.0, 200.0, 180.0]
@@ -102,14 +108,25 @@ def test_detection_annotation_format():
     assert annotations[0].instances[1].bbox.to_list() == [120.0, 30.0, 200.0, 180.0]
     assert annotations[1].instances[1].text == "AB0000FF"
     assert annotations[2].instances == []
-    assert task_dict[1] == "person"
-    assert task_dict[4] == "truck"
+    assert label[1].name == "person"
+    assert label[1].alias == ("human",)
+    assert label[1].prompt == ("a human", "人体")
+    assert label[2].name == "car"
+    assert label[2].alias == ()
+    assert label[4].name == "truck"
+    meta = __import__("json").loads(writer.meta_path.read_text(encoding="utf-8"))
+    person = next(item for item in meta["detection"] if item["category_id"] == 1)
+    assert person["category_alias"] == ["human"]
+    assert person["category_prompt"] == ["a human", "人体"]
+    car = next(item for item in meta["detection"] if item["category_id"] == 2)
+    assert "category_alias" not in car
+    assert "category_prompt" not in car
 
 
 def test_keypoint_annotation_format():
     writer = AnnotationWriter(
         TaskType.KEYPOINT,
-        task_dict={1: "person", 2: "car", 3: "bus", 4: "truck"},
+        label={1: "person", 2: "car", 3: "bus", 4: "truck"},
     )
 
     # bbox convert from multiple formats, the default list parameter is xyxy format
@@ -168,7 +185,7 @@ def test_keypoint_annotation_format():
 def test_segmentation_annotation_format():
     writer = AnnotationWriter(
         TaskType.SEGMENTATION,
-        task_dict={1: "person", 2: "car", 3: "bus", 4: "truck"},
+        label={1: "person", 2: "car", 3: "bus", 4: "truck"},
     )
     seg_a = SegmentationRLE.from_mask(_mask())
     seg_b = SegmentationRLE.from_mask(_mask())
@@ -221,7 +238,7 @@ def test_segmentation_annotation_format():
 def test_classification_annotation_format():
     writer = AnnotationWriter(
         TaskType.CLASSIFICATION,
-        task_dict={
+        label={
             "hair_color": {1: "black", 2: "brown", 3: "blonde", 4: "red"},
             "age": {1: "young", 2: "middle-aged", 3: "elderly"},
         },
@@ -244,7 +261,7 @@ def test_classification_annotation_format():
     )
     writer.save()
 
-    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
+    annotations, label, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["categories"][1]["category_ids"] == [1]
@@ -254,14 +271,14 @@ def test_classification_annotation_format():
     assert annotations[0].categories[1].category_ids == [1]
     assert annotations[1].categories[0].category_ids == [2]
 
-    assert task_dict["hair_color"][1] == "black"
-    assert task_dict["age"][2] == "middle-aged"
+    assert label["hair_color"][1].name == "black"
+    assert label["age"][2].name == "middle-aged"
 
 
 def test_relationship_annotation_format():
     writer = AnnotationWriter(
         TaskType.RELATIONSHIP,
-        task_dict={
+        label={
             "detection": {1: "person", 2: "car"},
             "relationship": {0: "near", 1: "left_of"},
         },
@@ -330,7 +347,7 @@ def test_vlm_annotation_format():
     )
     writer.save()
 
-    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
+    annotations, label, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["description"].startswith("A street")
@@ -338,7 +355,7 @@ def test_vlm_annotation_format():
     assert isinstance(annotations[0], VlmAnnotation)
     assert annotations[0].description.startswith("A street")
     assert annotations[1].width == 800
-    assert task_dict is None
+    assert label is None
 
 
 def test_conversation_annotation_format():
@@ -378,7 +395,7 @@ def test_conversation_annotation_format():
     )
     writer.save()
 
-    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
+    annotations, label, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
     assert rows[0]["conversations"][0]["content"][1]["type"] == "text"
@@ -386,13 +403,13 @@ def test_conversation_annotation_format():
     assert isinstance(annotations[0], ConversationAnnotation)
     assert annotations[0].conversations[0].role == ConversationRole.USER
     assert annotations[1].conversations[1].content[0].text.startswith("A computer")
-    assert task_dict is None
+    assert label is None
 
 
 def test_action_annotation_format():
     writer = AnnotationWriter(
         TaskType.ACTION,
-        task_dict={2: "fall", 4: "walk", 5: "stand"},
+        label={2: "fall", 4: "walk", 5: "stand"},
     )
 
     # bbox convert from multiple formats, the default list parameter is xyxy format
@@ -515,7 +532,7 @@ def test_action_annotation_format():
 def test_reader_validate_returns_false_on_invalid_data(tmp_path):
     writer = AnnotationWriter(
         TaskType.DETECTION,
-        task_dict={1: "person"},
+        label={1: "person"},
         task_dir=tmp_path / "detection",
     )
     writer.append(
@@ -553,8 +570,8 @@ def test_sequence_annotation_format():
     )
     writer.save()
 
-    annotations, task_dict, rows = _read_annotations(writer, expected_count=2)
-    assert task_dict is None
+    annotations, label, rows = _read_annotations(writer, expected_count=2)
+    assert label is None
     assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
     assert rows[1]["sequences"] == []
     assert isinstance(annotations[0], SequenceAnnotation)

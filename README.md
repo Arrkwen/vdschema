@@ -9,17 +9,17 @@ It supports two primary workflows:
 
 ## Supported tasks
 
-| Task           | `TaskType`                | `Task_dict`                               | Python type                  |
+| Task           | `TaskType`                | `label`                               | Python type                  |
 | -------------- | --------------------------- | ------------------------------------------- | ---------------------------- |
-| detection      | `TaskType.DETECTION`      | `{id: name}`                              | `DetectionAnnotation`      |
-| keypoint       | `TaskType.KEYPOINT`       | `{id: name}`                              | `KeypointAnnotation`       |
-| segmentation   | `TaskType.SEGMENTATION`   | `{id: name}`                              | `SegmentationAnnotation`   |
-| classification | `TaskType.CLASSIFICATION` | `{head: {id: name}}`                      | `ClassificationAnnotation` |
+| detection      | `TaskType.DETECTION`      | `{id: Category(...)}`                              | `DetectionAnnotation`      |
+| keypoint       | `TaskType.KEYPOINT`       | `{id: Category(...)}`                              | `KeypointAnnotation`       |
+| segmentation   | `TaskType.SEGMENTATION`   | `{id: Category(...)}`                              | `SegmentationAnnotation`   |
+| classification | `TaskType.CLASSIFICATION` | `{head: {id: Category(...)}}`                      | `ClassificationAnnotation` |
 | relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}` | `RelationshipAnnotation`   |
 | vlm            | `TaskType.VLM`            | —                                          | `VlmAnnotation`            |
 | conversation   | `TaskType.CONVERSATION`   | —                                          | `ConversationAnnotation`   |
 | sequence       | `TaskType.SEQUENCE`       | —                                          | `SequenceAnnotation`       |
-| action         | `TaskType.ACTION`         | `{id: name}`                              | `ActionAnnotation`         |
+| action         | `TaskType.ACTION`         | `{id: Category(...)}`                              | `ActionAnnotation`         |
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
 
@@ -58,12 +58,15 @@ Expand a task below for a full example:
 <summary><strong>Detection</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
 
 # step1: create annotation object
 writer = AnnotationWriter(
     TaskType.DETECTION,
-    task_dict={1: "person", 2: "car"},
+    label={
+        1: Category("person", alias=["human"], prompt=["a human", "人体"]),
+        2: Category("car"),
+    },
 )
 
 # step2: add annotation info
@@ -79,11 +82,11 @@ writer.append(
 writer.save()
 
 # step4(option): load annotation info.
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.DETECTION, writer.save_dir()
 ).load()
 
-print(task_dict)  # {1: "person", 2: "car"}
+print(label[1].name, label[1].alias)  # person ('human',)
 print(annotations) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
 ```
 
@@ -93,9 +96,9 @@ print(annotations) # [DetectionAnnotation(filename='images/sample.jpg', width=64
 <summary><strong>Keypoint</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
 
-writer = AnnotationWriter(TaskType.KEYPOINT, task_dict={1: "person"})
+writer = AnnotationWriter(TaskType.KEYPOINT, label={1: Category("person")})
 writer.append(
     filename="images/keypoint_001.jpg",
     width=640,
@@ -110,7 +113,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.KEYPOINT, writer.save_dir()
 ).load()
 ```
@@ -125,6 +128,7 @@ from vdschema import (
     AnnotationReader,
     AnnotationWriter,
     Bbox,
+    Category,
     SegmentationRLE,
     TaskType,
 )
@@ -135,7 +139,7 @@ mask[20:80, 30:120] = 1
 task_dir = "output/segmentation"
 writer = AnnotationWriter(
     TaskType.SEGMENTATION,
-    task_dict={1: "person"},
+    label={1: Category("person")},
     task_dir=task_dir,
 )
 # if bbox is not xyxy format, support other format(xywh, cxxywh)
@@ -153,7 +157,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, task_dict = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
+annotations, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
 </details>
@@ -162,13 +166,13 @@ annotations, task_dict = AnnotationReader(TaskType.SEGMENTATION, task_dir).load(
 <summary><strong>Classification</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
 
 writer = AnnotationWriter(
     TaskType.CLASSIFICATION,
-    task_dict={
-        "hair_color": {1: "black", 2: "brown"},
-        "age": {1: "young", 2: "middle-aged"},
+    label={
+        "hair_color": {1: Category("black"), 2: Category("brown")},
+        "age": {1: Category("young"), 2: Category("middle-aged")},
     },
 )
 writer.append(
@@ -181,7 +185,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.CLASSIFICATION, writer.save_dir()
 ).load()
 ```
@@ -192,13 +196,13 @@ annotations, task_dict = AnnotationReader(
 <summary><strong>Relationship</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
 
 writer = AnnotationWriter(
     TaskType.RELATIONSHIP,
-    task_dict={
-        "detection": {1: "person", 2: "car"},
-        "relationship": {0: "near", 1: "left_of"},
+    label={
+        "detection": {1: Category("person"), 2: Category("car")},
+        "relationship": {0: Category("near"), 1: Category("left_of")},
     },
 )
 writer.append(
@@ -212,7 +216,7 @@ writer.append(
     relationships=[{"subject_id": 0, "object_id": 1, "relation_type": "near"}],
 )
 writer.save()
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.RELATIONSHIP, writer.save_dir()
 ).load()
 ```
@@ -222,7 +226,7 @@ annotations, task_dict = AnnotationReader(
 <details>
 <summary><strong>VLM</strong></summary>
 
-No label dictionary file. Omit `task_dict` for tasks without vocabulary.
+No label dictionary file. Omit `label` for tasks without vocabulary.
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
@@ -235,10 +239,10 @@ writer.append(
     description="A street intersection with three people crossing.",
 )
 writer.save()
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.VLM, writer.save_dir()
 ).load()
-assert task_dict is None
+assert label is None
 ```
 
 </details>
@@ -270,7 +274,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.CONVERSATION, writer.save_dir()
 ).load()
 ```
@@ -291,7 +295,7 @@ writer.append(
     sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
 )
 writer.save()
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.SEQUENCE, writer.save_dir()
 ).load()
 ```
@@ -302,11 +306,11 @@ annotations, task_dict = AnnotationReader(
 <summary><strong>Action</strong></summary>
 
 ```python
-from vdschema import AnnotationReader, AnnotationWriter, TaskType
+from vdschema import AnnotationReader, AnnotationWriter, Category, TaskType
 
 writer = AnnotationWriter(
     TaskType.ACTION,
-    task_dict={2: "fall", 4: "walk"},
+    label={2: Category("fall"), 4: Category("walk")},
 )
 writer.append(
     filename="videos/action_001.mp4",
@@ -325,7 +329,7 @@ writer.append(
     ],
 )
 writer.save()
-annotations, task_dict = AnnotationReader(
+annotations, label = AnnotationReader(
     TaskType.ACTION, writer.save_dir()
 ).load()
 ```

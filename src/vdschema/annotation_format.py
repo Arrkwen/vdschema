@@ -925,9 +925,7 @@ class TaskType(str, Enum):
         return self not in _TASKS_WITHOUT_LABEL_DICT
 
 
-_TASKS_WITHOUT_LABEL_DICT = frozenset(
-    {TaskType.VLM, TaskType.CONVERSATION, TaskType.SEQUENCE}
-)
+_TASKS_WITHOUT_LABEL_DICT = frozenset({TaskType.VLM, TaskType.CONVERSATION})
 
 _TASK_ANNOTATION: dict[TaskType, type[BaseAnnotation]] = {
     TaskType.DETECTION: DetectionAnnotation,

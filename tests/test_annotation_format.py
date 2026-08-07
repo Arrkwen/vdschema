@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, TypeVar
 
 import numpy as np
 
+from vdschema.annotation_dict import ANNOTATION_VOCAB_FILENAME
 from vdschema import (
     ActionAnnotation,
+    AnnotationFormatError,
     AnnotationReader,
     AnnotationWriter,
     BaseAnnotation,
@@ -26,6 +29,9 @@ from vdschema import (
 )
 
 TAnnotation = TypeVar("TAnnotation", bound=BaseAnnotation)
+
+ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+ALPHANUMERIC_VOCAB = ASSETS_DIR / "alphanumeric_vocab.txt"
 
 
 def _read_annotations(
@@ -564,28 +570,152 @@ def test_reader_validate_returns_false_on_invalid_data(tmp_path):
 
 
 def test_sequence_annotation_format():
-    writer = AnnotationWriter(TaskType.SEQUENCE)
-    writer.append(
-        filename="batch1_crop_plate/27993412_car0_inst0.jpg",
-        width=224,
-        height=128,
-        sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
-    )
-    writer.append(
-        filename="batch1_crop_plate/empty_seq.jpg",
-        width=224,
-        height=128,
-        sequences=[],
-    )
-    writer.save()
+    import tempfile
 
-    data, label, rows = _read_annotations(writer, expected_count=2)
-    assert label is None
-    assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
-    assert rows[1]["sequences"] == []
-    assert isinstance(data[0], SequenceAnnotation)
-    assert data[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
-    assert data[1].sequences == []
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+
+        writer = AnnotationWriter(
+            TaskType.SEQUENCE,
+            label=ALPHANUMERIC_VOCAB,
+            task_dir=tmp_path / "sequence",
+        )
+        writer.append(
+            filename="batch1_crop_plate/27993412_car0_inst0.jpg",
+            width=224,
+            height=128,
+            sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
+        )
+        writer.append(
+            filename="batch1_crop_plate/empty_seq.jpg",
+            width=224,
+            height=128,
+            sequences=[],
+        )
+        writer.save()
+
+        assert not writer.meta_path.exists()
+        assert writer.vocab_path.is_file()
+        assert writer.vocab_path.name == ANNOTATION_VOCAB_FILENAME
+        assert writer.vocab_path.read_text(encoding="utf-8") == ALPHANUMERIC_VOCAB.read_text(
+            encoding="utf-8"
+        )
+
+        data, label, rows = _read_annotations(writer, expected_count=2)
+        assert label == {"vocab": ANNOTATION_VOCAB_FILENAME}
+        assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
+        assert rows[1]["sequences"] == []
+        assert isinstance(data[0], SequenceAnnotation)
+        assert data[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
+        assert data[1].sequences == []
+
+
+def test_sequence_unknown_token_raises():
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        writer = AnnotationWriter(
+            TaskType.SEQUENCE,
+            label=ALPHANUMERIC_VOCAB,
+            task_dir=Path(tmp) / "sequence",
+        )
+        try:
+            writer.append(
+                filename="bad.jpg",
+                width=224,
+                height=128,
+                sequences=["B", "z"],
+            )
+            raised = False
+        except AnnotationFormatError:
+            raised = True
+        assert raised
+
+
+def test_sequence_vocab_file_format():
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+
+        multi_token = tmp_path / "bad_multi.txt"
+        multi_token.write_text("A B\n", encoding="utf-8")
+        try:
+            AnnotationWriter(
+                TaskType.SEQUENCE,
+                label=multi_token,
+                task_dir=tmp_path / "sequence",
+            )
+            raised = False
+        except AnnotationFormatError:
+            raised = True
+        assert raised
+
+        duplicate = tmp_path / "bad_dup.txt"
+        duplicate.write_text("A\nA\n", encoding="utf-8")
+        try:
+            AnnotationWriter(
+                TaskType.SEQUENCE,
+                label=duplicate,
+                task_dir=tmp_path / "sequence",
+            )
+            raised = False
+        except AnnotationFormatError:
+            raised = True
+        assert raised
+
+        trailing_space = tmp_path / "bad_space.txt"
+        trailing_space.write_text("A \n", encoding="utf-8")
+        try:
+            AnnotationWriter(
+                TaskType.SEQUENCE,
+                label=trailing_space,
+                task_dir=tmp_path / "sequence",
+            )
+            raised = False
+        except AnnotationFormatError:
+            raised = True
+        assert raised
+
+        empty = tmp_path / "bad_empty.txt"
+        empty.write_text("\n\n", encoding="utf-8")
+        try:
+            AnnotationWriter(
+                TaskType.SEQUENCE,
+                label=empty,
+                task_dir=tmp_path / "sequence",
+            )
+            raised = False
+        except AnnotationFormatError:
+            raised = True
+        assert raised
+
+
+def test_sequence_reader_rejects_unknown_token():
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        writer = AnnotationWriter(
+            TaskType.SEQUENCE,
+            label=ASSETS_DIR / "digits_vocab.txt",
+            task_dir=tmp_path / "sequence",
+        )
+        writer.append(
+            filename="ok.jpg",
+            width=224,
+            height=128,
+            sequences=["1", "2", "3"],
+        )
+        writer.save()
+
+        writer.data_path.write_text(
+            writer.data_path.read_text(encoding="utf-8")
+            + '{"filename":"bad.jpg","width":224,"height":128,"sequences":["1","X"]}\n',
+            encoding="utf-8",
+        )
+        reader = AnnotationReader(TaskType.SEQUENCE, writer.save_dir())
+        assert reader.validate() is False
 
 
 def run_all():
@@ -600,6 +730,9 @@ def run_all():
     test_vlm_annotation_format()
     test_conversation_annotation_format()
     test_sequence_annotation_format()
+    test_sequence_unknown_token_raises()
+    test_sequence_vocab_file_format()
+    test_sequence_reader_rejects_unknown_token()
     test_action_annotation_format()
     with tempfile.TemporaryDirectory() as tmp:
         test_reader_validate_returns_false_on_invalid_data(Path(tmp))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, Mapping, Sequence
@@ -14,6 +15,7 @@ from .annotation_format import (
     ClassificationAnnotation,
     DetectionAnnotation,
     RelationshipAnnotation,
+    SequenceAnnotation,
     TaskType,
 )
 
@@ -23,6 +25,7 @@ SCHEMA_BASE_URL = (
 ANNOTATION_SCHEMA_ID = f"{SCHEMA_BASE_URL}/annotation_data.json"
 ANNOTATION_DATA_FILENAME = "annotation_data.jsonl"
 ANNOTATION_META_FILENAME = "annotation_meta.json"
+ANNOTATION_VOCAB_FILENAME = "annotation_vocab.txt"
 
 _CATEGORY_ENTRY_KEYS = {
     "id_key": "category_id",
@@ -52,6 +55,14 @@ def meta_path_for(
 ) -> Path:
     """Default label-meta (vocabulary) path under a task directory."""
     return Path(task_dir) / task_meta_filename
+
+
+def vocab_path_for(
+    task_dir: str | Path,
+    task_vocab_filename: str = ANNOTATION_VOCAB_FILENAME,
+) -> Path:
+    """Default sequence vocabulary path under a task directory."""
+    return Path(task_dir) / task_vocab_filename
 
 
 @dataclass(frozen=True)
@@ -407,9 +418,101 @@ class RelationshipLabelDict(TaskLabelDict):
                 )
 
 
+def _load_vocab_tokens(path: str | Path) -> list[str]:
+    """Load one token per line from a vocabulary file."""
+    tokens: list[str] = []
+    seen: set[str] = set()
+    vocab_path = Path(path)
+    with vocab_path.open(encoding="utf-8") as f:
+        for lineno, line in enumerate(f, start=1):
+            content = line.rstrip("\n\r")
+            if not content:
+                continue
+            if content.lstrip().startswith("#"):
+                continue
+            if content != content.strip():
+                raise AnnotationFormatError(
+                    f"{vocab_path}:{lineno} vocab line must not have leading or trailing whitespace"
+                )
+            if any(ch.isspace() for ch in content):
+                raise AnnotationFormatError(
+                    f"{vocab_path}:{lineno} vocab line must contain exactly one token"
+                )
+            token = content
+            if token in seen:
+                raise AnnotationFormatError(
+                    f"{vocab_path}:{lineno} duplicate vocab token={token!r}"
+                )
+            seen.add(token)
+            tokens.append(token)
+    if not tokens:
+        raise AnnotationFormatError(f"{vocab_path}: vocabulary file is empty")
+    return tokens
+
+
+class SequenceLabelDict(TaskLabelDict):
+    """Token vocabulary for sequence tasks (external file only)."""
+
+    def __init__(self, *, vocab_path: str | Path) -> None:
+        path = Path(vocab_path)
+        if not path.is_file():
+            raise AnnotationFormatError(f"sequence vocab file not found: {path}")
+        self.vocab_path = path
+        self._tokens = _load_vocab_tokens(path)
+        self._vocab_set = set(self._tokens)
+
+    @property
+    def vocab_set(self) -> set[str]:
+        return self._vocab_set
+
+    @classmethod
+    def from_writer_label(
+        cls,
+        label: str | Path | Mapping[str, Any],
+    ) -> SequenceLabelDict:
+        if isinstance(label, (str, Path)):
+            source = Path(label)
+        elif isinstance(label, dict):
+            if "vocab" not in label:
+                raise AnnotationFormatError("sequence label requires a vocabulary file path")
+            source = Path(label["vocab"])
+        else:
+            raise AnnotationFormatError("sequence label must be a vocabulary file path")
+        if not source.is_file():
+            raise AnnotationFormatError(f"sequence vocab file not found: {source}")
+        return cls(vocab_path=source)
+
+    def to_label(self) -> dict[str, Any]:
+        return {"vocab": ANNOTATION_VOCAB_FILENAME}
+
+    def to_data(self) -> dict[str, Any]:
+        raise AnnotationFormatError("sequence vocabulary is stored in annotation_vocab.txt")
+
+    def save(self, task_dir: str | Path) -> None:
+        target_dir = Path(task_dir)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(self.vocab_path, target_dir / ANNOTATION_VOCAB_FILENAME)
+
+    @classmethod
+    def load(cls, task_dir: str | Path) -> SequenceLabelDict:
+        vocab_path = vocab_path_for(task_dir)
+        if not vocab_path.is_file():
+            raise AnnotationFormatError(f"missing vocabulary file: {vocab_path}")
+        return cls(vocab_path=vocab_path)
+
+    def validate_annotation(self, annotation: BaseAnnotation) -> None:
+        if not isinstance(annotation, SequenceAnnotation):
+            return
+        for token in annotation.sequences:
+            if token not in self.vocab_set:
+                raise AnnotationFormatError(
+                    f"unknown sequence token={token!r}; token must appear in vocabulary file"
+                )
+
+
 @dataclass(frozen=True)
 class NoLabelDict(TaskLabelDict):
-    """Placeholder for tasks without label vocabulary (VLM, conversation, sequence)."""
+    """Placeholder for tasks without label vocabulary (VLM, conversation)."""
 
     def to_label(self) -> dict[str, Any]:
         return {}
@@ -433,13 +536,16 @@ _LABEL_DICT_BY_TASK: dict[TaskType, type[TaskLabelDict]] = {
 
 def build_label_dict(
     task_type: TaskType,
-    label: dict[str, Any] | Mapping[int, Name | str] | None,
+    label: dict[str, Any] | Mapping[int, Name | str] | str | Path | None,
 ) -> TaskLabelDict:
     """Build a task-specific label dictionary from Writer ``label``."""
     if not task_type.has_label_dict:
         return NoLabelDict()
     if label is None:
         raise AnnotationFormatError(f"{task_type.value} requires label")
+
+    if task_type is TaskType.SEQUENCE:
+        return SequenceLabelDict.from_writer_label(label)  # type: ignore[arg-type]
 
     if task_type is TaskType.RELATIONSHIP:
         if not isinstance(label, dict):
@@ -464,9 +570,14 @@ def load_label_dict(
     *,
     task_meta_filename: str = ANNOTATION_META_FILENAME,
 ) -> TaskLabelDict | None:
-    """Load ``task_meta_filename`` under ``task_dir``; return ``None`` when not applicable."""
+    """Load label vocabulary under ``task_dir``; return ``None`` when not applicable."""
     if not task_type.has_label_dict:
         return None
+    if task_type is TaskType.SEQUENCE:
+        vocab_path = vocab_path_for(task_dir)
+        if not vocab_path.is_file():
+            raise AnnotationFormatError(f"missing vocabulary file: {vocab_path}")
+        return SequenceLabelDict.load(task_dir)
     meta_path = meta_path_for(task_dir, task_meta_filename)
     if not meta_path.is_file():
         raise AnnotationFormatError(f"missing label dictionary: {meta_path}")

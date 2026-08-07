@@ -1,6 +1,6 @@
 # Annotation format examples
 
-Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory.
+Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory (sequence tasks use `annotation_vocab.txt` instead).
 
 `bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` entries are `[x, y, visibility]` (`visibility`: 0/1/2). `segmentation` follows pycocotools RLE (`size`: `[height, width]`).
 
@@ -218,7 +218,17 @@ No `annotation_meta.json`.
 
 ## sequence
 
-No `annotation_meta.json`.
+**annotation_vocab.txt** (exactly one token per line; copied from the Writer `label` path on save). Example vocab files: [assets/alphanumeric_vocab.txt](assets/alphanumeric_vocab.txt), [assets/digits_vocab.txt](assets/digits_vocab.txt), [assets/letters_vocab.txt](assets/letters_vocab.txt).
+
+```
+0
+1
+B
+P
+D
+V
+7
+```
 
 **annotation_data.jsonl**
 

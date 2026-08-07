@@ -19,13 +19,13 @@ It supports two primary workflows:
 | relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}` | `RelationshipAnnotation`   |
 | vlm            | `TaskType.VLM`            | —                                         | `VlmAnnotation`            |
 | conversation   | `TaskType.CONVERSATION`   | —                                         | `ConversationAnnotation`   |
-| sequence       | `TaskType.SEQUENCE`       | —                                         | `SequenceAnnotation`       |
+| sequence       | `TaskType.SEQUENCE`       | `"/path/to/vocab.txt"` → `annotation_vocab.txt` | `SequenceAnnotation`       |
 | action         | `TaskType.ACTION`         | `{id: Name(...)}`                         | `ActionAnnotation`         |
 
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
 
-Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json).
+Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json). Sequence tasks use **`annotation_vocab.txt`** instead of `annotation_meta.json`.
 
 ## Install
 
@@ -279,10 +279,15 @@ data, label = AnnotationReader(
 
 **Sequence**
 
+Vocabulary is provided as an external file and copied to the output directory as `annotation_vocab.txt`. The file must contain **exactly one token per line** (no spaces/tabs within a line). See [assets/](assets/) for examples such as `alphanumeric_vocab.txt`. Each token in `sequences` must appear in the vocabulary file; validation runs on `append()` and on read.
+
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
 
-writer = AnnotationWriter(TaskType.SEQUENCE)
+writer = AnnotationWriter(
+    TaskType.SEQUENCE,
+    label="/path/to/vocab.txt",
+)
 writer.append(
     filename="batch1_crop_plate/27993412_car0_inst0.jpg",
     width=224,
@@ -293,6 +298,7 @@ writer.save()
 data, label = AnnotationReader(
     TaskType.SEQUENCE, writer.save_dir()
 ).load()
+assert label == {"vocab": "annotation_vocab.txt"}
 ```
 
 

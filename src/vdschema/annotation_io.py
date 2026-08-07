@@ -15,11 +15,13 @@ from .annotation_dict import (
     ANNOTATION_DATA_FILENAME,
     ANNOTATION_META_FILENAME,
     NoLabelDict,
+    SequenceLabelDict,
     TaskLabelDict,
     build_label_dict,
     data_path_for,
     load_label_dict,
     meta_path_for,
+    vocab_path_for,
 )
 from .annotation_format import AnnotationFormatError, BaseAnnotation, TaskType
 
@@ -44,7 +46,7 @@ class AnnotationWriter:
     def __init__(
         self,
         task_type: TaskType,
-        label: dict[str, Any] | dict[int, Any] | None = None,
+        label: dict[str, Any] | dict[int, Any] | str | Path | None = None,
         task_dir: str | Path = DEFAULT_OUTPUT_DIR,
         *,
         task_data_filename: str = ANNOTATION_DATA_FILENAME,
@@ -71,6 +73,11 @@ class AnnotationWriter:
     def meta_path(self) -> Path:
         """Path to the label-meta (vocabulary) file."""
         return meta_path_for(self.task_dir, self.task_meta_filename)
+
+    @property
+    def vocab_path(self) -> Path:
+        """Path to the sequence vocabulary file."""
+        return vocab_path_for(self.task_dir)
 
     def append_annotation(self, annotation: BaseAnnotation) -> BaseAnnotation:
         if not isinstance(annotation, self.annotation_cls):
@@ -105,7 +112,9 @@ class AnnotationWriter:
                     )
                     + "\n"
                 )
-        if not isinstance(self.label_dict, NoLabelDict):
+        if isinstance(self.label_dict, SequenceLabelDict):
+            self.label_dict.save(self.task_dir)
+        elif not isinstance(self.label_dict, NoLabelDict):
             self.label_dict.save(self.meta_path)
 
 
@@ -135,6 +144,11 @@ class AnnotationReader:
     def meta_path(self) -> Path:
         """Path to the label-meta (vocabulary) file."""
         return meta_path_for(self.task_dir, self.task_meta_filename)
+
+    @property
+    def vocab_path(self) -> Path:
+        """Path to the sequence vocabulary file."""
+        return vocab_path_for(self.task_dir)
 
     def iter_raw(self) -> Iterator[dict[str, Any]]:
         path = self.data_path

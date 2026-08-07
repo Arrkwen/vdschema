@@ -267,6 +267,11 @@
         "text": {
           "type": "string",
           "description": "该实例的简短文本描述或对应 OCR 的文字（可选）。"
+        },
+        "is_ignored": {
+          "type": "boolean",
+          "description": "训练阶段是否忽略该实例（不贡献梯度）。",
+          "default": false
         }
       },
       "required": [

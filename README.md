@@ -9,17 +9,19 @@ It supports two primary workflows:
 
 ## Supported tasks
 
-| Task           | `TaskType`                | `label`                               | Python type                  |
-| -------------- | --------------------------- | ------------------------------------------- | ---------------------------- |
-| detection      | `TaskType.DETECTION`      | `{id: Name(...)}`                              | `DetectionAnnotation`      |
-| keypoint       | `TaskType.KEYPOINT`       | `{id: Name(...)}`                              | `KeypointAnnotation`       |
-| segmentation   | `TaskType.SEGMENTATION`   | `{id: Name(...)}`                              | `SegmentationAnnotation`   |
-| classification | `TaskType.CLASSIFICATION` | `{head: {id: Name(...)}}`                      | `ClassificationAnnotation` |
+
+| Task           | `TaskType`                | `label`                                   | Python type                |
+| -------------- | ------------------------- | ----------------------------------------- | -------------------------- |
+| detection      | `TaskType.DETECTION`      | `{id: Name(...)}`                         | `DetectionAnnotation`      |
+| keypoint       | `TaskType.KEYPOINT`       | `{id: Name(...)}`                         | `KeypointAnnotation`       |
+| segmentation   | `TaskType.SEGMENTATION`   | `{id: Name(...)}`                         | `SegmentationAnnotation`   |
+| classification | `TaskType.CLASSIFICATION` | `{head: {id: Name(...)}}`                 | `ClassificationAnnotation` |
 | relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}` | `RelationshipAnnotation`   |
-| vlm            | `TaskType.VLM`            | —                                          | `VlmAnnotation`            |
-| conversation   | `TaskType.CONVERSATION`   | —                                          | `ConversationAnnotation`   |
-| sequence       | `TaskType.SEQUENCE`       | —                                          | `SequenceAnnotation`       |
-| action         | `TaskType.ACTION`         | `{id: Name(...)}`                              | `ActionAnnotation`         |
+| vlm            | `TaskType.VLM`            | —                                         | `VlmAnnotation`            |
+| conversation   | `TaskType.CONVERSATION`   | —                                         | `ConversationAnnotation`   |
+| sequence       | `TaskType.SEQUENCE`       | —                                         | `SequenceAnnotation`       |
+| action         | `TaskType.ACTION`         | `{id: Name(...)}`                         | `ActionAnnotation`         |
+
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
 
@@ -54,8 +56,7 @@ pip install -e .
 
 Expand a task below for a full example:
 
-<details open>
-<summary><strong>Detection</strong></summary>
+**Detection**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -76,6 +77,7 @@ writer.append(
     height=480,
     instances=[
         {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
+        {"id": 1, "category_id": 1, "bbox": [160, 190, 300, 560]， "is_ignored": True},
     ],
 )
 # step3: save annotation info, by default, written to output/{task_type}/,can override by setting task_dir in AnnotationWriter.
@@ -90,10 +92,9 @@ print(label[1].name, label[1].alias)  # person ('human',)
 print(data) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
 ```
 
-</details>
 
-<details>
-<summary><strong>Keypoint</strong></summary>
+
+**Keypoint**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -118,10 +119,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Segmentation</strong></summary>
+
+**Segmentation**
 
 ```python
 from vdschema import (
@@ -160,10 +160,9 @@ writer.save()
 data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Classification</strong></summary>
+
+**Classification**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -190,10 +189,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Relationship</strong></summary>
+
+**Relationship**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -221,10 +219,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>VLM</strong></summary>
+
+**VLM**
 
 No label dictionary file. Omit `label` for tasks without vocabulary.
 
@@ -245,10 +242,9 @@ data, label = AnnotationReader(
 assert label is None
 ```
 
-</details>
 
-<details>
-<summary><strong>Conversation</strong></summary>
+
+**Conversation**
 
 ```python
 from vdschema import (
@@ -279,10 +275,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Sequence</strong></summary>
+
+**Sequence**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, TaskType
@@ -300,10 +295,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Action</strong></summary>
+
+**Action**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -334,7 +328,7 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
+
 
 ### More examples
 

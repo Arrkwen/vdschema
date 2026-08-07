@@ -70,7 +70,12 @@ def test_detection_annotation_format():
         height=480,
         instances=[
             {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
-            {"id": 1, "category_id": 1, "bbox": Bbox.from_xyxy([120, 30, 200, 180])},
+            {
+                "id": 1,
+                "category_id": 1,
+                "bbox": Bbox.from_xyxy([120, 30, 200, 180]),
+                "is_ignored": True,
+            },
             {"id": 2, "category_id": 2, "bbox": Bbox.from_xywh([120, 30, 80, 150])},
             {"id": 3, "category_id": 4, "bbox": Bbox.from_cxcywh([160, 105, 80, 150])},
         ],
@@ -106,6 +111,10 @@ def test_detection_annotation_format():
     assert rows[1]["instances"][1]["bbox"] == [220.0, 80.0, 360.0, 300.0]
     assert isinstance(data[0], DetectionAnnotation)
     assert data[0].instances[1].bbox.to_list() == [120.0, 30.0, 200.0, 180.0]
+    assert data[0].instances[0].is_ignored is False
+    assert data[0].instances[1].is_ignored is True
+    assert rows[0]["instances"][0]["is_ignored"] is False
+    assert rows[0]["instances"][1]["is_ignored"] is True
     assert data[1].instances[1].text == "AB0000FF"
     assert data[2].instances == []
     assert label[1].name == "person"

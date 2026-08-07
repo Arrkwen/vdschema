@@ -193,7 +193,7 @@ class Keypoint:
 class Instance:
     """
     annotation_data instance。
-    Required: id / category_id / bbox. Optional: keypoints / segmentation / text.
+    Required: id / category_id / bbox. Optional: keypoints / segmentation / text / is_ignored.
     """
 
     id: int
@@ -202,6 +202,7 @@ class Instance:
     keypoints: dict[str, list[Keypoint]] | None = None
     segmentation: SegmentationRLE | None = None
     text: str | None = None
+    is_ignored: bool = False
 
     def validate(self) -> None:
         if self.id < 0 or self.category_id < 0:
@@ -234,6 +235,7 @@ class Instance:
             out["segmentation"] = self.segmentation.to_dict()
         if self.text is not None:
             out["text"] = self.text
+        out["is_ignored"] = bool(self.is_ignored)
         return out
 
     @classmethod
@@ -256,6 +258,7 @@ class Instance:
             keypoints=kps,
             segmentation=seg,
             text=raw.get("text"),
+            is_ignored=bool(raw.get("is_ignored", False)),
         )
 
 
@@ -548,6 +551,7 @@ def _instance(raw: Any) -> Instance:
         keypoints=_keypoints(data.get("keypoints")),
         segmentation=_segmentation(_segmentation_field(data)),
         text=data.get("text"),
+        is_ignored=bool(data.get("is_ignored", False)),
     )
 
 

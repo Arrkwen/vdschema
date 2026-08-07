@@ -1,0 +1,137 @@
+"""Tests for vdswitch CLI converters."""
+
+from __future__ import annotations
+
+import shutil
+from pathlib import Path
+
+from vdschema import AnnotationReader, Source, TaskType, switch
+
+
+def test_vdswitch_det_monolith(det_legacy_dir: Path, tmp_path: Path) -> None:
+    out = tmp_path / "vdschema_det"
+    switch(
+        task=TaskType.DETECTION,
+        source=Source.MONOLITH,
+        input_data=det_legacy_dir / "meta/train_baseline.jsonl",
+        input_label=det_legacy_dir / "meta/label_dict.json",
+        output=out,
+        root=det_legacy_dir,
+    )
+    data, label = AnnotationReader(
+        TaskType.DETECTION,
+        out,
+        task_data_filename="train_baseline.jsonl",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert data
+    assert label
+    assert data[0].width == 320
+    assert data[0].height == 240
+
+
+def test_vdswitch_det_up_alias(det_legacy_dir: Path, tmp_path: Path) -> None:
+    out = tmp_path / "vdschema_det_up"
+    switch(
+        task=TaskType.DETECTION,
+        source=Source.UP,
+        input_data=det_legacy_dir / "meta/train_baseline.jsonl",
+        input_label=det_legacy_dir / "meta/label_dict.json",
+        output=out,
+    )
+    assert (out / "train_baseline.jsonl").is_file()
+    assert (out / "label_dict.json").is_file()
+
+
+def test_vdswitch_det_same_dir(det_legacy_dir: Path, tmp_path: Path) -> None:
+    data = tmp_path / "train_baseline.jsonl"
+    label = tmp_path / "label_dict.json"
+    original_data = (det_legacy_dir / "meta/train_baseline.jsonl").read_text(encoding="utf-8")
+    original_label = (det_legacy_dir / "meta/label_dict.json").read_text(encoding="utf-8")
+    data.write_text(original_data, encoding="utf-8")
+    label.write_text(original_label, encoding="utf-8")
+    images = tmp_path / "images"
+    images.mkdir()
+    shutil.copy(det_legacy_dir / "images/sample.jpg", images / "sample.jpg")
+
+    switch(
+        task=TaskType.DETECTION,
+        source=Source.MONOLITH,
+        input_data=data,
+        input_label=label,
+        output=tmp_path,
+    )
+    assert (tmp_path / "train_baseline_vdschema.jsonl").is_file()
+    assert (tmp_path / "label_dict_vdschema.json").is_file()
+
+
+def test_vdswitch_det_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) -> None:
+    train = det_legacy_dir / "meta/train_baseline.jsonl"
+    test = det_legacy_dir / "meta/test_baseline.jsonl"
+    shutil.copy(train, test)
+    out = tmp_path / "vdschema_det_multi"
+    switch(
+        task=TaskType.DETECTION,
+        source=Source.MONOLITH,
+        input_data=[train, test],
+        input_label=det_legacy_dir / "meta/label_dict.json",
+        output=out,
+        root=det_legacy_dir,
+    )
+    assert (out / "train_baseline.jsonl").is_file()
+    assert (out / "test_baseline.jsonl").is_file()
+    assert (out / "label_dict.json").is_file()
+
+
+def test_vdswitch_cli_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) -> None:
+    from vdswitch.cli import main
+
+    train = det_legacy_dir / "meta/train_baseline.jsonl"
+    test = det_legacy_dir / "meta/test_baseline.jsonl"
+    shutil.copy(train, test)
+    out = tmp_path / "cli_out"
+    assert (
+        main(
+            [
+                "--task",
+                "detection",
+                "--source",
+                "monolith",
+                "--input-data",
+                str(train),
+                str(test),
+                "--input-label",
+                str(det_legacy_dir / "meta/label_dict.json"),
+                "--output",
+                str(out),
+                "--root",
+                str(det_legacy_dir),
+            ]
+        )
+        == 0
+    )
+    assert (out / "train_baseline.jsonl").is_file()
+    assert (out / "test_baseline.jsonl").is_file()
+
+
+def test_vdswitch_action(act_legacy_dir: Path, tmp_path: Path) -> None:
+    out = tmp_path / "vdschema_act"
+    switch(
+        task=TaskType.ACTION,
+        source=Source.UP,
+        input_data=act_legacy_dir / "meta/video_train.txt",
+        input_label=act_legacy_dir / "meta/label_dict.json",
+        output=out,
+        root=act_legacy_dir,
+    )
+    data, label = AnnotationReader(
+        TaskType.ACTION,
+        out,
+        task_data_filename="video_train.txt",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert data
+    assert label
+    assert data[0].width == 640
+    assert data[0].height == 480
+    assert data[0].actions[0].category_id == 1

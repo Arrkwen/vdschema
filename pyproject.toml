@@ -1,6 +1,6 @@
 [project]
 name = "vdschema"
-dynamic = ["version"]
+version = "0.4.2"
 description = "Unified annotation schema and JSONL IO for vision datasets."
 readme = "README.md"
 authors = [
@@ -9,6 +9,8 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",
+    "opencv-python-headless>=4.8",
+    "pillow>=10.0",
     "pycocotools>=2.0.7",
 ]
 
@@ -29,15 +31,21 @@ dev = [
     "twine>=5.0.0",
 ]
 
+
+[project.scripts]
+vdswitch = "vdswitch.cli:main"
+
 [tool.setuptools]
 package-dir = { "" = "src" }
-packages = ["vdschema"]
-
-[tool.setuptools.dynamic]
-version = { attr = "vdschema._version.__version__" }
+packages = ["vdschema", "vdswitch", "vdswitch.converters", "vdswitch.utils"]
 
 [tool.setuptools.package-data]
 vdschema = ["schema/*.json", "schema/*.md"]
+
+[[tool.uv.index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

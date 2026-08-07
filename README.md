@@ -10,22 +10,22 @@ It supports two primary workflows:
 ## Supported tasks
 
 
-| Task           | `TaskType`                | `label`                                   | Python type                |
-| -------------- | ------------------------- | ----------------------------------------- | -------------------------- |
-| detection      | `TaskType.DETECTION`      | `{id: Name(...)}`                         | `DetectionAnnotation`      |
-| keypoint       | `TaskType.KEYPOINT`       | `{id: Name(...)}`                         | `KeypointAnnotation`       |
-| segmentation   | `TaskType.SEGMENTATION`   | `{id: Name(...)}`                         | `SegmentationAnnotation`   |
-| classification | `TaskType.CLASSIFICATION` | `{head: {id: Name(...)}}`                 | `ClassificationAnnotation` |
-| relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}` | `RelationshipAnnotation`   |
-| vlm            | `TaskType.VLM`            | —                                         | `VlmAnnotation`            |
-| conversation   | `TaskType.CONVERSATION`   | —                                         | `ConversationAnnotation`   |
+| Task           | `TaskType`                | `label`                                         | Python type                |
+| -------------- | ------------------------- | ----------------------------------------------- | -------------------------- |
+| detection      | `TaskType.DETECTION`      | `{id: Name(...)}`                               | `DetectionAnnotation`      |
+| keypoint       | `TaskType.KEYPOINT`       | `{id: Name(...)}`                               | `KeypointAnnotation`       |
+| segmentation   | `TaskType.SEGMENTATION`   | `{id: Name(...)}`                               | `SegmentationAnnotation`   |
+| classification | `TaskType.CLASSIFICATION` | `{head: {id: Name(...)}}`                       | `ClassificationAnnotation` |
+| relationship   | `TaskType.RELATIONSHIP`   | `{detection: {...}, relationship: {...}}`       | `RelationshipAnnotation`   |
+| vlm            | `TaskType.VLM`            | —                                               | `VlmAnnotation`            |
+| conversation   | `TaskType.CONVERSATION`   | —                                               | `ConversationAnnotation`   |
 | sequence       | `TaskType.SEQUENCE`       | `"/path/to/vocab.txt"` → `annotation_vocab.txt` | `SequenceAnnotation`       |
-| action         | `TaskType.ACTION`         | `{id: Name(...)}`                         | `ActionAnnotation`         |
+| action         | `TaskType.ACTION`         | `{id: Name(...)}`                               | `ActionAnnotation`         |
 
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
 
-Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json). Sequence tasks use **`annotation_vocab.txt`** instead of `annotation_meta.json`.
+Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json). Sequence tasks use `**annotation_vocab.txt`** instead of `annotation_meta.json`.
 
 ## Install
 
@@ -92,8 +92,6 @@ print(label[1].name, label[1].alias)  # person ('human',)
 print(data) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
 ```
 
-
-
 **Keypoint**
 
 ```python
@@ -118,8 +116,6 @@ data, label = AnnotationReader(
     TaskType.KEYPOINT, writer.save_dir()
 ).load()
 ```
-
-
 
 **Segmentation**
 
@@ -160,8 +156,6 @@ writer.save()
 data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
-
-
 **Classification**
 
 ```python
@@ -188,8 +182,6 @@ data, label = AnnotationReader(
     TaskType.CLASSIFICATION, writer.save_dir()
 ).load()
 ```
-
-
 
 **Relationship**
 
@@ -219,8 +211,6 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-
-
 **VLM**
 
 No label dictionary file. Omit `label` for tasks without vocabulary.
@@ -241,8 +231,6 @@ data, label = AnnotationReader(
 ).load()
 assert label is None
 ```
-
-
 
 **Conversation**
 
@@ -275,8 +263,6 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-
-
 **Sequence**
 
 Vocabulary is provided as an external file and copied to the output directory as `annotation_vocab.txt`. The file must contain **exactly one token per line** (no spaces/tabs within a line). See [assets/](assets/) for examples such as `alphanumeric_vocab.txt`. Each token in `sequences` must appear in the vocabulary file; validation runs on `append()` and on read.
@@ -300,8 +286,6 @@ data, label = AnnotationReader(
 ).load()
 assert label == {"vocab": "annotation_vocab.txt"}
 ```
-
-
 
 **Action**
 
@@ -334,8 +318,6 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-
-
 ### More examples
 
 Full runnable tests: [tests/test_annotation_format.py](tests/test_annotation_format.py). Run:
@@ -343,6 +325,63 @@ Full runnable tests: [tests/test_annotation_format.py](tests/test_annotation_for
 ```bash
 uv run pytest
 ```
+
+## vdswitch
+
+同步安装的一个标注数据转换工具，用于将以下格式的数据集，转为 vdschema 格式的标注数据集
+
+- [x] monolith
+- [x] unitied-perception
+- [ ] coco
+- [ ] yolo
+
+```bash
+vdswitch \
+  --task detection \
+  --source monolith \
+  --root  relative_root \
+  --input-data /path/to/train.jsonl /path/to/test.jsonl \
+  --input-label /path/to/label_dict.json \
+  --output /path/to/output_dir
+```
+
+**Python API**
+
+```python
+from vdschema import AnnotationReader, Source, TaskType, switch
+
+switch(
+    task=TaskType.DETECTION,
+    source=Source.MONOLITH,
+    input_data=[
+        "/path/to/meta/train.jsonl",
+        "/path/to/meta/test.jsonl",
+    ],
+    input_label="/path/to/meta/label_dict.json",
+    output="/path/to/output_dir",
+    root="/path/to/dataset",  # 数据集根目录；与标注中的路径拼接，定位图片/视频绝对路径
+)
+
+data, label = AnnotationReader(TaskType.DETECTION, out).load()
+```
+
+更多用例见 [tests/test_vdswitch.py](tests/test_vdswitch.py)。
+
+
+| Flag            | Values                                  | Notes                                                                                      |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `--task`        | `detection`, `classification`, `action` | vdschema task type                                                                         |
+| `--source`      | `monolith`, `up`                        | source annotation type                                                                     |
+| `--input-data`  | one or more file paths                  | annotation data file path(s)                                                               |
+| `--input-label` | file path                               | annotation labelfile path                                                                  |
+| `--output`      | directory                               | output directory; see output filename rules below                                          |
+| `--root`        | directory                               | dataset root; joined with media paths in annotations to resolve absolute image/video paths |
+
+
+**Output filenames**
+
+- If `--output` equals the directory of `--input-data`, write `{stem}_vdschema{suffix}` next to the source files (e.g. `train_vdschema.jsonl`, `label_dict_vdschema.json`).
+- Otherwise, reuse the source names in the output directory (e.g. `train.jsonl`, `label_dict.json`).
 
 ## Development
 
@@ -357,7 +396,7 @@ uv build
 
 ## Publishing
 
-1. Bump `__version__` in `src/vdschema/_version.py` (used at runtime and by `uv build`).
+1. Bump `version` in `pyproject.toml` (used at runtime via package metadata and by `uv build`).
 2. Create a **Published** GitHub Release with a new tag (e.g. `0.1.0`).
 
 The [publish.yml](.github/workflows/publish.yml) workflow runs on release publish and uploads the build to PyPI. You can also re-run it manually from Actions → **vdschema-publisher**.

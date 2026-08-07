@@ -450,14 +450,12 @@ class ActionEvent:
     track_id: int
     start_idx: int
     end_idx: int
-    description: str
     tracks: list[TrackItem] = field(default_factory=list)
+    description: str | None = None
 
     def validate(self) -> None:
         if self.end_idx < self.start_idx:
             raise AnnotationFormatError("end_idx must be >= start_idx")
-        if not self.description:
-            raise AnnotationFormatError("action description must not be empty")
         if not self.tracks:
             raise AnnotationFormatError("tracks must not be empty")
         for tr in self.tracks:
@@ -465,14 +463,16 @@ class ActionEvent:
 
     def to_dict(self) -> dict[str, Any]:
         self.validate()
-        return {
+        out: dict[str, Any] = {
             "category_id": int(self.category_id),
             "track_id": int(self.track_id),
             "start_idx": int(self.start_idx),
             "end_idx": int(self.end_idx),
-            "description": self.description,
             "tracks": [t.to_dict() for t in self.tracks],
         }
+        if self.description is not None:
+            out["description"] = self.description
+        return out
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> ActionEvent:
@@ -481,8 +481,8 @@ class ActionEvent:
             track_id=int(raw["track_id"]),
             start_idx=int(raw["start_idx"]),
             end_idx=int(raw["end_idx"]),
-            description=raw["description"],
             tracks=[TrackItem.from_dict(t) for t in raw["tracks"]],
+            description=raw.get("description"),
         )
 
 
@@ -624,8 +624,8 @@ def _action_event(raw: Any) -> ActionEvent:
         track_id=int(data["track_id"]),
         start_idx=int(data["start_idx"]),
         end_idx=int(data["end_idx"]),
-        description=data["description"],
         tracks=[_track_item(item) for item in data["tracks"]],
+        description=data.get("description"),
     )
 
 
@@ -720,8 +720,6 @@ class ClassificationAnnotation(BaseAnnotation):
 
     def validate(self) -> None:
         self.validate_base()
-        if not self.categories:
-            raise AnnotationFormatError("categories must not be empty")
         for category in self.categories:
             category.validate()
 

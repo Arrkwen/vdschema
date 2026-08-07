@@ -1,6 +1,11 @@
 """Unified annotation schema and JSONL IO."""
 
-from ._version import __version__
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("vdschema")
+except PackageNotFoundError:
+    __version__ = "unknown"
 from .annotation_dict import Name
 from .annotation_io import AnnotationReader, AnnotationWriter
 from .annotation_format import (
@@ -22,6 +27,8 @@ from .annotation_format import (
     TaskType,
     VlmAnnotation,
 )
+from vdswitch import switch
+from vdswitch.converters.sources import Source
 
 __all__ = [
     "__version__",
@@ -45,4 +52,6 @@ __all__ = [
     "SegmentationRLE",
     "ConversationRole",
     "ConversationTurn",
+    "Source",
+    "switch",
 ]

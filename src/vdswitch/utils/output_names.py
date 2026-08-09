@@ -24,8 +24,7 @@ def resolve_output_filenames(
     input_data = Path(input_data).expanduser().resolve()
     input_label = Path(input_label).expanduser().resolve()
     output_dir = Path(output_dir).expanduser().resolve()
-    same_dir = output_dir == input_data.parent
     return (
-        output_filename(input_data, same_dir=same_dir),
-        output_filename(input_label, same_dir=same_dir),
+        output_filename(input_data, same_dir=output_dir == input_data.parent),
+        output_filename(input_label, same_dir=output_dir == input_label.parent),
     )

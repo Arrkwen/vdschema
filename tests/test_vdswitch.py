@@ -135,3 +135,70 @@ def test_vdswitch_action(act_legacy_dir: Path, tmp_path: Path) -> None:
     assert data[0].width == 640
     assert data[0].height == 480
     assert data[0].actions[0].category_id == 1
+
+
+def test_vdswitch_sequence(seq_legacy_dir: Path, tmp_path: Path) -> None:
+    out = tmp_path / "vdschema_seq"
+    switch(
+        task=TaskType.SEQUENCE,
+        source=Source.UP,
+        input_data=seq_legacy_dir / "meta/train_baseline.jsonl",
+        input_label=seq_legacy_dir / "meta/vocab.txt",
+        output=out,
+        root=seq_legacy_dir,
+    )
+    data, label = AnnotationReader(
+        TaskType.SEQUENCE,
+        out,
+        task_data_filename="train_baseline.jsonl",
+        task_meta_filename="vocab.txt",
+    ).load()
+    assert data
+    assert label == {"vocab": "vocab.txt"}
+    assert (out / "vocab.txt").read_text(encoding="utf-8") == (
+        seq_legacy_dir / "meta/vocab.txt"
+    ).read_text(encoding="utf-8")
+    assert data[0].width == 224
+    assert data[0].height == 128
+    assert data[0].sequences == ["B", "1", "0"]
+
+
+def test_vdswitch_sequence_same_dir(seq_legacy_dir: Path, tmp_path: Path) -> None:
+    meta = tmp_path / "meta"
+    images = tmp_path / "images"
+    meta.mkdir()
+    images.mkdir()
+    shutil.copy(seq_legacy_dir / "images/sample.jpg", images / "sample.jpg")
+    shutil.copy(seq_legacy_dir / "meta/vocab.txt", meta / "vocab.txt")
+    shutil.copy(seq_legacy_dir / "meta/train_baseline.jsonl", meta / "train_baseline.jsonl")
+
+    switch(
+        task=TaskType.SEQUENCE,
+        source=Source.UP,
+        input_data=meta / "train_baseline.jsonl",
+        input_label=meta / "vocab.txt",
+        output=meta,
+        root=tmp_path,
+    )
+    assert (meta / "train_baseline_vdschema.jsonl").is_file()
+    assert (meta / "vocab_vdschema.txt").is_file()
+    assert not (meta / "annotation_vocab.txt").is_file()
+
+
+def test_vdswitch_sequence_mixed_input_dirs(seq_legacy_dir: Path, tmp_path: Path) -> None:
+    labels = tmp_path / "labels"
+    labels.mkdir()
+    vocab = labels / "vocab.txt"
+    vocab.write_text((seq_legacy_dir / "meta/vocab.txt").read_text(encoding="utf-8"), encoding="utf-8")
+    out = seq_legacy_dir / "meta"
+    switch(
+        task=TaskType.SEQUENCE,
+        source=Source.UP,
+        input_data=seq_legacy_dir / "meta/train_baseline.jsonl",
+        input_label=vocab,
+        output=out,
+        root=seq_legacy_dir,
+    )
+    assert (out / "train_baseline_vdschema.jsonl").is_file()
+    assert (out / "vocab.txt").is_file()
+    assert not (out / "vocab_vdschema.txt").is_file()

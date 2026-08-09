@@ -57,13 +57,28 @@ def meta_path_for(
     return Path(task_dir) / task_meta_filename
 
 
-def vocab_path_for(
-    task_dir: str | Path,
-    task_vocab_filename: str = ANNOTATION_VOCAB_FILENAME,
-) -> Path:
-    """Default sequence vocabulary path under a task directory."""
-    return Path(task_dir) / task_vocab_filename
+def default_meta_filename(task_type: TaskType) -> str:
+    """Return the default label-meta filename for ``task_type``."""
+    if task_type is TaskType.SEQUENCE:
+        return ANNOTATION_VOCAB_FILENAME
+    return ANNOTATION_META_FILENAME
 
+
+def resolve_meta_filename(
+    task_type: TaskType,
+    task_meta_filename: str | None = None,
+) -> str:
+    """Resolve ``task_meta_filename``, applying task-specific defaults when ``None``."""
+    if task_meta_filename is None:
+        return default_meta_filename(task_type)
+    return task_meta_filename
+
+
+def resolve_data_filename(task_data_filename: str | None = None) -> str:
+    """Resolve ``task_data_filename``, using the global default when ``None``."""
+    if task_data_filename is None:
+        return ANNOTATION_DATA_FILENAME
+    return task_data_filename
 
 @dataclass(frozen=True)
 class Name:
@@ -244,6 +259,17 @@ class TaskLabelDict:
             encoding="utf-8",
         )
 
+    @classmethod
+    def from_writer_label(
+        cls,
+        label: dict[str, Any] | Mapping[int, Name | str] | str | Path,
+    ) -> TaskLabelDict:
+        return cls(label)  # type: ignore[arg-type,call-arg]
+
+    @classmethod
+    def load(cls, path: str | Path) -> TaskLabelDict:
+        raise NotImplementedError(f"{cls.__name__}.load is not implemented")
+
     def validate_annotation(self, annotation: BaseAnnotation) -> None:
         return
 
@@ -407,6 +433,23 @@ class RelationshipLabelDict(TaskLabelDict):
             annotation_schema_ref=_schema_ref(raw),
         )
 
+    @classmethod
+    def from_writer_label(
+        cls,
+        label: dict[str, Any] | Mapping[int, Name | str] | str | Path,
+    ) -> RelationshipLabelDict:
+        if not isinstance(label, dict):
+            raise AnnotationFormatError("relationship label must be a mapping")
+        try:
+            return cls(
+                detection=label["detection"],
+                relationship=label["relationship"],
+            )
+        except KeyError as exc:
+            raise AnnotationFormatError(
+                "relationship label requires 'detection' and 'relationship'"
+            ) from exc
+
     def validate_annotation(self, annotation: BaseAnnotation) -> None:
         if not isinstance(annotation, RelationshipAnnotation):
             return
@@ -453,11 +496,17 @@ def _load_vocab_tokens(path: str | Path) -> list[str]:
 class SequenceLabelDict(TaskLabelDict):
     """Token vocabulary for sequence tasks (external file only)."""
 
-    def __init__(self, *, vocab_path: str | Path) -> None:
+    def __init__(
+        self,
+        *,
+        vocab_path: str | Path,
+        output_filename: str | None = None,
+    ) -> None:
         path = Path(vocab_path)
         if not path.is_file():
             raise AnnotationFormatError(f"sequence vocab file not found: {path}")
         self.vocab_path = path
+        self._output_filename = output_filename
         self._tokens = _load_vocab_tokens(path)
         self._vocab_set = set(self._tokens)
 
@@ -483,22 +532,23 @@ class SequenceLabelDict(TaskLabelDict):
         return cls(vocab_path=source)
 
     def to_label(self) -> dict[str, Any]:
-        return {"vocab": ANNOTATION_VOCAB_FILENAME}
+        return {"vocab": self._output_filename or ANNOTATION_VOCAB_FILENAME}
 
     def to_data(self) -> dict[str, Any]:
-        raise AnnotationFormatError("sequence vocabulary is stored in annotation_vocab.txt")
+        raise AnnotationFormatError("sequence vocabulary is stored in an external file")
 
-    def save(self, task_dir: str | Path) -> None:
-        target_dir = Path(task_dir)
-        target_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(self.vocab_path, target_dir / ANNOTATION_VOCAB_FILENAME)
+    def save(self, path: str | Path) -> None:
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(self.vocab_path, target)
+        self._output_filename = target.name
 
     @classmethod
-    def load(cls, task_dir: str | Path) -> SequenceLabelDict:
-        vocab_path = vocab_path_for(task_dir)
+    def load(cls, path: str | Path) -> SequenceLabelDict:
+        vocab_path = Path(path)
         if not vocab_path.is_file():
             raise AnnotationFormatError(f"missing vocabulary file: {vocab_path}")
-        return cls(vocab_path=vocab_path)
+        return cls(vocab_path=vocab_path, output_filename=vocab_path.name)
 
     def validate_annotation(self, annotation: BaseAnnotation) -> None:
         if not isinstance(annotation, SequenceAnnotation):
@@ -531,6 +581,7 @@ _LABEL_DICT_BY_TASK: dict[TaskType, type[TaskLabelDict]] = {
     TaskType.CLASSIFICATION: ClassificationLabelDict,
     TaskType.RELATIONSHIP: RelationshipLabelDict,
     TaskType.ACTION: ActionLabelDict,
+    TaskType.SEQUENCE: SequenceLabelDict,
 }
 
 
@@ -544,41 +595,21 @@ def build_label_dict(
     if label is None:
         raise AnnotationFormatError(f"{task_type.value} requires label")
 
-    if task_type is TaskType.SEQUENCE:
-        return SequenceLabelDict.from_writer_label(label)  # type: ignore[arg-type]
-
-    if task_type is TaskType.RELATIONSHIP:
-        if not isinstance(label, dict):
-            raise AnnotationFormatError("relationship label must be a mapping")
-        try:
-            return RelationshipLabelDict(
-                detection=label["detection"],
-                relationship=label["relationship"],
-            )
-        except KeyError as exc:
-            raise AnnotationFormatError(
-                "relationship label requires 'detection' and 'relationship'"
-            ) from exc
-
     label_cls = _LABEL_DICT_BY_TASK[task_type]
-    return label_cls(label)  # type: ignore[arg-type,call-arg]
+    return label_cls.from_writer_label(label)  # type: ignore[arg-type]
 
 
 def load_label_dict(
     task_type: TaskType,
     task_dir: str | Path,
     *,
-    task_meta_filename: str = ANNOTATION_META_FILENAME,
+    task_meta_filename: str | None = None,
 ) -> TaskLabelDict | None:
     """Load label vocabulary under ``task_dir``; return ``None`` when not applicable."""
     if not task_type.has_label_dict:
         return None
-    if task_type is TaskType.SEQUENCE:
-        vocab_path = vocab_path_for(task_dir)
-        if not vocab_path.is_file():
-            raise AnnotationFormatError(f"missing vocabulary file: {vocab_path}")
-        return SequenceLabelDict.load(task_dir)
-    meta_path = meta_path_for(task_dir, task_meta_filename)
+    resolved_meta_filename = resolve_meta_filename(task_type, task_meta_filename)
+    meta_path = meta_path_for(task_dir, resolved_meta_filename)
     if not meta_path.is_file():
         raise AnnotationFormatError(f"missing label dictionary: {meta_path}")
     return _LABEL_DICT_BY_TASK[task_type].load(meta_path)  # type: ignore[attr-defined]

@@ -31,6 +31,24 @@ def det_legacy_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def seq_legacy_dir(tmp_path: Path) -> Path:
+    root = tmp_path / "seq"
+    images = root / "images"
+    meta = root / "meta"
+    images.mkdir(parents=True)
+    meta.mkdir(parents=True)
+
+    Image.new("RGB", (224, 128), color=(64, 128, 192)).save(images / "sample.jpg")
+    (meta / "vocab.txt").write_text("0\n1\nB\n", encoding="utf-8")
+    (meta / "train_baseline.jsonl").write_text(
+        '{"filename":"sample.jpg","sequences":["B","1","0"],'
+        '"image_width":224,"image_height":128}\n',
+        encoding="utf-8",
+    )
+    return root
+
+
+@pytest.fixture
 def act_legacy_dir(tmp_path: Path) -> Path:
     root = tmp_path / "act"
     video_dir = root / "video"

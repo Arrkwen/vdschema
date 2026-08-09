@@ -46,3 +46,21 @@ def test_resolve_output_filenames_same_dir(tmp_path: Path) -> None:
     )
     assert data_name == "train_baseline_vdschema.jsonl"
     assert label_name == "label_dict_vdschema.json"
+
+
+def test_resolve_output_filenames_mixed_dirs(tmp_path: Path) -> None:
+    data = tmp_path / "data" / "train_baseline.jsonl"
+    label = tmp_path / "labels" / "vocab.txt"
+    out = tmp_path / "data"
+    data.parent.mkdir()
+    label.parent.mkdir()
+    data.touch()
+    label.touch()
+
+    data_name, label_name = resolve_output_filenames(
+        input_data=data,
+        input_label=label,
+        output_dir=out,
+    )
+    assert data_name == "train_baseline_vdschema.jsonl"
+    assert label_name == "vocab.txt"

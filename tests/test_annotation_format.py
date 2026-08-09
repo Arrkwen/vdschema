@@ -40,7 +40,12 @@ def _read_annotations(
     expected_count: int,
 ) -> tuple[list[TAnnotation], dict | None, list[dict[str, Any]]]:
     """Exercise AnnotationReader.iter_raw / iter_annotations / load / validate."""
-    reader = AnnotationReader(writer.task_type, writer.save_dir())
+    reader = AnnotationReader(
+        writer.task_type,
+        writer.save_dir(),
+        task_data_filename=writer.task_data_filename,
+        task_meta_filename=writer.task_meta_filename,
+    )
     raw_rows = list(reader.iter_raw())
     assert len(raw_rows) == expected_count
     via_iter = list(reader.iter_annotations())
@@ -594,10 +599,9 @@ def test_sequence_annotation_format():
         )
         writer.save()
 
-        assert not writer.meta_path.exists()
-        assert writer.vocab_path.is_file()
-        assert writer.vocab_path.name == ANNOTATION_VOCAB_FILENAME
-        assert writer.vocab_path.read_text(encoding="utf-8") == ALPHANUMERIC_VOCAB.read_text(
+        assert writer.meta_path.is_file()
+        assert writer.meta_path.name == ANNOTATION_VOCAB_FILENAME
+        assert writer.meta_path.read_text(encoding="utf-8") == ALPHANUMERIC_VOCAB.read_text(
             encoding="utf-8"
         )
 
@@ -608,6 +612,34 @@ def test_sequence_annotation_format():
         assert isinstance(data[0], SequenceAnnotation)
         assert data[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
         assert data[1].sequences == []
+
+
+def test_sequence_custom_vocab_filename():
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        writer = AnnotationWriter(
+            TaskType.SEQUENCE,
+            label=ALPHANUMERIC_VOCAB,
+            task_dir=tmp_path / "sequence",
+            task_meta_filename="custom_vocab.txt",
+        )
+        writer.append(
+            filename="sample.jpg",
+            width=224,
+            height=128,
+            sequences=["B", "1", "0"],
+        )
+        writer.save()
+
+        assert writer.meta_path.name == "custom_vocab.txt"
+        assert writer.meta_path.is_file()
+        assert not (writer.save_dir() / ANNOTATION_VOCAB_FILENAME).is_file()
+
+        data, label, _rows = _read_annotations(writer, expected_count=1)
+        assert label == {"vocab": "custom_vocab.txt"}
+        assert data[0].sequences == ["B", "1", "0"]
 
 
 def test_sequence_unknown_token_raises():
@@ -730,6 +762,7 @@ def run_all():
     test_vlm_annotation_format()
     test_conversation_annotation_format()
     test_sequence_annotation_format()
+    test_sequence_custom_vocab_filename()
     test_sequence_unknown_token_raises()
     test_sequence_vocab_file_format()
     test_sequence_reader_rejects_unknown_token()

@@ -92,7 +92,8 @@ print(label[1].name, label[1].alias)  # person ('human',)
 print(data) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
 ```
 
-**Keypoint**
+<details>
+<summary><strong>Keypoint</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -117,7 +118,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-**Segmentation**
+</details>
+
+<details>
+<summary><strong>Segmentation</strong></summary>
 
 ```python
 from vdschema import (
@@ -156,7 +160,10 @@ writer.save()
 data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
-**Classification**
+</details>
+
+<details>
+<summary><strong>Classification</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -183,7 +190,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-**Relationship**
+</details>
+
+<details>
+<summary><strong>Relationship</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -211,7 +221,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-**VLM**
+</details>
+
+<details>
+<summary><strong>VLM</strong></summary>
 
 No label dictionary file. Omit `label` for tasks without vocabulary.
 
@@ -232,7 +245,10 @@ data, label = AnnotationReader(
 assert label is None
 ```
 
-**Conversation**
+</details>
+
+<details>
+<summary><strong>Conversation</strong></summary>
 
 ```python
 from vdschema import (
@@ -263,7 +279,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-**Sequence**
+</details>
+
+<details>
+<summary><strong>Sequence</strong></summary>
 
 Vocabulary is provided as an external file and copied to the output directory as `annotation_vocab.txt`. The file must contain **exactly one token per line** (no spaces/tabs within a line). See [assets/](assets/) for examples such as `alphanumeric_vocab.txt`. Each token in `sequences` must appear in the vocabulary file; validation runs on `append()` and on read.
 
@@ -287,7 +306,10 @@ data, label = AnnotationReader(
 assert label == {"vocab": "annotation_vocab.txt"}
 ```
 
-**Action**
+</details>
+
+<details>
+<summary><strong>Action</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -318,6 +340,8 @@ data, label = AnnotationReader(
 ).load()
 ```
 
+</details>
+
 ### More examples
 
 Full runnable tests: [tests/test_annotation_format.py](tests/test_annotation_format.py). Run:
@@ -339,10 +363,10 @@ uv run pytest
 vdswitch \
   --task detection \
   --source monolith \
-  --root  relative_root \
   --input-data /path/to/train.jsonl /path/to/test.jsonl \
   --input-label /path/to/label_dict.json \
-  --output /path/to/output_dir
+  --input-root /path/to/dataset \
+  --output output
 ```
 
 **Python API**
@@ -350,7 +374,7 @@ vdswitch \
 ```python
 from vdschema import AnnotationReader, Source, TaskType, switch
 
-switch(
+out = switch(
     task=TaskType.DETECTION,
     source=Source.MONOLITH,
     input_data=[
@@ -358,8 +382,8 @@ switch(
         "/path/to/meta/test.jsonl",
     ],
     input_label="/path/to/meta/label_dict.json",
-    output="/path/to/output_dir",
-    root="/path/to/dataset",  # 数据集根目录；与标注中的路径拼接，定位图片/视频绝对路径
+    input_root="/path/to/dataset",  # 数据集根目录；与标注中的路径拼接，定位图片/视频绝对路径
+    output="output",  # 默认值
 )
 
 data, label = AnnotationReader(TaskType.DETECTION, out).load()
@@ -370,12 +394,12 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 
 | Flag            | Values                                  | Notes                                                                                      |
 | --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `--task`        | `detection`, `classification`, `action` | vdschema task type                                                                         |
+| `--task`        | `detection`, `classification`, `action`, `sequence` | vdschema task type                                                                         |
 | `--source`      | `monolith`, `up`                        | source annotation type                                                                     |
 | `--input-data`  | one or more file paths                  | annotation data file path(s)                                                               |
 | `--input-label` | file path                               | annotation labelfile path                                                                  |
-| `--output`      | directory                               | output directory; see output filename rules below                                          |
-| `--root`        | directory                               | dataset root; joined with media paths in annotations to resolve absolute image/video paths |
+| `--input-root`  | directory                               | dataset root; joined with media paths in annotations to resolve absolute image/video paths |
+| `--output`      | directory (default: `output`)           | output directory; see output filename rules below                                          |
 
 
 **Output filenames**

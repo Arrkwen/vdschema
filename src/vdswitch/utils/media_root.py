@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 _MEDIA_ROOT_HINT = (
-    "pass --root as the dataset root; it is joined with media paths in "
+    "pass --input-root as the dataset root; it is joined with media paths in "
     "annotation files to resolve absolute image/video paths"
 )
 
@@ -32,7 +32,7 @@ def _pick_existing_dir(
             if path.is_dir():
                 return path
     if root is not None:
-        raise FileNotFoundError(f"no {kind} directory under --root={root}")
+        raise FileNotFoundError(f"no {kind} directory under --input-root={root}")
     raise FileNotFoundError(f"could not locate {kind} root; {_MEDIA_ROOT_HINT}")
 
 

@@ -28,7 +28,7 @@ def test_find_video_root_with_explicit_root(act_legacy_dir: Path, tmp_path: Path
 
 
 def test_find_image_root_missing_without_root(tmp_path: Path) -> None:
-    with pytest.raises(FileNotFoundError, match="--root"):
+    with pytest.raises(FileNotFoundError, match="--input-root"):
         find_image_root(
             output_dir=tmp_path / "out",
             input_data=tmp_path / "meta/data.jsonl",

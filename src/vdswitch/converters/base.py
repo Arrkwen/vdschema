@@ -26,12 +26,12 @@ class BaseConverter(ABC):
         input_data: Path,
         input_label: Path,
         output_dir: Path,
-        root: Path | None = None,
+        input_root: Path | None = None,
     ) -> None:
         self.input_data = Path(input_data).expanduser().resolve()
         self.input_label = Path(input_label).expanduser().resolve()
         self.output_dir = Path(output_dir).expanduser().resolve()
-        self.root = Path(root).expanduser().resolve() if root is not None else None
+        self.input_root = Path(input_root).expanduser().resolve() if input_root is not None else None
         self.output_data_filename, self.output_meta_filename = resolve_output_filenames(
             input_data=self.input_data,
             input_label=self.input_label,
@@ -43,7 +43,7 @@ class BaseConverter(ABC):
         image_root = find_image_root(
             output_dir=self.output_dir,
             input_data=self.input_data,
-            root=self.root,
+            root=self.input_root,
         )
         return ImageSizeResolver(image_root)
 

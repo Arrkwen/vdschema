@@ -50,7 +50,7 @@ class MonolithUpActionConverter(BaseConverter):
             find_video_root(
                 output_dir=self.output_dir,
                 input_data=self.input_data,
-                root=self.root,
+                root=self.input_root,
             )
         )
         with self.input_data.open(encoding="utf-8") as f:

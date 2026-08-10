@@ -22,20 +22,24 @@ def _coerce_input_data_paths(
     return paths
 
 
+DEFAULT_OUTPUT_DIR = "output"
+
+
 def switch(
     *,
     task: TaskType,
     source: Source,
     input_data: str | Path | Sequence[str | Path],
     input_label: str | Path,
-    output: str | Path,
-    root: str | Path | None = None,
+    input_root: str | Path | None = None,
+    output: str | Path = DEFAULT_OUTPUT_DIR
 ) -> Path:
     """Convert third party annotations to vdschema.
 
-    ``root`` is the dataset root directory. Media paths recorded in annotation
-    files are joined with ``root`` to resolve absolute image or video paths
-    (for example to read width and height). Pass it when auto-detection fails.
+    ``input_root`` is the dataset root directory. Media paths recorded in
+    annotation files are joined with ``input_root`` to resolve absolute image
+    or video paths (for example to read width and height). Pass it when
+    auto-detection fails.
     """
     task_type = parse_task(task)
     converter_cls = get_converter_class(task_type, source)
@@ -45,7 +49,7 @@ def switch(
             input_data=data_path,
             input_label=input_label,
             output_dir=output_dir,
-            root=root,
+            input_root=input_root,
         ).run()
     return output_dir
 

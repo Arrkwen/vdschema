@@ -8,7 +8,7 @@ import sys
 from . import converters  # noqa: F401 — register built-in converters
 from .converters.registry import parse_task, supported_sources, supported_tasks
 from .converters.sources import Source
-from .switch import switch
+from .switch import switch, DEFAULT_OUTPUT_DIR
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,18 +47,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Third party annotation dictionary file path",
     )
     parser.add_argument(
-        "--output",
-        required=True,
-        help="Output directory for vdschema annotation data and dictionary",
-    )
-    parser.add_argument(
-        "--root",
+        "--input-root",
         default=None,
         help=(
             "Dataset root; joined with media paths in annotation files to "
             "resolve absolute image/video paths (e.g. for width/height); "
             "use when auto-detection fails"
         ),
+    )
+    parser.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT_DIR,
+        help="Output directory for vdschema annotation data and dictionary",
     )
     return parser
 
@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
         input_data=args.input_data,
         input_label=args.input_label,
         output=args.output,
-        root=args.root,
+        input_root=args.input_root,
     )
     print(f"vdswitch: wrote vdschema dataset to {out}")
     return 0

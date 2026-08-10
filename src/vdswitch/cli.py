@@ -44,7 +44,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--input-label",
         required=True,
-        help="Third party annotation dictionary file path",
+        help=(
+            "Third party annotation dictionary file path; "
+            'content format depends on --task (e.g. detection: {"1":"name1","2":"name2"})'
+        ),
     )
     parser.add_argument(
         "--input-root",

@@ -1,6 +1,6 @@
 [project]
 name = "vdschema"
-version = "0.5.1"
+version = "0.5.2"
 description = "Unified annotation schema and JSONL IO for vision datasets."
 readme = "README.md"
 authors = [
@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",
     "opencv-python-headless>=4.8",
-    "pillow==10.0",
+    "pillow>=10.0",
     "pycocotools>=2.0.7",
 ]
 

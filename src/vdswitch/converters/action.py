@@ -19,6 +19,21 @@ def _load_act_label(label_path: Path) -> tuple[dict[int, Name], dict[str, int]]:
         raw = json.load(f)
     if not isinstance(raw, dict) or not raw:
         raise ValueError(f"invalid act label_dict: {label_path}")
+
+    if "action" in raw and isinstance(raw["action"], list):
+        label: dict[int, Name] = {}
+        name_to_id: dict[str, int] = {}
+        for item in raw["action"]:
+            if not isinstance(item, dict):
+                continue
+            cid = int(item["category_id"])
+            name = str(item["category_name"])
+            label[cid] = Name(name)
+            name_to_id[name] = cid
+        if not label:
+            raise ValueError(f"act label action[] is empty: {label_path}")
+        return label, name_to_id
+
     attr_name = next(iter(raw.keys()))
     class_names = list(raw[attr_name] or [])
     if not class_names:
@@ -26,6 +41,34 @@ def _load_act_label(label_path: Path) -> tuple[dict[int, Name], dict[str, int]]:
     label = {idx: Name(str(name)) for idx, name in enumerate(class_names)}
     name_to_id = {str(name): idx for idx, name in enumerate(class_names)}
     return label, name_to_id
+
+
+def _parse_legacy_meta_line(line: str) -> tuple[str, str] | None:
+    """Parse legacy act meta line; ``None`` means skip (same rules as UP dataset).
+
+    Meta start/end/label are only used for legacy QC filtering; action fields
+    come from kmot tracks.
+    """
+    parts = line.split(";")
+    if len(parts) < 6:
+        raise ValueError(f"invalid act meta line: {line!r}")
+
+    video_path = parts[0]
+    num_frames = int(parts[1])
+    start = int(parts[2])
+    end = int(parts[3])
+    kmot_rel = parts[5]
+
+    if num_frames < 0:
+        num_frames = abs(num_frames)
+        start, end = end, start
+    if start > end:
+        return None
+    num_frames = end - start + 1
+    if num_frames < 4:
+        return None
+
+    return video_path, kmot_rel
 
 
 @register_converter_for_sources(
@@ -45,7 +88,6 @@ class MonolithUpActionConverter(BaseConverter):
             task_meta_filename=self.output_meta_filename,
         )
 
-        data_root = self.input_data.parent
         video_size = VideoSizeResolver(
             find_video_root(
                 output_dir=self.output_dir,
@@ -58,14 +100,13 @@ class MonolithUpActionConverter(BaseConverter):
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
-                parts = line.split(";")
-                if len(parts) < 6:
-                    raise ValueError(f"invalid act meta line: {line!r}")
 
-                # legacy meta 仅用于定位 video 与 kmot 文件；动作字段来自 kmot。
-                video_path = parts[0]
-                kmot_rel = parts[5]
-                kmot_path = (data_root / kmot_rel).resolve()
+                parsed = _parse_legacy_meta_line(line)
+                if parsed is None:
+                    continue
+                video_path, kmot_rel = parsed
+
+                kmot_path = (self.input_data.parent / kmot_rel).resolve()
                 if not kmot_path.is_file():
                     continue
 

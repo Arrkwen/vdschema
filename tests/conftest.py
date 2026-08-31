@@ -64,13 +64,15 @@ def act_legacy_dir(tmp_path: Path) -> Path:
         (640, 480),
     )
     frame = np.zeros((480, 640, 3), dtype=np.uint8)
-    for _ in range(3):
+    for _ in range(500):
         writer.write(frame)
     writer.release()
 
     (kmot_dir / "sample.txt").write_text(
         "442,18,76.0,280.0,104.0,230.0,221488,1.0,1,package_tossing\n"
-        "443,18,80.0,274.0,100.0,236.0,221488,1.0,1,package_tossing\n",
+        "443,18,80.0,274.0,100.0,236.0,221488,1.0,1,package_tossing\n"
+        "444,18,84.0,268.0,96.0,242.0,221488,1.0,1,package_tossing\n"
+        "445,18,88.0,262.0,92.0,248.0,221488,1.0,1,package_tossing\n",
         encoding="utf-8",
     )
     (root / "meta" / "label_dict.json").write_text(
@@ -78,7 +80,7 @@ def act_legacy_dir(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     (root / "meta" / "video_train.txt").write_text(
-        "video/sample.mp4;27;442;443;1;kmot/sample.txt\n",
+        "video/sample.mp4;4;443;446;1;kmot/sample.txt\n",
         encoding="utf-8",
     )
     return root

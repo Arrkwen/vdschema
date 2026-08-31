@@ -135,6 +135,39 @@ def test_vdswitch_action(act_legacy_dir: Path, tmp_path: Path) -> None:
     assert data[0].width == 640
     assert data[0].height == 480
     assert data[0].actions[0].category_id == 1
+    assert data[0].actions[0].start_idx == 442
+    assert data[0].actions[0].end_idx == 445
+    assert len(data) == 1
+
+
+def test_vdswitch_action_one_jsonl_per_meta_line(
+    act_legacy_dir: Path, tmp_path: Path
+) -> None:
+    """同一视频多条 meta 行应各自输出一条 jsonl。"""
+    meta_path = act_legacy_dir / "meta/video_train.txt"
+    meta_path.write_text(
+        meta_path.read_text(encoding="utf-8")
+        + "video/sample.mp4;4;100;103;0;kmot/sample.txt\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "vdschema_act_multi"
+    switch(
+        task=TaskType.ACTION,
+        source=Source.UP,
+        input_data=meta_path,
+        input_label=act_legacy_dir / "meta/label_dict.json",
+        output=out,
+        input_root=act_legacy_dir,
+    )
+    data, _ = AnnotationReader(
+        TaskType.ACTION,
+        out,
+        task_data_filename="video_train.txt",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert len(data) == 2
+    assert all(item.filename == "video/sample.mp4" for item in data)
+    assert all(len(item.actions) == 1 for item in data)
 
 
 def test_vdswitch_sequence(seq_legacy_dir: Path, tmp_path: Path) -> None:

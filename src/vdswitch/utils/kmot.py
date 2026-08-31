@@ -33,21 +33,23 @@ class KmotTrack:
             return 0
         return max(item.frame_idx for item in self.frames)
 
-    def to_action_dict(self) -> dict[str, Any]:
+    def to_action_dict(self, *, frame_index_offset: int = 0) -> dict[str, Any]:
         if not self.frames or self.category_id is None:
             raise ValueError(f"track {self.track_id} has no frames or category")
+        ordered = sorted(self.frames, key=lambda row: row.frame_idx)
+        frame_indices = [item.frame_idx + frame_index_offset for item in ordered]
         tracks = [
             {
-                "frame_idx": item.frame_idx,
+                "frame_idx": frame_idx,
                 "bbox": item.bbox_xyxy,
             }
-            for item in sorted(self.frames, key=lambda row: row.frame_idx)
+            for item, frame_idx in zip(ordered, frame_indices)
         ]
         return {
             "category_id": self.category_id,
             "track_id": self.track_id,
-            "start_idx": self.start_idx,
-            "end_idx": self.end_idx,
+            "start_idx": min(frame_indices),
+            "end_idx": max(frame_indices),
             "tracks": tracks,
         }
 
@@ -122,3 +124,28 @@ def parse_kmot_file(
     for track_id, track in grouped.items():
         track.category_id = category_votes[track_id].most_common(1)[0][0]
     return grouped
+
+
+def filter_tracks_to_window(
+    grouped: dict[int, KmotTrack],
+    start_idx: int,
+    end_idx: int,
+    *,
+    frame_index_offset: int = 0,
+) -> dict[int, KmotTrack]:
+    """Keep kmot frames whose legacy-aligned index falls in ``[start_idx, end_idx]``."""
+    filtered: dict[int, KmotTrack] = {}
+    for track_id, track in grouped.items():
+        frames = [
+            item
+            for item in track.frames
+            if start_idx <= item.frame_idx + frame_index_offset <= end_idx
+        ]
+        if not frames:
+            continue
+        filtered[track_id] = KmotTrack(
+            track_id=track_id,
+            frames=frames,
+            category_id=track.category_id,
+        )
+    return filtered

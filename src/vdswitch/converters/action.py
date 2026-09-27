@@ -48,7 +48,7 @@ def _load_act_label(label_path: Path) -> tuple[dict[int, Name], dict[str, int]]:
 
 
 def _parse_legacy_meta_line(line: str) -> tuple[str, str] | None:
-    """Parse legacy act meta line; ``None`` means skip (same rules as UP dataset).
+    """Parse legacy act meta line; ``None`` means skip (same rules as monolith datasets).
 
     Meta start/end/label are only used for legacy QC filtering; action fields
     come from kmot tracks.
@@ -75,9 +75,9 @@ def _parse_legacy_meta_line(line: str) -> tuple[str, str] | None:
     return video_path, kmot_rel
 
 
-@register_converter(task=TaskType.ACTION, source=Source.UP)
+@register_converter(task=TaskType.ACTION, source=Source.MONOLITH)
 class MonolithUpActionConverter(BaseConverter):
-    """UP video meta txt + kmot → vdschema action."""
+    """Monolith video meta txt + kmot → vdschema action."""
 
     input_data_help = (
         "Text meta file: one video per line, semicolon-separated fields.\n"

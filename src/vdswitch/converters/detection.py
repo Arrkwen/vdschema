@@ -26,9 +26,9 @@ def _load_det_label(label_path: Path) -> dict[int, Name]:
     return {int(key): Name(str(name)) for key, name in raw.items()}
 
 
-@register_converter(task=TaskType.DETECTION, source=Source.UP)
+@register_converter(task=TaskType.DETECTION, source=Source.MONOLITH)
 class MonolithUpDetectionConverter(BaseConverter):
-    """UP baseline jsonl + label_dict.json → vdschema detection."""
+    """Monolith baseline jsonl + label_dict.json → vdschema detection."""
 
     input_data_help = (
         "JSONL file: one JSON object per line with filename and instances "

@@ -10,9 +10,9 @@ from .registry import register_converter
 from .sources import Source
 
 
-@register_converter(task=TaskType.SEQUENCE, source=Source.UP)
+@register_converter(task=TaskType.SEQUENCE, source=Source.MONOLITH)
 class MonolithUpSequenceConverter(BaseConverter):
-    """UP baseline jsonl + vocab.txt → vdschema sequence."""
+    """Monolith baseline jsonl + vocab.txt → vdschema sequence."""
 
     input_data_help = (
         "JSONL file: one JSON object per line with filename and sequences "

@@ -13,8 +13,8 @@ def _default_source_for_task(task: TaskType) -> Source:
     sources = supported_sources(task)
     if not sources:
         raise ValueError(f"no converter registered for task={task.value!r}")
-    if Source.UP in sources:
-        return Source.UP
+    if Source.MONOLITH in sources:
+        return Source.MONOLITH
     return sorted(sources, key=lambda item: item.value)[0]
 
 
@@ -86,7 +86,7 @@ def _example_command(task: TaskType, source: Source) -> str:
         return (
             "vdswitch \\\n"
             "  --task action \\\n"
-            "  --source up \\\n"
+            "  --source monolith \\\n"
             "  --input-data /path/to/meta/video_train.txt \\\n"
             "  --input-label /path/to/meta/label_dict.json \\\n"
             "  --input-root /path/to/dataset \\\n"
@@ -101,7 +101,7 @@ def _example_command(task: TaskType, source: Source) -> str:
     return (
         "vdswitch \\\n"
         f"  --task {task.value} \\\n"
-        "  --source up \\\n"
+        "  --source monolith \\\n"
         f"  --input-data /path/to/{data} \\\n"
         f"  --input-label /path/to/{label} \\\n"
         "  --input-root /path/to/dataset \\\n"

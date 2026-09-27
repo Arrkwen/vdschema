@@ -14,7 +14,7 @@ def test_vdswitch_det_up(det_legacy_dir: Path, tmp_path: Path) -> None:
     out = tmp_path / "vdschema_det"
     switch(
         task=TaskType.DETECTION,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=det_legacy_dir / "meta/train_baseline.jsonl",
         input_label=det_legacy_dir / "meta/label_dict.json",
         output=out,
@@ -32,9 +32,9 @@ def test_vdswitch_det_up(det_legacy_dir: Path, tmp_path: Path) -> None:
     assert data[0].height == 240
 
 
-def test_vdswitch_rejects_monolith_source(det_legacy_dir: Path) -> None:
-    with pytest.raises(ValueError, match="monolith"):
-        Source.parse("monolith")
+def test_vdswitch_up_source_alias_parses_to_monolith() -> None:
+    assert Source.parse("up") is Source.MONOLITH
+    assert Source.parse("monolith") is Source.MONOLITH
 
 
 def test_vdswitch_det_same_dir(det_legacy_dir: Path, tmp_path: Path) -> None:
@@ -54,7 +54,7 @@ def test_vdswitch_det_same_dir(det_legacy_dir: Path, tmp_path: Path) -> None:
 
     switch(
         task=TaskType.DETECTION,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=data,
         input_label=label,
         output=tmp_path,
@@ -70,7 +70,7 @@ def test_vdswitch_det_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) 
     out = tmp_path / "vdschema_det_multi"
     switch(
         task=TaskType.DETECTION,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=[train, test],
         input_label=det_legacy_dir / "meta/label_dict.json",
         output=out,
@@ -85,7 +85,7 @@ def test_vdswitch_cls_up(cls_legacy_dir: Path, tmp_path: Path) -> None:
     out = tmp_path / "vdschema_cls"
     switch(
         task=TaskType.CLASSIFICATION,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=cls_legacy_dir / "meta/train_baseline.jsonl",
         input_label=cls_legacy_dir / "meta/label_dict.json",
         output=out,
@@ -120,7 +120,7 @@ def test_vdswitch_help_list_tasks() -> None:
 def test_vdswitch_help_requires_task_with_source() -> None:
     from vdswitch.cli import main
 
-    assert main(["help", "--source", "up"]) == 2
+    assert main(["help", "--source", "monolith"]) == 2
 
 
 def test_vdswitch_cli_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) -> None:
@@ -136,7 +136,7 @@ def test_vdswitch_cli_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) 
                 "--task",
                 "detection",
                 "--source",
-                "up",
+                "monolith",
                 "--input-data",
                 str(train),
                 str(test),
@@ -158,7 +158,7 @@ def test_vdswitch_action(act_legacy_dir: Path, tmp_path: Path) -> None:
     out = tmp_path / "vdschema_act"
     switch(
         task=TaskType.ACTION,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=act_legacy_dir / "meta/video_train.txt",
         input_label=act_legacy_dir / "meta/label_dict.json",
         output=out,
@@ -193,7 +193,7 @@ def test_vdswitch_action_one_jsonl_per_meta_line(
     out = tmp_path / "vdschema_act_multi"
     switch(
         task=TaskType.ACTION,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=meta_path,
         input_label=act_legacy_dir / "meta/label_dict.json",
         output=out,
@@ -214,7 +214,7 @@ def test_vdswitch_sequence(seq_legacy_dir: Path, tmp_path: Path) -> None:
     out = tmp_path / "vdschema_seq"
     switch(
         task=TaskType.SEQUENCE,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=seq_legacy_dir / "meta/train_baseline.jsonl",
         input_label=seq_legacy_dir / "meta/vocab.txt",
         output=out,
@@ -249,7 +249,7 @@ def test_vdswitch_sequence_same_dir(seq_legacy_dir: Path, tmp_path: Path) -> Non
 
     switch(
         task=TaskType.SEQUENCE,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=meta / "train_baseline.jsonl",
         input_label=meta / "vocab.txt",
         output=meta,
@@ -273,7 +273,7 @@ def test_vdswitch_sequence_mixed_input_dirs(
     out = seq_legacy_dir / "meta"
     switch(
         task=TaskType.SEQUENCE,
-        source=Source.UP,
+        source=Source.MONOLITH,
         input_data=seq_legacy_dir / "meta/train_baseline.jsonl",
         input_label=vocab,
         output=out,

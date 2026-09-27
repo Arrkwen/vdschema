@@ -179,4 +179,4 @@ def test_vdswitch_help_coco_detection() -> None:
 def test_vdswitch_help_detection_defaults_to_up() -> None:
     text = format_help_text(task=TaskType.DETECTION, source=None)
     assert "train_baseline.jsonl" in text
-    assert "--source up" in text
+    assert "--source monolith" in text

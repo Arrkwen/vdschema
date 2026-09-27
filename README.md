@@ -357,7 +357,7 @@ uv run pytest
 
 同步安装的一个标注数据转换工具，用于将以下格式的数据集，转为 vdschema 格式的标注数据集
 
-- [x] unified-perception (up)
+- [x] monolith
 - [x] coco (detection / keypoint / segmentation)
 - [x] yolo (detection)
 - [x] imagenet (classification)
@@ -366,7 +366,7 @@ uv run pytest
 ```bash
 vdswitch \
   --task detection \
-  --source up \
+  --source monolith \
   --input-data /path/to/train.jsonl /path/to/test.jsonl \
   --input-label /path/to/label_dict.json \
   --input-root /path/to/dataset \
@@ -378,10 +378,10 @@ vdswitch \
 ```bash
 vdswitch help                          # 列出任务摘要
 vdswitch help --task classification    # 分类任务的文件格式与示例
-vdswitch help --task detection --source up
+vdswitch help --task detection --source monolith
 ```
 
-| Task             | `--source up`                            | `--source coco`                                      |
+| Task             | `--source monolith`                      | other sources                                        |
 | ---------------- | ---------------------------------------- | ---------------------------------------------------- |
 | `detection`      | JSONL + `label_dict.json`                | COCO `instances_*.json`（`categories` 可与 data 同文件）     |
 |                |                                          | YOLO `train.txt` + `classes.txt` + `labels/*.txt`        |
@@ -413,7 +413,7 @@ from vdschema import AnnotationReader, Source, TaskType, switch
 
 out = switch(
     task=TaskType.DETECTION,
-    source=Source.UP,
+    source=Source.MONOLITH,
     input_data=[
         "/path/to/meta/train.jsonl",
         "/path/to/meta/test.jsonl",
@@ -432,7 +432,7 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 | Flag            | Values                                              | Notes                                                                                      |
 | --------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `--task`        | `detection`, `classification`, `action`, `sequence` | vdschema task type                                                                         |
-| `--source`      | `up`, `coco`                                        | legacy UP layout or MS COCO instances JSON                                                 |
+| `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`       | legacy monolith layout or third-party dataset formats                                      |
 | `--input-data`  | one or more file paths                              | annotation data file path(s)                                                               |
 | `--input-label` | file path                                           | Label or vocab file; JSON or text depending on `--task` (see `vdswitch help --task …`)     |
 | `--input-root`  | directory                                           | dataset root; joined with media paths in annotations to resolve absolute image/video paths |

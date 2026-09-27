@@ -34,9 +34,9 @@ def _load_cls_label(label_path: Path) -> dict[str, dict[int, Name]]:
     return heads
 
 
-@register_converter(task=TaskType.CLASSIFICATION, source=Source.UP)
+@register_converter(task=TaskType.CLASSIFICATION, source=Source.MONOLITH)
 class MonolithUpClassificationConverter(BaseConverter):
-    """UP baseline jsonl + label_dict.json → vdschema classification."""
+    """Monolith baseline jsonl + label_dict.json → vdschema classification."""
 
     input_data_help = (
         "JSONL file: one JSON object per line with filename and attribute.\n"

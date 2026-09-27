@@ -6,7 +6,7 @@ from enum import Enum
 
 
 class Source(str, Enum):
-    UP = "up"
+    MONOLITH = "monolith"
     COCO = "coco"
     YOLO = "yolo"
     IMAGENET = "imagenet"
@@ -17,10 +17,8 @@ class Source(str, Enum):
         if isinstance(value, cls):
             return value
         normalized = value.lower()
-        if normalized == "monolith":
-            raise ValueError(
-                "source 'monolith' is no longer supported; use 'up' (same layout)"
-            ) from None
+        if normalized == "up":
+            return cls.MONOLITH
         try:
             return cls(normalized)
         except ValueError as exc:

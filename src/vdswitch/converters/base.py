@@ -21,7 +21,7 @@ class BaseConverter(ABC):
     source: ClassVar[Source]
 
     #: Shown by ``vdswitch help``.
-    source_note: ClassVar[str] = "Unified perception (UP) legacy on-disk layout."
+    source_note: ClassVar[str] = "Monolith legacy on-disk layout (JSONL / meta / kmot)."
     input_data_help: ClassVar[str] = ""
     input_label_help: ClassVar[str] = ""
     input_data_sample: ClassVar[str] = ""

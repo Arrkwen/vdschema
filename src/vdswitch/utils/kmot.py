@@ -1,4 +1,4 @@
-"""Parse legacy UP/monolith kmot track files."""
+"""Parse legacy monolith kmot track files."""
 
 from __future__ import annotations
 

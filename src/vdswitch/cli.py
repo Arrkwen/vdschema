@@ -1,4 +1,4 @@
-"""vdswitch CLI — legacy UP → vdschema."""
+"""vdswitch CLI — legacy monolith → vdschema."""
 
 from __future__ import annotations
 
@@ -122,7 +122,7 @@ def build_convert_parser() -> argparse.ArgumentParser:
         "--source",
         required=True,
         choices=source_choices,
-        help="Third party source (up or coco)",
+        help="Third party source (monolith, coco, yolo, …)",
     )
     parser.add_argument(
         "--input-data",
@@ -173,7 +173,7 @@ def build_help_parser() -> argparse.ArgumentParser:
         "--source",
         choices=source_choices,
         default=None,
-        help="Optional; up or coco (see vdswitch help --task …)",
+        help="Optional; see vdswitch help --task …",
     )
     return parser
 

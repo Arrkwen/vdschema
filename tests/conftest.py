@@ -199,3 +199,27 @@ def yolo_legacy_dir(tmp_path: Path) -> Path:
     (root / "classes.txt").write_text("person\ncar\n", encoding="utf-8")
     (root / "train.txt").write_text("images/train/sample.jpg\n", encoding="utf-8")
     return root
+
+
+@pytest.fixture
+def imagenet_legacy_dir(tmp_path: Path) -> Path:
+    root = tmp_path / "dataset"
+    train = root / "train"
+    cat = train / "cat"
+    dog = train / "dog"
+    cat.mkdir(parents=True)
+    dog.mkdir(parents=True)
+    Image.new("RGB", (64, 48), color=(100, 100, 100)).save(cat / "a.jpg")
+    Image.new("RGB", (64, 48), color=(200, 200, 200)).save(dog / "b.jpg")
+    return train
+
+
+@pytest.fixture
+def ocr_legacy_dir(tmp_path: Path) -> Path:
+    root = tmp_path / "ocr"
+    images = root / "images"
+    images.mkdir(parents=True)
+    Image.new("RGB", (80, 32), color=(50, 100, 150)).save(images / "001.jpg")
+    (root / "vocab.txt").write_text("h\ne\nl\no\n", encoding="utf-8")
+    (root / "anno.txt").write_text("images/001.jpg\thello\n", encoding="utf-8")
+    return root

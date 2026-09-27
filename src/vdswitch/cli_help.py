@@ -60,6 +60,17 @@ def _example_command(task: TaskType, source: Source) -> str:
             "  --output output"
         )
 
+    if source is Source.IMAGENET and task is TaskType.CLASSIFICATION:
+        return (
+            "vdswitch \\\n"
+            "  --task classification \\\n"
+            "  --source imagenet \\\n"
+            "  --input-data /path/to/train \\\n"
+            "  --input-label /path/to/train \\\n"
+            "  --input-root /path/to/dataset \\\n"
+            "  --output output"
+        )
+
     if task is TaskType.ACTION:
         return (
             "vdswitch \\\n"

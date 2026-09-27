@@ -221,7 +221,7 @@
     "instance": {
       "type": "object",
       "additionalProperties": false,
-      "description": "单实例：可选 `bbox`、`polygon`（flat `[x1,y1,...]`）、`rle_mask`（pycocotools RLE）、`keypoints`、`text`。",
+      "description": "单实例：可选 `bbox`、`polygon`、`polyline`（均为 flat `[x1,y1,...]`）、`rle_mask`（pycocotools RLE）、`keypoints`、`text`。",
       "properties": {
         "id": {
           "type": "integer",
@@ -258,8 +258,16 @@
         },
         "polygon": {
           "type": "array",
-          "description": "可选。单个闭合环，flat `[x1,y1,x2,y2,...]`，至少 3 个顶点（6 个数）。",
+          "description": "可选。闭合环或有向框顶点，flat `[x1,y1,x2,y2,...]`，至少 3 个顶点（6 个数）。",
           "minItems": 6,
+          "items": {
+            "type": "number"
+          }
+        },
+        "polyline": {
+          "type": "array",
+          "description": "可选。开放折线（如车道线），flat `[x1,y1,x2,y2,...]`，至少 2 个顶点（4 个数）。",
+          "minItems": 4,
           "items": {
             "type": "number"
           }

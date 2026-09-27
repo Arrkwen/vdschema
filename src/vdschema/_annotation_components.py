@@ -198,14 +198,15 @@ class Keypoint:
 class Instance:
     """
     annotation_data instance。
-    Required: id / category_id. Optional: bbox / polygon / rle_mask / keypoints / text.
-    Task-specific rules (e.g. detection requires bbox or polygon) apply at read time.
+    Required: id / category_id. Optional: bbox / polygon / polyline / rle_mask / keypoints / text.
+    Task-specific rules (e.g. detection requires bbox, polygon, or polyline) apply at read time.
     """
 
     id: int
     category_id: int
     bbox: Bbox | None = None
     polygon: list[float] | None = None
+    polyline: list[float] | None = None
     keypoints: dict[str, list[Keypoint]] | None = None
     rle_mask: SegmentationRLE | None = None
     text: str | None = None
@@ -218,6 +219,8 @@ class Instance:
             self.bbox.validate()
         if self.polygon is not None:
             _validate_polygon_flat(self.polygon)
+        if self.polyline is not None:
+            _validate_polyline_flat(self.polyline)
         if self.keypoints:
             for part, points in self.keypoints.items():
                 if not part or not part[0].islower():
@@ -239,6 +242,8 @@ class Instance:
             out["bbox"] = self.bbox.to_list()
         if self.polygon is not None:
             out["polygon"] = list(self.polygon)
+        if self.polyline is not None:
+            out["polyline"] = list(self.polyline)
         if self.keypoints:
             out["keypoints"] = {
                 part: [kp.to_list() for kp in points]
@@ -261,12 +266,14 @@ class Instance:
             }
         bbox = Bbox.from_list(raw["bbox"]) if "bbox" in raw else None
         polygon = _polygon(raw.get("polygon"))
+        polyline = _polyline(raw.get("polyline"))
         rle = _rle_mask(_rle_mask_field(raw))
         return cls(
             id=int(raw["id"]),
             category_id=int(raw["category_id"]),
             bbox=bbox,
             polygon=polygon,
+            polyline=polyline,
             keypoints=kps,
             rle_mask=rle,
             text=raw.get("text"),
@@ -535,6 +542,13 @@ def _validate_polygon_flat(coords: list[float]) -> None:
         )
 
 
+def _validate_polyline_flat(coords: list[float]) -> None:
+    if len(coords) < 4 or len(coords) % 2 != 0:
+        raise AnnotationFormatError(
+            "polyline must be flat [x1,y1,x2,y2,...] with at least 2 vertices"
+        )
+
+
 def _polygon(value: Any) -> list[float] | None:
     if value is None:
         return None
@@ -542,6 +556,16 @@ def _polygon(value: Any) -> list[float] | None:
         raise AnnotationFormatError("polygon must be a flat list of coordinates")
     coords = [float(v) for v in value]
     _validate_polygon_flat(coords)
+    return coords
+
+
+def _polyline(value: Any) -> list[float] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise AnnotationFormatError("polyline must be a flat list of coordinates")
+    coords = [float(v) for v in value]
+    _validate_polyline_flat(coords)
     return coords
 
 
@@ -577,6 +601,7 @@ def _instance(raw: Any) -> Instance:
         category_id=int(data["category_id"]),
         bbox=bbox,
         polygon=_polygon(data.get("polygon")),
+        polyline=_polyline(data.get("polyline")),
         keypoints=_keypoints(data.get("keypoints")),
         rle_mask=_rle_mask(_rle_mask_field(data)),
         text=data.get("text"),

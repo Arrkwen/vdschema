@@ -25,6 +25,14 @@ It supports two primary workflows:
 
 JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schema/example.md).
 
+**Detection geometry** — each instance must include at least one of:
+
+| Format | Field | Shape |
+| ------ | ----- | ----- |
+| Horizontal box | `bbox` | `[x1, y1, x2, y2]` (xyxy) |
+| Oriented box / closed contour | `polygon` | flat `[x1, y1, x2, y2, …]`, ≥3 vertices |
+| Open polyline (e.g. lane lines) | `polyline` | flat `[x1, y1, x2, y2, …]`, ≥2 vertices |
+
 Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json). Sequence tasks use `**annotation_vocab.txt`** instead of `annotation_meta.json`.
 
 ## Install
@@ -65,14 +73,19 @@ Each task directory holds `annotation_data.jsonl` plus optional label meta:
 
 ## Basic Usage
 
-Expand a task below for a full example:
+Expand a task below for a full example (GitHub renders `<details>` as collapsible sections).
 
-**Detection**
+<details>
+<summary><strong>Detection</strong></summary>
+
+Each instance needs at least one geometry: horizontal **`bbox`**, oriented **`polygon`**, or open **`polyline`** (see table above).
+
+<details>
+<summary>Axis-aligned bbox</summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
 
-# step1: create annotation object
 writer = AnnotationWriter(
     TaskType.DETECTION,
     label={
@@ -80,30 +93,76 @@ writer = AnnotationWriter(
         2: Name("car"),
     },
 )
-
-# step2: add annotation info
 writer.append(
     filename="images/sample.jpg",
     width=640,
     height=480,
     instances=[
         {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
-        {"id": 1, "category_id": 1, "bbox": [160, 190, 300, 560]， "is_ignored": True},
+        {"id": 1, "category_id": 1, "bbox": [160, 190, 300, 560], "is_ignored": True},
     ],
 )
-# step3: save annotation info, by default, written to output/{task_type}/,can override by setting task_dir in AnnotationWriter.
 writer.save()
-
-# step4(option): load annotation info.
-data, label = AnnotationReader(
-    TaskType.DETECTION, writer.save_dir()
-).load()
-
+data, label = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 print(label[1].name, label[1].alias)  # person ('human',)
-print(data) # [DetectionAnnotation(..., instances=[Instance(..., rle_mask=None, ...)], ...)]
 ```
 
-**Keypoint**
+</details>
+
+<details>
+<summary>Oriented box (polygon)</summary>
+
+```python
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
+
+writer = AnnotationWriter(TaskType.DETECTION, label={1: Name("ship")})
+writer.append(
+    filename="images/obb_001.jpg",
+    width=640,
+    height=480,
+    instances=[
+        {
+            "id": 0,
+            "category_id": 1,
+            "polygon": [120, 80, 200, 60, 220, 140, 140, 160],
+        }
+    ],
+)
+writer.save()
+data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
+```
+
+</details>
+
+<details>
+<summary>Open polyline</summary>
+
+```python
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
+
+writer = AnnotationWriter(TaskType.DETECTION, label={1: Name("lane_line")})
+writer.append(
+    filename="images/lane_001.jpg",
+    width=1280,
+    height=720,
+    instances=[
+        {
+            "id": 0,
+            "category_id": 1,
+            "polyline": [100, 650, 280, 520, 460, 410, 640, 340],
+        }
+    ],
+)
+writer.save()
+data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
+```
+
+</details>
+
+</details>
+
+<details>
+<summary><strong>Keypoint</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -128,9 +187,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
+</details>
 
-
-**Segmentation**
+<details>
+<summary><strong>Segmentation</strong></summary>
 
 ```python
 from vdschema import (
@@ -169,9 +229,10 @@ writer.save()
 data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
+</details>
 
-
-**Classification**
+<details>
+<summary><strong>Classification</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -198,9 +259,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
+</details>
 
-
-**Relationship**
+<details>
+<summary><strong>Relationship</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -228,9 +290,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
+</details>
 
-
-**VLM**
+<details>
+<summary><strong>VLM</strong></summary>
 
 No label dictionary file. Omit `label` for tasks without vocabulary.
 
@@ -251,9 +314,10 @@ data, label = AnnotationReader(
 assert label is None
 ```
 
+</details>
 
-
-**Conversation**
+<details>
+<summary><strong>Conversation</strong></summary>
 
 ```python
 from vdschema import (
@@ -284,9 +348,10 @@ data, label = AnnotationReader(
 ).load()
 ```
 
+</details>
 
-
-**Sequence**
+<details>
+<summary><strong>Sequence</strong></summary>
 
 Vocabulary is provided as an external file and copied to the output directory as `annotation_vocab.txt`. The file must contain **exactly one token per line** (no spaces/tabs within a line). See [assets/](assets/) for examples such as `alphanumeric_vocab.txt`. Each token in `sequences` must appear in the vocabulary file; validation runs on `append()` and on read.
 
@@ -310,9 +375,10 @@ data, label = AnnotationReader(
 assert label == {"vocab": "annotation_vocab.txt"}
 ```
 
+</details>
 
-
-**Action**
+<details>
+<summary><strong>Action</strong></summary>
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -343,7 +409,7 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-
+</details>
 
 ### More examples
 

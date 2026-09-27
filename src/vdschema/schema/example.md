@@ -2,7 +2,7 @@
 
 Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory (sequence tasks use `annotation_vocab.txt` instead).
 
-`bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` entries are `[x, y, visibility]` (`visibility`: 0/1/2). `polygon` is flat `[x1,y1,x2,y2,...]`. `rle_mask` follows pycocotools RLE (`size`: `[height, width]`).
+`bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` entries are `[x, y, visibility]` (`visibility`: 0/1/2). `polygon` is a flat closed ring or oriented box `[x1,y1,...]` (≥3 vertices). `polyline` is an open line `[x1,y1,...]` (≥2 vertices). `rle_mask` follows pycocotools RLE (`size`: `[height, width]`).
 
 ---
 
@@ -20,12 +20,14 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
       "category_alias": ["human"],
       "category_prompt": ["a human", "人体"]
     },
-    {"category_id": 2, "category_name": "car"}
+    {"category_id": 2, "category_name": "car"},
+    {"category_id": 3, "category_name": "ship"},
+    {"category_id": 4, "category_name": "lane_line"}
   ]
 }
 ```
 
-**annotation_data.jsonl** (one line)
+**annotation_data.jsonl** — axis-aligned `bbox` (one line)
 
 ```json
 {
@@ -35,6 +37,40 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
   "instances": [
     {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
     {"id": 1, "category_id": 2, "bbox": [120, 30, 200, 180]}
+  ]
+}
+```
+
+**annotation_data.jsonl** — oriented box (`polygon`, one line)
+
+```json
+{
+  "filename": "images/detection_obb_001.jpg",
+  "width": 640,
+  "height": 480,
+  "instances": [
+    {
+      "id": 0,
+      "category_id": 3,
+      "polygon": [120, 80, 200, 60, 220, 140, 140, 160]
+    }
+  ]
+}
+```
+
+**annotation_data.jsonl** — open `polyline` (e.g. lane line, one line)
+
+```json
+{
+  "filename": "images/detection_lane_001.jpg",
+  "width": 1280,
+  "height": 720,
+  "instances": [
+    {
+      "id": 0,
+      "category_id": 4,
+      "polyline": [100, 650, 280, 520, 460, 410, 640, 340]
+    }
   ]
 }
 ```

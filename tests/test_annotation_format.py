@@ -548,11 +548,10 @@ def test_action_annotation_format():
     assert len(data[1].actions) == 2
 
 
-def test_reader_validate_returns_false_on_invalid_data(tmp_path):
+def test_reader_validate_returns_false_on_invalid_data():
     writer = AnnotationWriter(
         TaskType.DETECTION,
         label={1: "person"},
-        task_dir=tmp_path / "detection",
     )
     writer.append(
         filename="images/ok.jpg",
@@ -574,180 +573,139 @@ def test_reader_validate_returns_false_on_invalid_data(tmp_path):
 
 
 def test_sequence_annotation_format():
-    import tempfile
+    writer = AnnotationWriter(
+        TaskType.SEQUENCE,
+        label=ALPHANUMERIC_VOCAB,
+    )
+    writer.append(
+        filename="batch1_crop_plate/27993412_car0_inst0.jpg",
+        width=224,
+        height=128,
+        sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
+    )
+    writer.append(
+        filename="batch1_crop_plate/empty_seq.jpg",
+        width=224,
+        height=128,
+        sequences=[],
+    )
+    writer.save()
 
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
+    assert writer.meta_path.is_file()
+    assert writer.meta_path.name == ANNOTATION_VOCAB_FILENAME
+    assert writer.meta_path.read_text(encoding="utf-8") == ALPHANUMERIC_VOCAB.read_text(
+        encoding="utf-8"
+    )
 
-        writer = AnnotationWriter(
-            TaskType.SEQUENCE,
-            label=ALPHANUMERIC_VOCAB,
-            task_dir=tmp_path / "sequence",
-        )
-        writer.append(
-            filename="batch1_crop_plate/27993412_car0_inst0.jpg",
-            width=224,
-            height=128,
-            sequences=["B", "1", "0", "7", "7", "P", "D", "V"],
-        )
-        writer.append(
-            filename="batch1_crop_plate/empty_seq.jpg",
-            width=224,
-            height=128,
-            sequences=[],
-        )
-        writer.save()
-
-        assert writer.meta_path.is_file()
-        assert writer.meta_path.name == ANNOTATION_VOCAB_FILENAME
-        assert writer.meta_path.read_text(
-            encoding="utf-8"
-        ) == ALPHANUMERIC_VOCAB.read_text(encoding="utf-8")
-
-        data, label, rows = _read_annotations(writer, expected_count=2)
-        assert label == {"vocab": ANNOTATION_VOCAB_FILENAME}
-        assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
-        assert rows[1]["sequences"] == []
-        assert isinstance(data[0], SequenceAnnotation)
-        assert data[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
-        assert data[1].sequences == []
+    data, label, rows = _read_annotations(writer, expected_count=2)
+    assert label == {"vocab": ANNOTATION_VOCAB_FILENAME}
+    assert rows[0]["sequences"] == ["B", "1", "0", "7", "7", "P", "D", "V"]
+    assert rows[1]["sequences"] == []
+    assert isinstance(data[0], SequenceAnnotation)
+    assert data[0].sequences == ["B", "1", "0", "7", "7", "P", "D", "V"]
+    assert data[1].sequences == []
 
 
 def test_sequence_custom_vocab_filename():
-    import tempfile
+    default_vocab = Path("output/sequence") / ANNOTATION_VOCAB_FILENAME
+    if default_vocab.is_file():
+        default_vocab.unlink()
 
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        writer = AnnotationWriter(
-            TaskType.SEQUENCE,
-            label=ALPHANUMERIC_VOCAB,
-            task_dir=tmp_path / "sequence",
-            task_meta_filename="custom_vocab.txt",
-        )
-        writer.append(
-            filename="sample.jpg",
-            width=224,
-            height=128,
-            sequences=["B", "1", "0"],
-        )
-        writer.save()
+    writer = AnnotationWriter(
+        TaskType.SEQUENCE,
+        label=ALPHANUMERIC_VOCAB,
+        task_meta_filename="custom_vocab.txt",
+    )
+    writer.append(
+        filename="sample.jpg",
+        width=224,
+        height=128,
+        sequences=["B", "1", "0"],
+    )
+    writer.save()
 
-        assert writer.meta_path.name == "custom_vocab.txt"
-        assert writer.meta_path.is_file()
-        assert not (writer.save_dir() / ANNOTATION_VOCAB_FILENAME).is_file()
+    assert writer.meta_path.name == "custom_vocab.txt"
+    assert writer.meta_path.is_file()
+    assert not (writer.save_dir() / ANNOTATION_VOCAB_FILENAME).is_file()
 
-        data, label, _rows = _read_annotations(writer, expected_count=1)
-        assert label == {"vocab": "custom_vocab.txt"}
-        assert data[0].sequences == ["B", "1", "0"]
+    data, label, _rows = _read_annotations(writer, expected_count=1)
+    assert label == {"vocab": "custom_vocab.txt"}
+    assert data[0].sequences == ["B", "1", "0"]
 
 
 def test_sequence_unknown_token_raises():
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmp:
-        writer = AnnotationWriter(
-            TaskType.SEQUENCE,
-            label=ALPHANUMERIC_VOCAB,
-            task_dir=Path(tmp) / "sequence",
+    writer = AnnotationWriter(
+        TaskType.SEQUENCE,
+        label=ALPHANUMERIC_VOCAB,
+    )
+    with pytest.raises(AnnotationFormatError):
+        writer.append(
+            filename="bad.jpg",
+            width=224,
+            height=128,
+            sequences=["B", "z"],
         )
-        with pytest.raises(AnnotationFormatError):
-            writer.append(
-                filename="bad.jpg",
-                width=224,
-                height=128,
-                sequences=["B", "z"],
-            )
 
 
 def test_sequence_province_vocab():
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmp:
-        writer = AnnotationWriter(
-            TaskType.SEQUENCE,
-            label=PROVINCE_VOCAB,
-            task_dir=Path(tmp) / "sequence",
-        )
-        writer.append(
-            filename="plates/guangdong_sichuan.jpg",
-            width=224,
-            height=128,
-            sequences=["广东", "四川"],
-        )
-        writer.save()
-        data, label, _rows = _read_annotations(writer, expected_count=1)
-        assert label == {"vocab": ANNOTATION_VOCAB_FILENAME}
-        assert data[0].sequences == ["广东", "四川"]
+    writer = AnnotationWriter(
+        TaskType.SEQUENCE,
+        label=PROVINCE_VOCAB,
+    )
+    writer.append(
+        filename="plates/guangdong_sichuan.jpg",
+        width=224,
+        height=128,
+        sequences=["广东", "四川"],
+    )
+    writer.save()
+    data, label, _rows = _read_annotations(writer, expected_count=1)
+    assert label == {"vocab": ANNOTATION_VOCAB_FILENAME}
+    assert data[0].sequences == ["广东", "四川"]
 
 
-def test_sequence_vocab_file_format():
-    import tempfile
+def test_sequence_vocab_file_format(tmp_path: Path):
+    multi_token = tmp_path / "bad_multi.txt"
+    multi_token.write_text("A B\n", encoding="utf-8")
+    with pytest.raises(AnnotationFormatError):
+        AnnotationWriter(TaskType.SEQUENCE, label=multi_token)
 
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
+    duplicate = tmp_path / "bad_dup.txt"
+    duplicate.write_text("A\nA\n", encoding="utf-8")
+    with pytest.raises(AnnotationFormatError):
+        AnnotationWriter(TaskType.SEQUENCE, label=duplicate)
 
-        multi_token = tmp_path / "bad_multi.txt"
-        multi_token.write_text("A B\n", encoding="utf-8")
-        with pytest.raises(AnnotationFormatError):
-            AnnotationWriter(
-                TaskType.SEQUENCE,
-                label=multi_token,
-                task_dir=tmp_path / "sequence",
-            )
+    trailing_space = tmp_path / "bad_space.txt"
+    trailing_space.write_text("A \n", encoding="utf-8")
+    with pytest.raises(AnnotationFormatError):
+        AnnotationWriter(TaskType.SEQUENCE, label=trailing_space)
 
-        duplicate = tmp_path / "bad_dup.txt"
-        duplicate.write_text("A\nA\n", encoding="utf-8")
-        with pytest.raises(AnnotationFormatError):
-            AnnotationWriter(
-                TaskType.SEQUENCE,
-                label=duplicate,
-                task_dir=tmp_path / "sequence",
-            )
-
-        trailing_space = tmp_path / "bad_space.txt"
-        trailing_space.write_text("A \n", encoding="utf-8")
-        with pytest.raises(AnnotationFormatError):
-            AnnotationWriter(
-                TaskType.SEQUENCE,
-                label=trailing_space,
-                task_dir=tmp_path / "sequence",
-            )
-
-        empty = tmp_path / "bad_empty.txt"
-        empty.write_text("\n\n", encoding="utf-8")
-        with pytest.raises(AnnotationFormatError):
-            AnnotationWriter(
-                TaskType.SEQUENCE,
-                label=empty,
-                task_dir=tmp_path / "sequence",
-            )
+    empty = tmp_path / "bad_empty.txt"
+    empty.write_text("\n\n", encoding="utf-8")
+    with pytest.raises(AnnotationFormatError):
+        AnnotationWriter(TaskType.SEQUENCE, label=empty)
 
 
 def test_sequence_reader_rejects_unknown_token():
-    import tempfile
+    writer = AnnotationWriter(
+        TaskType.SEQUENCE,
+        label=ASSETS_DIR / "digits_vocab.txt",
+    )
+    writer.append(
+        filename="ok.jpg",
+        width=224,
+        height=128,
+        sequences=["1", "2", "3"],
+    )
+    writer.save()
 
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        writer = AnnotationWriter(
-            TaskType.SEQUENCE,
-            label=ASSETS_DIR / "digits_vocab.txt",
-            task_dir=tmp_path / "sequence",
-        )
-        writer.append(
-            filename="ok.jpg",
-            width=224,
-            height=128,
-            sequences=["1", "2", "3"],
-        )
-        writer.save()
-
-        writer.data_path.write_text(
-            writer.data_path.read_text(encoding="utf-8")
-            + '{"filename":"bad.jpg","width":224,"height":128,"sequences":["1","X"]}\n',
-            encoding="utf-8",
-        )
-        reader = AnnotationReader(TaskType.SEQUENCE, writer.save_dir())
-        assert reader.validate() is False
+    writer.data_path.write_text(
+        writer.data_path.read_text(encoding="utf-8")
+        + '{"filename":"bad.jpg","width":224,"height":128,"sequences":["1","X"]}\n',
+        encoding="utf-8",
+    )
+    reader = AnnotationReader(TaskType.SEQUENCE, writer.save_dir())
+    assert reader.validate() is False
 
 
 def test_instance_reads_legacy_segmentation_key() -> None:

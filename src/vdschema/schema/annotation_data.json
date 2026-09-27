@@ -60,7 +60,6 @@
     "actions": {
       "type": "array",
       "description": "视频动作事件列表；每条事件绑定一条逐帧轨迹。",
-      "minItems": 1,
       "items": {
         "$ref": "#/$defs/video_event"
       }
@@ -74,48 +73,6 @@
     "filename",
     "width",
     "height"
-  ],
-  "allOf": [
-    {
-      "description": "至少包含一种标注内容。",
-      "anyOf": [
-        {
-          "required": [
-            "instances"
-          ]
-        },
-        {
-          "required": [
-            "categories"
-          ]
-        },
-        {
-          "required": [
-            "relationships"
-          ]
-        },
-        {
-          "required": [
-            "conversations"
-          ]
-        },
-        {
-          "required": [
-            "sequences"
-          ]
-        },
-        {
-          "required": [
-            "actions"
-          ]
-        },
-        {
-          "required": [
-            "description"
-          ]
-        }
-      ]
-    }
   ],
   "examples": [
     {

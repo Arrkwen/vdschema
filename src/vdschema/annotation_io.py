@@ -17,7 +17,7 @@ from .annotation_dict import (
     TaskLabelDict,
     build_label_dict,
     data_path_for,
-    load_label_dict,
+    load_reader_label_dict,
     meta_path_for,
     resolve_data_filename,
     resolve_meta_filename,
@@ -110,7 +110,12 @@ class AnnotationWriter:
 
 
 class AnnotationReader:
-    """Read annotation JSONL and optional label dictionary from ``task_dir``."""
+    """Read annotation JSONL and optional label dictionary from ``task_dir``.
+
+    Label vocabulary is loaded when the meta file exists; otherwise label checks
+    are skipped. Sequence tasks use a vocabulary text file; other tasks use
+    ``annotation_meta.json`` when applicable.
+    """
 
     def __init__(
         self,
@@ -152,13 +157,12 @@ class AnnotationReader:
                         f"{path}:{lineno} failed to parse JSON"
                     ) from exc
 
+    def _label_dict_for_read(self) -> tuple[TaskLabelDict, dict[str, Any] | None]:
+        return load_reader_label_dict(self.task_type, self.meta_path)
+
     def _resolve_label_dict(self) -> TaskLabelDict:
-        loaded = load_label_dict(
-            self.task_type,
-            self.task_dir,
-            task_meta_filename=self.task_meta_filename,
-        )
-        return loaded if loaded is not None else NoLabelDict()
+        label_dict, _ = self._label_dict_for_read()
+        return label_dict
 
     def _parse_annotations(
         self,
@@ -177,13 +181,7 @@ class AnnotationReader:
 
     def load(self) -> tuple[list[BaseAnnotation], dict[str, Any] | None]:
         """Return parsed annotation ``data`` and ``label`` (``None`` if not used)."""
-        loaded = load_label_dict(
-            self.task_type,
-            self.task_dir,
-            task_meta_filename=self.task_meta_filename,
-        )
-        label_dict = loaded if loaded is not None else NoLabelDict()
-        label = None if loaded is None else loaded.to_label()
+        label_dict, label = self._label_dict_for_read()
         data = self._parse_annotations(label_dict)
         return data, label
 

@@ -13,6 +13,7 @@ It supports two primary workflows:
 | Task           | `TaskType`                | `label`                                         | Python type                |
 | -------------- | ------------------------- | ----------------------------------------------- | -------------------------- |
 | detection      | `TaskType.DETECTION`      | `{id: Name(...)}`                               | `DetectionAnnotation`      |
+| manifest       | `TaskType.MANIFEST`       | —                                               | `ManifestAnnotation`       |
 | keypoint       | `TaskType.KEYPOINT`       | `{id: Name(...)}`                               | `KeypointAnnotation`       |
 | segmentation   | `TaskType.SEGMENTATION`   | `{id: Name(...)}`                               | `SegmentationAnnotation`   |
 | classification | `TaskType.CLASSIFICATION` | `{head: {id: Name(...)}}`                       | `ClassificationAnnotation` |
@@ -36,7 +37,7 @@ JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schem
 | Point target (e.g. counting)    | `point`    | `[x, y]`                                |
 
 
-Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json). Sequence tasks use `**annotation_vocab.txt`** instead of `annotation_meta.json`.
+Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json). Sequence tasks use `**annotation_vocab.txt`** instead of `annotation_meta.json`. 
 
 ## Install
 
@@ -72,7 +73,7 @@ pip install -e ".[vdswitch]"
 Each task directory holds `annotation_data.jsonl` plus optional label meta:
 
 - `**data_path**` — per-image/per-video JSONL records.
-- `**meta_path**` — task-level label information (not always JSON). Detection uses `annotation_meta.json`; sequence uses a vocabulary text file (default `annotation_vocab.txt`). Override the meta filename with `task_meta_filename` when needed.
+- `**meta_path**` — task-level label information when the task has a vocabulary. Detection and related tasks use `annotation_meta.json` (`annotation_schema_ref` plus vocabulary). Manifest, VLM, and conversation tasks do not write meta. Sequence uses a vocabulary text file (default `annotation_vocab.txt`). Override the meta filename with `task_meta_filename` when needed.
 
 ## Basic Usage
 
@@ -80,7 +81,7 @@ Expand a task below for a full example (GitHub renders `<details>` as collapsibl
 
 **Detection**
 
-Each instance needs at least one geometry: horizontal `**bbox`**, oriented `**polygon**`, open `**polyline**`, or `**point**` (see table above).
+Each instance needs at least one geometry: horizontal `**bbox`**, oriented `**polygon`**, open `**polyline**`, or `**point**` (see table above).
 
 Axis-aligned bounding box (bbox)
 
@@ -108,8 +109,6 @@ data, label = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 print(label[1].name, label[1].alias)  # person ('human',)
 ```
 
-
-
 Oriented box (polygon)
 
 ```python
@@ -131,8 +130,6 @@ writer.append(
 writer.save()
 data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 ```
-
-
 
 Open polyline
 
@@ -156,8 +153,6 @@ writer.save()
 data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 ```
 
-
-
 Point
 
 ```python
@@ -177,9 +172,42 @@ writer.save()
 data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 ```
 
+**Manifest**
 
+Inference or evaluation lists: only `filename`, `width`, and `height`. No `label` dictionary. Output is still `annotation_data.jsonl` under `output/manifest/` (when using the default output directory).The same file can be read with another `TaskType` on `writer.save_dir()`; omitted task fields default to empty. 
 
+```python
+from vdschema import (
+    AnnotationReader,
+    AnnotationWriter,
+    DetectionAnnotation,
+    TaskType,
+    VlmAnnotation,
+)
 
+writer = AnnotationWriter(TaskType.MANIFEST)
+writer.append(filename="images/infer_001.jpg", width=640, height=480)
+writer.append(filename="videos/infer_002.mp4", width=1920, height=1080)
+writer.save()
+
+manifest_dir = writer.save_dir()
+
+data, label = AnnotationReader(TaskType.MANIFEST, manifest_dir).load()
+assert label is None
+assert data[0].to_dict() == {
+    "filename": "images/infer_001.jpg",
+    "width": 640,
+    "height": 480,
+}
+
+data_det, _ = AnnotationReader(TaskType.DETECTION, manifest_dir).load()
+assert isinstance(data_det[0], DetectionAnnotation)
+assert data_det[0].instances == []
+
+data_vlm, _ = AnnotationReader(TaskType.VLM, manifest_dir).load()
+assert isinstance(data_vlm[0], VlmAnnotation)
+assert data_vlm[0].description == ""
+```
 
 **Keypoint**
 
@@ -205,8 +233,6 @@ data, label = AnnotationReader(
     TaskType.KEYPOINT, writer.save_dir()
 ).load()
 ```
-
-
 
 **Segmentation**
 
@@ -247,8 +273,6 @@ writer.save()
 data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
-
-
 **Classification**
 
 ```python
@@ -275,8 +299,6 @@ data, label = AnnotationReader(
     TaskType.CLASSIFICATION, writer.save_dir()
 ).load()
 ```
-
-
 
 **Relationship**
 
@@ -306,8 +328,6 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-
-
 **VLM**
 
 No label dictionary file. Omit `label` for tasks without vocabulary.
@@ -328,8 +348,6 @@ data, label = AnnotationReader(
 ).load()
 assert label is None
 ```
-
-
 
 **Conversation**
 
@@ -362,8 +380,6 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-
-
 **Sequence**
 
 Vocabulary is provided as an external file and copied to the output directory as `annotation_vocab.txt`. The file must contain **exactly one token per line** (no spaces/tabs within a line). See [assets/](assets/) for examples such as `alphanumeric_vocab.txt`. Each token in `sequences` must appear in the vocabulary file; validation runs on `append()` and on read.
@@ -387,8 +403,6 @@ data, label = AnnotationReader(
 ).load()
 assert label == {"vocab": "annotation_vocab.txt"}
 ```
-
-
 
 **Action**
 
@@ -420,8 +434,6 @@ data, label = AnnotationReader(
     TaskType.ACTION, writer.save_dir()
 ).load()
 ```
-
-
 
 ### More examples
 
@@ -468,15 +480,15 @@ vdswitch help --task detection --source monolith
 | `detection`      | JSONL + `label_dict.json`    | COCO `instances_*.json`（类别在 JSON 内，可省略 `--input-label`；标注里已是绝对路径时可省略 `--input-root`） |
 |                  |                              | YOLO `train.txt` + `classes.txt` + `labels/*.txt`                                    |
 |                  |                              | LabelBee `**/*.json` General Data（`rectTool` / `lineTool` / `polygonTool`）           |
-|                  |                              | LabelMe `*.json`（`rectangle` / `polygon` / `linestrip` / `point` / `circle`→bbox）      |
-|                  |                              | VOC `ImageSets/Main/*.txt` + `Annotations/*.xml`（检测）                                  |
+|                  |                              | LabelMe `*.json`（`rectangle` / `polygon` / `linestrip` / `point` / `circle`→bbox）    |
+|                  |                              | VOC `ImageSets/Main/*.txt` + `Annotations/*.xml`（检测）                                 |
 | `keypoint`       | —                            | COCO instances JSON（含 `keypoints` / 类别 `keypoints` 名）                                |
 |                  |                              | LabelBee `pointTool` JSON 目录                                                         |
 |                  |                              | LabelMe `point` shapes JSON 目录                                                       |
 | `segmentation`   | —                            | COCO instances JSON（`segmentation` 多边形或 RLE）                                         |
 |                  |                              | LabelBee `polygonTool` JSON 目录                                                       |
-|                  |                              | LabelMe `polygon` shapes JSON 目录                                                      |
-|                  |                              | VOC `SegmentationClass/*.png`（每类一个 RLE 实例，默认 VOC2012 20 类）                          |
+|                  |                              | LabelMe `polygon` shapes JSON 目录                                                     |
+|                  |                              | VOC `SegmentationClass/*.png`（每类一个 RLE 实例，默认 VOC2012 20 类）                           |
 | `classification` | JSONL + 多头 `label_dict.json` | ImageNet 目录 `train/<class>/`（可只传 `--input-data`，省略 `--input-label` / `--input-root`） |
 |                  |                              | LabelBee `tagTool` JSON 目录                                                           |
 | `action`         | 视频 meta + kmot               | 无标准 COCO 格式                                                                          |
@@ -520,14 +532,14 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 更多用例见 [tests/test_vdswitch.py](tests/test_vdswitch.py)。
 
 
-| Flag            | Values                                                    | Notes                                                                                                        |
-| --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `--task`        | `detection`, `classification`, `action`, `sequence`       | vdschema task type                                                                                           |
+| Flag            | Values                                                                      | Notes                                                                                                        |
+| --------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `--task`        | `detection`, `classification`, `action`, `sequence`                         | vdschema task type                                                                                           |
 | `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`, `labelbee`, `labelme`, `voc` | legacy monolith layout or third-party dataset formats                                                        |
-| `--input-data`  | one or more file paths                                    | annotation data file path(s)                                                                                 |
-| `--input-label` | file path (optional for some `--source`)                  | Label or vocab file; omit when native format embeds labels (COCO JSON, ImageNet layout); see `vdswitch help` |
-| `--input-root`  | directory (optional for some `--source`)                  | dataset root; omit when media paths in annotations are already absolute; see `vdswitch help`                 |
-| `--output`      | directory (default: `output`)                             | output directory; see output filename rules below                                                            |
+| `--input-data`  | one or more file paths                                                      | annotation data file path(s)                                                                                 |
+| `--input-label` | file path (optional for some `--source`)                                    | Label or vocab file; omit when native format embeds labels (COCO JSON, ImageNet layout); see `vdswitch help` |
+| `--input-root`  | directory (optional for some `--source`)                                    | dataset root; omit when media paths in annotations are already absolute; see `vdswitch help`                 |
+| `--output`      | directory (default: `output`)                                               | output directory; see output filename rules below                                                            |
 
 
 **Output filenames**

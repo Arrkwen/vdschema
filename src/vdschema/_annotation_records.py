@@ -99,7 +99,9 @@ class DetectionAnnotation(BaseAnnotation):
     def from_dict(cls, raw: dict[str, Any]) -> DetectionAnnotation:
         return cls(
             **cls._base_kwargs(raw),
-            instances=[Instance.from_dict(item) for item in raw["instances"]],
+            instances=[
+                Instance.from_dict(item) for item in raw.get("instances", [])
+            ],
             description=raw.get("description"),
         )
 
@@ -156,7 +158,8 @@ class ClassificationAnnotation(BaseAnnotation):
         return cls(
             **cls._base_kwargs(raw),
             categories=[
-                ClassificationHead.from_dict(item) for item in raw["categories"]
+                ClassificationHead.from_dict(item)
+                for item in raw.get("categories", [])
             ],
             description=raw.get("description"),
         )
@@ -177,10 +180,6 @@ class RelationshipAnnotation(BaseAnnotation):
         if not self.instances and self.relationships:
             raise AnnotationFormatError(
                 "instances is empty when relationships is not empty"
-            )
-        if not self.relationships and self.instances:
-            raise AnnotationFormatError(
-                "relationships is empty when instances is not empty"
             )
         instance_ids = {instance.id for instance in self.instances}
         for instance in self.instances:
@@ -215,9 +214,12 @@ class RelationshipAnnotation(BaseAnnotation):
     def from_dict(cls, raw: dict[str, Any]) -> RelationshipAnnotation:
         return cls(
             **cls._base_kwargs(raw),
-            instances=[Instance.from_dict(item) for item in raw["instances"]],
+            instances=[
+                Instance.from_dict(item) for item in raw.get("instances", [])
+            ],
             relationships=[
-                Relationship.from_dict(item) for item in raw["relationships"]
+                Relationship.from_dict(item)
+                for item in raw.get("relationships", [])
             ],
             description=raw.get("description"),
         )
@@ -225,20 +227,21 @@ class RelationshipAnnotation(BaseAnnotation):
 
 @dataclass(kw_only=True)
 class VlmAnnotation(BaseAnnotation):
-    description: str
+    description: str = ""
 
     def validate(self) -> None:
         self.validate_base()
-        if not self.description:
-            raise AnnotationFormatError("description must not be empty")
 
     def to_dict(self) -> dict[str, Any]:
         self.validate()
-        return {**self.base_dict(), "description": self.description}
+        out = self.base_dict()
+        if self.description:
+            out["description"] = self.description
+        return out
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> VlmAnnotation:
-        return cls(**cls._base_kwargs(raw), description=raw["description"])
+        return cls(**cls._base_kwargs(raw), description=raw.get("description", ""))
 
 
 @dataclass(kw_only=True)
@@ -251,8 +254,6 @@ class ConversationAnnotation(BaseAnnotation):
 
     def validate(self) -> None:
         self.validate_base()
-        if not self.conversations:
-            raise AnnotationFormatError("conversations must not be empty")
         for turn in self.conversations:
             turn.validate()
 
@@ -271,7 +272,8 @@ class ConversationAnnotation(BaseAnnotation):
         return cls(
             **cls._base_kwargs(raw),
             conversations=[
-                ConversationTurn.from_dict(item) for item in raw["conversations"]
+                ConversationTurn.from_dict(item)
+                for item in raw.get("conversations", [])
             ],
             description=raw.get("description"),
         )
@@ -297,7 +299,10 @@ class SequenceAnnotation(BaseAnnotation):
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> SequenceAnnotation:
-        return cls(**cls._base_kwargs(raw), sequences=raw["sequences"])
+        return cls(
+            **cls._base_kwargs(raw),
+            sequences=list(raw.get("sequences", [])),
+        )
 
 
 @dataclass(kw_only=True)
@@ -310,8 +315,6 @@ class ActionAnnotation(BaseAnnotation):
 
     def validate(self) -> None:
         self.validate_base()
-        if not self.actions:
-            raise AnnotationFormatError("actions must not be empty")
         for action in self.actions:
             action.validate()
 
@@ -329,14 +332,33 @@ class ActionAnnotation(BaseAnnotation):
     def from_dict(cls, raw: dict[str, Any]) -> ActionAnnotation:
         return cls(
             **cls._base_kwargs(raw),
-            actions=[ActionEvent.from_dict(item) for item in raw["actions"]],
+            actions=[
+                ActionEvent.from_dict(item) for item in raw.get("actions", [])
+            ],
             description=raw.get("description"),
         )
+
+
+@dataclass(kw_only=True)
+class ManifestAnnotation(BaseAnnotation):
+    """Media index: filename and pixel size only (no task labels)."""
+
+    def validate(self) -> None:
+        self.validate_base()
+
+    def to_dict(self) -> dict[str, Any]:
+        self.validate()
+        return self.base_dict()
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> ManifestAnnotation:
+        return cls(**cls._base_kwargs(raw))
 
 
 class TaskType(str, Enum):
     """Supported annotation task kinds."""
 
+    MANIFEST = "manifest"
     DETECTION = "detection"
     KEYPOINT = "keypoint"
     SEGMENTATION = "segmentation"
@@ -361,9 +383,12 @@ class TaskType(str, Enum):
         return self not in _TASKS_WITHOUT_LABEL_DICT
 
 
-_TASKS_WITHOUT_LABEL_DICT = frozenset({TaskType.VLM, TaskType.CONVERSATION})
+_TASKS_WITHOUT_LABEL_DICT = frozenset(
+    {TaskType.MANIFEST, TaskType.VLM, TaskType.CONVERSATION}
+)
 
 _TASK_ANNOTATION: dict[TaskType, type[BaseAnnotation]] = {
+    TaskType.MANIFEST: ManifestAnnotation,
     TaskType.DETECTION: DetectionAnnotation,
     TaskType.KEYPOINT: KeypointAnnotation,
     TaskType.SEGMENTATION: SegmentationAnnotation,

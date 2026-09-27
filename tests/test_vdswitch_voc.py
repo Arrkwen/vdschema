@@ -195,7 +195,6 @@ def test_voc_optional_label_file(mini_voc_root: Path, tmp_path: Path) -> None:
 
 def test_voc_iter_and_parse_errors(tmp_path: Path) -> None:
     from vdswitch.utils.voc_dataset import (
-        detection_instances_from_record,
         iter_voc_image_ids,
         load_optional_class_list,
         resolve_media_filename,

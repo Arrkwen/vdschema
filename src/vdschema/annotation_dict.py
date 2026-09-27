@@ -214,6 +214,13 @@ def _schema_ref(raw: dict[str, Any]) -> str:
     return raw.get("annotation_schema_ref", ANNOTATION_SCHEMA_ID)
 
 
+_VOCAB_META_KEYS = ("detection", "classification", "relationship", "action")
+
+
+def _meta_has_vocab(raw: dict[str, Any]) -> bool:
+    return any(raw.get(key) for key in _VOCAB_META_KEYS)
+
+
 def _require_key(raw: dict[str, Any], path: str | Path, key: str) -> Any:
     value = raw.get(key)
     if not value:
@@ -564,7 +571,7 @@ class SequenceLabelDict(TaskLabelDict):
 
 @dataclass(frozen=True)
 class NoLabelDict(TaskLabelDict):
-    """Placeholder for tasks without label vocabulary (VLM, conversation)."""
+    """Placeholder for tasks without label vocabulary (manifest, VLM, conversation)."""
 
     def to_label(self) -> dict[str, Any]:
         return {}
@@ -607,6 +614,57 @@ def build_label_dict(
     return factory(label)
 
 
+def _vocab_label_dict_for_reader(
+    reader_task: TaskType,
+    meta_path: Path,
+    raw: dict[str, Any],
+) -> TaskLabelDict:
+    if reader_task in {
+        TaskType.DETECTION,
+        TaskType.KEYPOINT,
+        TaskType.SEGMENTATION,
+    }:
+        if raw.get("detection"):
+            return DetectionLabelDict.load(meta_path)
+        return NoLabelDict()
+    if reader_task is TaskType.CLASSIFICATION:
+        if raw.get("classification"):
+            return ClassificationLabelDict.load(meta_path)
+        return NoLabelDict()
+    if reader_task is TaskType.RELATIONSHIP:
+        if raw.get("detection") and raw.get("relationship"):
+            return RelationshipLabelDict.load(meta_path)
+        return NoLabelDict()
+    if reader_task is TaskType.ACTION:
+        if raw.get("action"):
+            return ActionLabelDict.load(meta_path)
+        return NoLabelDict()
+    if reader_task is TaskType.SEQUENCE:
+        return SequenceLabelDict.load(meta_path)
+    return NoLabelDict()
+
+
+def load_reader_label_dict(
+    reader_task: TaskType,
+    meta_path: Path,
+) -> tuple[TaskLabelDict, dict[str, Any] | None]:
+    """Load label meta for ``AnnotationReader`` when the meta file exists."""
+    if reader_task is TaskType.SEQUENCE:
+        if not meta_path.is_file():
+            return NoLabelDict(), None
+        loaded = SequenceLabelDict.load(meta_path)
+        return loaded, loaded.to_label()
+    if not meta_path.is_file():
+        return NoLabelDict(), None
+    raw = _read_json_object(meta_path)
+    if not _meta_has_vocab(raw):
+        return NoLabelDict(), None
+    label_dict = _vocab_label_dict_for_reader(reader_task, meta_path, raw)
+    label_payload = label_dict.to_label()
+    label = label_payload if label_payload else None
+    return label_dict, label
+
+
 def load_label_dict(
     task_type: TaskType,
     task_dir: str | Path,
@@ -614,10 +672,14 @@ def load_label_dict(
     task_meta_filename: str | None = None,
 ) -> TaskLabelDict | None:
     """Load label vocabulary under ``task_dir``; return ``None`` when not applicable."""
-    if not task_type.has_label_dict:
-        return None
     resolved_meta_filename = resolve_meta_filename(task_type, task_meta_filename)
     meta_path = meta_path_for(task_dir, resolved_meta_filename)
+    if task_type is TaskType.SEQUENCE:
+        if not meta_path.is_file():
+            raise AnnotationFormatError(f"missing label dictionary: {meta_path}")
+        return SequenceLabelDict.load(meta_path)
+    if not task_type.has_label_dict:
+        return None
     if not meta_path.is_file():
         raise AnnotationFormatError(f"missing label dictionary: {meta_path}")
     return _LABEL_DICT_BY_TASK[task_type].load(meta_path)  # type: ignore[attr-defined]

@@ -11,6 +11,7 @@ class Source(str, Enum):
     YOLO = "yolo"
     IMAGENET = "imagenet"
     OCR = "ocr"
+    LABELBEE = "labelbee"
 
     @classmethod
     def parse(cls, value: str | Source) -> Source:

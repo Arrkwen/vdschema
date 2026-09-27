@@ -428,6 +428,7 @@ uv run pytest
 - [x] yolo (detection)
 - [x] imagenet (classification)
 - [x] ocr (sequence)
+- [x] labelbee (detection / segmentation / keypoint / classification; [format docs](https://github.com/open-mmlab/labelbee-client/tree/main/docs/annotation))
 
 ```bash
 vdswitch \
@@ -451,9 +452,13 @@ vdswitch help --task detection --source monolith
 | ---------------- | ---------------------------------------- | ---------------------------------------------------- |
 | `detection`      | JSONL + `label_dict.json`                | COCO `instances_*.json`（类别在 JSON 内，可省略 `--input-label`；标注里已是绝对路径时可省略 `--input-root`）     |
 |                |                                          | YOLO `train.txt` + `classes.txt` + `labels/*.txt`        |
+|                |                                          | LabelBee `**/*.json` General Data（`rectTool` / `lineTool` / `polygonTool`） |
 | `keypoint`       | —                                        | COCO instances JSON（含 `keypoints` / 类别 `keypoints` 名） |
+|                |                                          | LabelBee `pointTool` JSON 目录 |
 | `segmentation`   | —                                        | COCO instances JSON（`segmentation` 多边形或 RLE）         |
+|                |                                          | LabelBee `polygonTool` JSON 目录 |
 | `classification` | JSONL + 多头 `label_dict.json`             | ImageNet 目录 `train/<class>/`（可只传 `--input-data`，省略 `--input-label` / `--input-root`） |
+|                |                                          | LabelBee `tagTool` JSON 目录 |
 | `action`         | 视频 meta + kmot                         | 无标准 COCO 格式                                          |
 | `sequence`       | JSONL + `vocab.txt`                      | OCR 清单 `anno.txt`（路径 TAB 文本）+ `vocab.txt`              |
 
@@ -498,7 +503,7 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 | Flag            | Values                                              | Notes                                                                                      |
 | --------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `--task`        | `detection`, `classification`, `action`, `sequence` | vdschema task type                                                                         |
-| `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`       | legacy monolith layout or third-party dataset formats                                      |
+| `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`, `labelbee` | legacy monolith layout or third-party dataset formats                                      |
 | `--input-data`  | one or more file paths                              | annotation data file path(s)                                                               |
 | `--input-label` | file path (optional for some `--source`)            | Label or vocab file; omit when native format embeds labels (COCO JSON, ImageNet layout); see `vdswitch help` |
 | `--input-root`  | directory (optional for some `--source`)            | dataset root; omit when media paths in annotations are already absolute; see `vdswitch help` |

@@ -1,6 +1,6 @@
 """Built-in converters; import submodules to populate the registry."""
 
-from . import action, classification, coco, detection, imagenet, ocr, sequence, yolo
+from . import action, classification, coco, detection, imagenet, labelbee, ocr, sequence, yolo
 
 __all__ = [
     "action",
@@ -10,6 +10,7 @@ __all__ = [
     "coco",
     "yolo",
     "imagenet",
+    "labelbee",
     "ocr",
     "MonolithUpActionConverter",
     "MonolithUpClassificationConverter",
@@ -20,6 +21,10 @@ __all__ = [
     "CocoSegmentationConverter",
     "YoloDetectionConverter",
     "ImagenetClassificationConverter",
+    "LabelBeeClassificationConverter",
+    "LabelBeeDetectionConverter",
+    "LabelBeeKeypointConverter",
+    "LabelBeeSegmentationConverter",
     "OcrSequenceConverter",
 ]
 
@@ -32,6 +37,12 @@ from .coco import (
 )
 from .detection import MonolithUpDetectionConverter
 from .imagenet import ImagenetClassificationConverter
+from .labelbee import (
+    LabelBeeClassificationConverter,
+    LabelBeeDetectionConverter,
+    LabelBeeKeypointConverter,
+    LabelBeeSegmentationConverter,
+)
 from .ocr import OcrSequenceConverter
 from .sequence import MonolithUpSequenceConverter
 from .yolo import YoloDetectionConverter

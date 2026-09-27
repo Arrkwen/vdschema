@@ -48,6 +48,8 @@ def _example_paths(task: TaskType, source: Source) -> tuple[str, str | None]:
         return "/path/to/anno.txt", "/path/to/vocab.txt"
     if source is Source.LABELBEE:
         return "/path/to/labelbee/json", None
+    if source is Source.LABELME:
+        return "/path/to/labelme/json", None
     if task is TaskType.ACTION:
         return "/path/to/meta/video_train.txt", "/path/to/meta/label_dict.json"
     if task is TaskType.SEQUENCE:

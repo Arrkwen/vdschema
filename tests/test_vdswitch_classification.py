@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from vdswitch.converters.classification import _load_cls_label
+from vdswitch.converters.monolith import _load_cls_label
 
 
 def test_load_cls_label_errors(tmp_path: Path) -> None:

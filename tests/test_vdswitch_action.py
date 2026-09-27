@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from vdschema import Source, TaskType, switch
-from vdswitch.converters.action import _load_act_label, _parse_legacy_meta_line
+from vdswitch.converters.monolith import _load_act_label, _parse_legacy_meta_line
 
 
 def test_load_act_label_action_list(tmp_path: Path) -> None:

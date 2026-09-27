@@ -22,17 +22,20 @@ _COCO_INPUT_DATA_HELP = (
     "(standard MS COCO detection / keypoint / segmentation export)."
 )
 _COCO_INPUT_LABEL_HELP = (
-    "Same COCO JSON path as --input-data, or a JSON file containing only "
-    "categories[] (ids and names must match annotations)."
+    "Optional. Defaults to --input-data (categories[] in the same JSON). "
+    "Or a JSON file with only categories[]."
 )
 _COCO_TYPICAL = (
-    "  annotations/instances_*.json  — COCO export\n"
-    "  images/…                      — file_name relative to --input-root"
+    "  annotations/instances_*.json  — COCO export (categories inside)\n"
+    "  images/…  — paths in JSON; use --input-root only if paths are relative"
 )
 
 
 class _CocoConverter(BaseConverter):
     source_note = "MS COCO instance JSON (pycocotools-compatible layout)."
+
+    input_label_same_as_data = True
+    input_root_optional = True
 
     input_data_help = _COCO_INPUT_DATA_HELP
     input_label_help = _COCO_INPUT_LABEL_HELP

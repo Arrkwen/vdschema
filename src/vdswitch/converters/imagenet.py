@@ -22,6 +22,10 @@ _IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 class ImagenetClassificationConverter(BaseConverter):
     """ImageNet train/<class_name>/* → vdschema classification."""
 
+    input_label_same_as_data = True
+    input_data_is_dir = True
+    input_root_optional = True
+
     source_note = "ImageNet-style directory tree: one subfolder per class."
 
     input_data_help = (
@@ -29,13 +33,13 @@ class ImagenetClassificationConverter(BaseConverter):
         "(e.g. train/n01440764/*.JPEG)."
     )
     input_label_help = (
-        "Same directory as --input-data (class names inferred from folder names)."
+        "Optional. Defaults to --input-data (class names from subfolder names)."
     )
     input_data_sample = "train/n01440764/sample.JPEG"
     input_label_sample = "(same directory as --input-data)"
     typical_layout = (
         "  train/<class_name>/*.jpg   — one folder per category\n"
-        "  --input-data and --input-label both point at train/"
+        "  --input-data points at train/ (--input-root defaults to its parent)"
     )
 
     def __init__(self, **kwargs) -> None:
@@ -46,12 +50,6 @@ class ImagenetClassificationConverter(BaseConverter):
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
         self.output_meta_filename = "label_dict.json"
-
-    def _ensure_inputs(self) -> None:
-        if not self.input_data.is_dir():
-            raise FileNotFoundError(f"input data not found: {self.input_data}")
-        if not self.input_label.is_dir() and not self.input_label.is_file():
-            raise FileNotFoundError(f"input label not found: {self.input_label}")
 
     def _convert(self) -> None:
         heads, name_to_id = build_imagenet_head(self.input_data)

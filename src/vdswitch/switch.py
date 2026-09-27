@@ -35,7 +35,7 @@ def switch(
     task: TaskType,
     source: Source,
     input_data: str | Path | Sequence[str | Path],
-    input_label: str | Path,
+    input_label: str | Path | None = None,
     input_root: str | Path | None = None,
     output: str | Path = DEFAULT_OUTPUT_DIR,
 ) -> Path:

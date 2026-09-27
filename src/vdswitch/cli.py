@@ -83,7 +83,7 @@ def _convert_usage(task_choices: tuple[str, ...], source_choices: tuple[str, ...
         f"{i}--task {tasks}\n"
         f"{i}--source {sources}\n"
         f"{i}--input-data PATH [PATH ...]\n"
-        f"{i}--input-label PATH\n"
+        f"{i}[--input-label PATH]\n"
         f"{i}[--input-root INPUT_ROOT]\n"
         f"{i}[--output OUTPUT]"
     )
@@ -133,17 +133,16 @@ def build_convert_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--input-label",
-        required=True,
+        default=None,
         metavar="PATH",
-        help="Label or vocab file path",
+        help="Label or vocab path; optional when embedded in --input-data (see help)",
     )
     parser.add_argument(
         "--input-root",
         default=None,
         help=(
-            "Dataset root; joined with media paths in annotation files to "
-            "resolve absolute image/video paths (e.g. for width/height); "
-            "use when auto-detection fails"
+            "Dataset root for relative media paths; optional when paths are "
+            "absolute or layout is inferable (see vdswitch help)"
         ),
     )
     parser.add_argument(

@@ -33,7 +33,12 @@ class ImageSizeResolver:
         return size
 
     def _resolve_image_path(self, filename: str) -> Path:
-        rel = Path(filename)
+        path = Path(filename).expanduser()
+        if path.is_absolute():
+            resolved = path.resolve()
+            if resolved.is_file():
+                return resolved
+        rel = path
         candidates = (
             self.image_root / rel.name,
             self.image_root / rel,

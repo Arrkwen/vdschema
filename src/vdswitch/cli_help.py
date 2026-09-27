@@ -31,86 +31,62 @@ def _resolve_source(task: TaskType, source: Source | None) -> Source:
     return _default_source_for_task(task)
 
 
-def _example_command(task: TaskType, source: Source) -> str:
+def _example_paths(task: TaskType, source: Source) -> tuple[str, str | None]:
     if source is Source.COCO:
         data_by_task = {
-            TaskType.DETECTION: "annotations/instances_train2017.json",
-            TaskType.KEYPOINT: "annotations/person_keypoints_train2017.json",
-            TaskType.SEGMENTATION: "annotations/instances_train2017.json",
+            TaskType.DETECTION: "/path/to/annotations/instances_train2017.json",
+            TaskType.KEYPOINT: "/path/to/annotations/person_keypoints_train2017.json",
+            TaskType.SEGMENTATION: "/path/to/annotations/instances_train2017.json",
         }
-        data = data_by_task.get(task, "annotations/instances.json")
-        return (
-            "vdswitch \\\n"
-            f"  --task {task.value} \\\n"
-            "  --source coco \\\n"
-            f"  --input-data /path/to/{data} \\\n"
-            f"  --input-label /path/to/{data} \\\n"
-            "  --input-root /path/to/dataset \\\n"
-            "  --output output"
-        )
-
+        data = data_by_task.get(task, "/path/to/annotations/instances.json")
+        return data, None
     if source is Source.YOLO and task is TaskType.DETECTION:
-        return (
-            "vdswitch \\\n"
-            "  --task detection \\\n"
-            "  --source yolo \\\n"
-            "  --input-data /path/to/train.txt \\\n"
-            "  --input-label /path/to/classes.txt \\\n"
-            "  --input-root /path/to/dataset \\\n"
-            "  --output output"
-        )
-
+        return "/path/to/train.txt", "/path/to/classes.txt"
     if source is Source.IMAGENET and task is TaskType.CLASSIFICATION:
-        return (
-            "vdswitch \\\n"
-            "  --task classification \\\n"
-            "  --source imagenet \\\n"
-            "  --input-data /path/to/train \\\n"
-            "  --input-label /path/to/train \\\n"
-            "  --input-root /path/to/dataset \\\n"
-            "  --output output"
-        )
-
+        return "/path/to/train", None
     if source is Source.OCR and task is TaskType.SEQUENCE:
-        return (
-            "vdswitch \\\n"
-            "  --task sequence \\\n"
-            "  --source ocr \\\n"
-            "  --input-data /path/to/anno.txt \\\n"
-            "  --input-label /path/to/vocab.txt \\\n"
-            "  --input-root /path/to/dataset \\\n"
-            "  --output output"
-        )
-
+        return "/path/to/anno.txt", "/path/to/vocab.txt"
     if task is TaskType.ACTION:
-        return (
-            "vdswitch \\\n"
-            "  --task action \\\n"
-            "  --source monolith \\\n"
-            "  --input-data /path/to/meta/video_train.txt \\\n"
-            "  --input-label /path/to/meta/label_dict.json \\\n"
-            "  --input-root /path/to/dataset \\\n"
-            "  --output output"
-        )
-
-    label = _label_placeholder(task)
-    data = "meta/train_baseline.jsonl"
+        return "/path/to/meta/video_train.txt", "/path/to/meta/label_dict.json"
     if task is TaskType.SEQUENCE:
-        data = "meta/train_baseline.jsonl"
-        label = "meta/vocab.txt"
-    return (
-        "vdswitch \\\n"
-        f"  --task {task.value} \\\n"
-        "  --source monolith \\\n"
-        f"  --input-data /path/to/{data} \\\n"
-        f"  --input-label /path/to/{label} \\\n"
-        "  --input-root /path/to/dataset \\\n"
-        "  --output output"
-    )
+        return "/path/to/meta/train_baseline.jsonl", "/path/to/meta/vocab.txt"
+    return "/path/to/meta/train_baseline.jsonl", "/path/to/meta/label_dict.json"
+
+
+def _example_command(task: TaskType, source: Source) -> str:
+    cls = get_converter_class(task, source)
+    data_path, label_path = _example_paths(task, source)
+    if label_path is None and not cls.input_label_same_as_data:
+        label_path = f"/path/to/{_label_placeholder(task)}"
+
+    lines = [
+        "vdswitch \\",
+        f"  --task {task.value} \\",
+        f"  --source {source.value} \\",
+        f"  --input-data {data_path} \\",
+    ]
+    if label_path is not None and not cls.input_label_same_as_data:
+        lines.append(f"  --input-label {label_path} \\")
+    if not cls.input_root_optional:
+        lines.append("  --input-root /path/to/dataset \\")
+    lines.append("  --output output")
+    return "\n".join(lines)
 
 
 def _converter_class_for_task(task: TaskType) -> type:
     return get_converter_class(task, _default_source_for_task(task))
+
+
+def _optional_flag_notes(cls: type) -> list[str]:
+    notes: list[str] = []
+    if cls.input_label_same_as_data:
+        notes.append("--input-label: optional (defaults to each --input-data path)")
+    if cls.input_root_optional:
+        notes.append(
+            "--input-root: optional when paths in data are absolute or "
+            "inferable from layout"
+        )
+    return notes
 
 
 def format_task_summary_lines() -> list[str]:
@@ -156,19 +132,26 @@ def format_help_text(*, task: TaskType | None, source: Source | None) -> str:
         f"Task: {task.value}",
         f"Source: {source_line}",
         cls.source_note,
-        "",
-        "--input-data",
-        cls.input_data_help or "(see converter docstring)",
-        "",
-        "Sample line / file excerpt:",
-        cls.input_data_sample or "(none)",
-        "",
-        "--input-label",
-        cls.input_label_help or "(see converter docstring)",
-        "",
-        "Sample content:",
-        cls.input_label_sample or "(none)",
     ]
+    optional_notes = _optional_flag_notes(cls)
+    if optional_notes:
+        sections.extend(["", "Optional flags:", *[f"  {note}" for note in optional_notes]])
+    sections.extend(
+        [
+            "",
+            "--input-data",
+            cls.input_data_help or "(see converter docstring)",
+            "",
+            "Sample line / file excerpt:",
+            cls.input_data_sample or "(none)",
+            "",
+            "--input-label",
+            cls.input_label_help or "(see converter docstring)",
+            "",
+            "Sample content:",
+            cls.input_label_sample or "(none)",
+        ]
+    )
     if cls.typical_layout:
         sections.extend(["", "Typical paths under dataset root:", cls.typical_layout])
     sections.extend(

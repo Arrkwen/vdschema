@@ -9,7 +9,7 @@ import pytest
 
 from vdschema import AnnotationReader, Source, TaskType, switch
 from vdswitch.cli import main
-from vdswitch.cli_help import format_help_text
+from vdswitch.cli_help import _example_command, format_help_text
 from vdswitch.converters.registry import get_converter_class
 from vdswitch.utils.coco_dataset import (
     coco_bbox_xyxy,
@@ -41,6 +41,19 @@ def test_coco_segmentation_polygon_roundtrip() -> None:
     assert rle is not None
     mask = rle.to_mask()
     assert mask.shape == (100, 200)
+
+
+def test_vdswitch_coco_detection_without_input_label(
+    coco_instances_path: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "vdschema_coco_det"
+    switch(
+        task=TaskType.DETECTION,
+        source=Source.COCO,
+        input_data=coco_instances_path,
+        output=out,
+    )
+    assert (out / "instances.jsonl").is_file()
 
 
 def test_vdswitch_coco_detection(coco_instances_path: Path, tmp_path: Path) -> None:
@@ -171,8 +184,11 @@ def test_vdswitch_cli_coco_detection(
 
 def test_vdswitch_help_coco_detection() -> None:
     text = format_help_text(task=TaskType.DETECTION, source=Source.COCO)
+    example = _example_command(TaskType.DETECTION, Source.COCO)
     assert "--source coco" in text
-    assert "instances_train2017.json" in text
+    assert "instances_train2017.json" in example
+    assert "--input-label" not in example
+    assert "--input-root" not in example
     assert main(["help", "--task", "detection", "--source", "coco"]) == 0
 
 

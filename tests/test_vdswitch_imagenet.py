@@ -18,6 +18,25 @@ def test_build_imagenet_head(imagenet_legacy_dir: Path) -> None:
     assert name_to_id["dog"] == 2
 
 
+def test_vdswitch_imagenet_minimal_args(
+    imagenet_legacy_dir: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "out"
+    switch(
+        task=TaskType.CLASSIFICATION,
+        source=Source.IMAGENET,
+        input_data=imagenet_legacy_dir,
+        output=out,
+    )
+    data, _ = AnnotationReader(
+        TaskType.CLASSIFICATION,
+        out,
+        task_data_filename="train.jsonl",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert len(data) == 2
+
+
 def test_vdswitch_imagenet_classification(
     imagenet_legacy_dir: Path, tmp_path: Path
 ) -> None:

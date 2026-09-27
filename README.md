@@ -383,11 +383,11 @@ vdswitch help --task detection --source monolith
 
 | Task             | `--source monolith`                      | other sources                                        |
 | ---------------- | ---------------------------------------- | ---------------------------------------------------- |
-| `detection`      | JSONL + `label_dict.json`                | COCO `instances_*.json`（`categories` 可与 data 同文件）     |
+| `detection`      | JSONL + `label_dict.json`                | COCO `instances_*.json`（类别在 JSON 内，可省略 `--input-label`；标注里已是绝对路径时可省略 `--input-root`）     |
 |                |                                          | YOLO `train.txt` + `classes.txt` + `labels/*.txt`        |
 | `keypoint`       | —                                        | COCO instances JSON（含 `keypoints` / 类别 `keypoints` 名） |
 | `segmentation`   | —                                        | COCO instances JSON（`segmentation` 多边形或 RLE）         |
-| `classification` | JSONL + 多头 `label_dict.json`             | ImageNet 目录 `train/<class>/`（`--input-data`/`--input-label` 同路径） |
+| `classification` | JSONL + 多头 `label_dict.json`             | ImageNet 目录 `train/<class>/`（可只传 `--input-data`，省略 `--input-label` / `--input-root`） |
 | `action`         | 视频 meta + kmot                         | 无标准 COCO 格式                                          |
 | `sequence`       | JSONL + `vocab.txt`                      | OCR 清单 `anno.txt`（路径 TAB 文本）+ `vocab.txt`              |
 
@@ -398,10 +398,10 @@ vdswitch \
   --task detection \
   --source coco \
   --input-data /path/to/annotations/instances_train2017.json \
-  --input-label /path/to/annotations/instances_train2017.json \
-  --input-root /path/to/dataset \
   --output output
 ```
+
+（`vdswitch help --task detection --source coco` 中的示例与上述最小参数一致；相对路径图片时需再加 `--input-root`。）
 
 
 运行 `vdswitch -h` 会提示使用 `vdswitch help`；各任务完整样例见 `vdswitch help --task <name>`。
@@ -434,8 +434,8 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 | `--task`        | `detection`, `classification`, `action`, `sequence` | vdschema task type                                                                         |
 | `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`       | legacy monolith layout or third-party dataset formats                                      |
 | `--input-data`  | one or more file paths                              | annotation data file path(s)                                                               |
-| `--input-label` | file path                                           | Label or vocab file; JSON or text depending on `--task` (see `vdswitch help --task …`)     |
-| `--input-root`  | directory                                           | dataset root; joined with media paths in annotations to resolve absolute image/video paths |
+| `--input-label` | file path (optional for some `--source`)            | Label or vocab file; omit when native format embeds labels (COCO JSON, ImageNet layout); see `vdswitch help` |
+| `--input-root`  | directory (optional for some `--source`)            | dataset root; omit when media paths in annotations are already absolute; see `vdswitch help` |
 | `--output`      | directory (default: `output`)                       | output directory; see output filename rules below                                          |
 
 

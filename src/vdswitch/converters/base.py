@@ -27,16 +27,32 @@ class BaseConverter(ABC):
     input_data_sample: ClassVar[str] = ""
     input_label_sample: ClassVar[str] = ""
     typical_layout: ClassVar[str] = ""
+    #: Omit ``--input-label`` on CLI; defaults to each ``--input-data`` path.
+    input_label_same_as_data: ClassVar[bool] = False
+    #: ``--input-data`` is a directory (ImageNet-style).
+    input_data_is_dir: ClassVar[bool] = False
+    #: Minimal ``vdswitch help`` example omits ``--input-root``.
+    input_root_optional: ClassVar[bool] = False
 
     def __init__(
         self,
         *,
         input_data: str | Path,
-        input_label: str | Path,
+        input_label: str | Path | None = None,
         output_dir: str | Path,
         input_root: str | Path | None = None,
     ) -> None:
         self.input_data = Path(input_data).expanduser().resolve()
+        if input_label is None:
+            if type(self).input_label_same_as_data:
+                input_label = self.input_data
+            else:
+                raise ValueError(
+                    f"--input-label is required for source="
+                    f"{type(self).source.value!r}; "
+                    f"see: vdswitch help --task {type(self).task_type.value} "
+                    f"--source {type(self).source.value}"
+                )
         self.input_label = Path(input_label).expanduser().resolve()
         self.output_dir = Path(output_dir).expanduser().resolve()
         self.input_root = (
@@ -71,8 +87,13 @@ class BaseConverter(ABC):
         return self.output_dir
 
     def _ensure_inputs(self) -> None:
-        if not self.input_data.is_file():
+        if type(self).input_data_is_dir:
+            if not self.input_data.is_dir():
+                raise FileNotFoundError(f"input data not found: {self.input_data}")
+        elif not self.input_data.is_file():
             raise FileNotFoundError(f"input data not found: {self.input_data}")
+        if type(self).input_label_same_as_data:
+            return
         if not self.input_label.is_file():
             raise FileNotFoundError(f"input label not found: {self.input_label}")
 

@@ -19,7 +19,12 @@ from vdswitch.utils.coco_dataset import (
 
 
 def test_coco_bbox_xyxy() -> None:
-    assert coco_bbox_xyxy({"bbox": [10.0, 20.0, 30.0, 40.0]}) == [10.0, 20.0, 40.0, 60.0]
+    assert coco_bbox_xyxy({"bbox": [10.0, 20.0, 30.0, 40.0]}) == [
+        10.0,
+        20.0,
+        40.0,
+        60.0,
+    ]
 
 
 def test_load_category_map_from_categories_only(tmp_path: Path) -> None:
@@ -142,7 +147,7 @@ def test_vdswitch_coco_segmentation(coco_instances_path: Path, tmp_path: Path) -
     ).load()
     assert len(data) == 1
     assert len(data[0].instances) == 1
-    assert data[0].instances[0].segmentation is not None
+    assert data[0].instances[0].rle_mask is not None
 
 
 @pytest.mark.parametrize(
@@ -158,9 +163,7 @@ def test_coco_unsupported_tasks(task: TaskType) -> None:
         get_converter_class(task, Source.COCO)
 
 
-def test_vdswitch_cli_coco_detection(
-    coco_instances_path: Path, tmp_path: Path
-) -> None:
+def test_vdswitch_cli_coco_detection(coco_instances_path: Path, tmp_path: Path) -> None:
     out = tmp_path / "cli_coco"
     assert (
         main(

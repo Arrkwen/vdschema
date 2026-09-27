@@ -53,6 +53,13 @@ name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
+[tool.coverage.run]
+source = ["src/vdschema", "src/vdswitch"]
+
+[tool.coverage.report]
+precision = 0
+show_missing = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

@@ -22,13 +22,13 @@ _ANSI_RESET = "\033[0m"
 _WINDOWS_VT: bool | None = None
 
 
-def _enable_windows_vt() -> bool:
+def _enable_windows_vt() -> bool:  # pragma: no cover
     global _WINDOWS_VT
     if _WINDOWS_VT is not None:
         return _WINDOWS_VT
-    import ctypes
+    import ctypes  # pragma: no cover — exercised only on Windows consoles
 
-    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]  # pragma: no cover
     enable_vt = 0x0004
     ok = True
     for handle_id in (-11, -12):  # stdout, stderr
@@ -221,5 +221,5 @@ def main(argv: list[str] | None = None) -> int:
     return run_convert(argv)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())

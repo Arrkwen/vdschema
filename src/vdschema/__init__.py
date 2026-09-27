@@ -5,7 +5,7 @@ from typing import Any
 
 try:
     __version__ = version("vdschema")
-except PackageNotFoundError:
+except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 from .annotation_dict import Name
 from .annotation_format import (

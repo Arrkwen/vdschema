@@ -17,9 +17,7 @@ from vdswitch.utils.yolo_dataset import (
 
 def test_yolo_label_path_mapping() -> None:
     image = Path("/data/images/train/a.jpg")
-    assert yolo_label_path_for_image(image) == Path(
-        "/data/labels/train/a.txt"
-    )
+    assert yolo_label_path_for_image(image) == Path("/data/labels/train/a.txt")
 
 
 def test_parse_yolo_label_file_xyxy(tmp_path: Path) -> None:

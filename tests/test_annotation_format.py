@@ -28,6 +28,7 @@ from vdschema import (
     VlmAnnotation,
 )
 from vdschema.annotation_dict import ANNOTATION_VOCAB_FILENAME
+from vdschema.annotation_format import Instance
 
 TAnnotation = TypeVar("TAnnotation", bound=BaseAnnotation)
 
@@ -222,7 +223,7 @@ def test_segmentation_annotation_format():
                 "id": 0,
                 "category_id": 1,
                 "bbox": [10, 20, 100, 200],
-                "segmentation": seg_a,
+                "rle_mask": seg_a,
             }
         ],
     )
@@ -235,7 +236,7 @@ def test_segmentation_annotation_format():
                 "id": 1,
                 "category_id": 1,
                 "bbox": Bbox.from_xywh([120, 30, 200, 180]),
-                "segmentation": seg_b,
+                "rle_mask": seg_b,
             }
         ],
     )
@@ -250,10 +251,10 @@ def test_segmentation_annotation_format():
     data, _, rows = _read_annotations(writer, expected_count=3)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
-    assert rows[0]["instances"][0]["segmentation"]["size"] == [480, 640]
-    assert rows[1]["instances"][0]["segmentation"]["counts"]
+    assert rows[0]["instances"][0]["rle_mask"]["size"] == [480, 640]
+    assert rows[1]["instances"][0]["rle_mask"]["counts"]
     assert isinstance(data[0], SegmentationAnnotation)
-    assert data[0].instances[0].segmentation.to_mask().shape == (480, 640)
+    assert data[0].instances[0].rle_mask.to_mask().shape == (480, 640)
     assert data[2].instances == []
 
 
@@ -447,42 +448,42 @@ def test_action_annotation_format():
                     {
                         "frame_idx": 0,
                         "bbox": [520, 300, 620, 380],
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                     {
                         "frame_idx": 1,
                         "bbox": Bbox.from_xyxy([528, 302, 628, 382]),
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                     {
                         "frame_idx": 2,
                         "bbox": Bbox.from_xyxy([536, 304, 636, 384]),
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                     {
                         "frame_idx": 3,
                         "bbox": Bbox.from_xyxy([544, 306, 644, 386]),
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                     {
                         "frame_idx": 4,
                         "bbox": Bbox.from_xyxy([552, 308, 652, 388]),
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                     {
                         "frame_idx": 5,
                         "bbox": Bbox.from_xyxy([560, 310, 660, 390]),
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                     {
                         "frame_idx": 6,
                         "bbox": Bbox.from_xyxy([568, 312, 668, 392]),
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                     {
                         "frame_idx": 7,
                         "bbox": Bbox.from_xyxy([576, 314, 676, 394]),
-                        "segmentation": SegmentationRLE.from_mask(_mask(1080, 1920)),
+                        "rle_mask": SegmentationRLE.from_mask(_mask(1080, 1920)),
                     },
                 ],
             }
@@ -747,3 +748,67 @@ def test_sequence_reader_rejects_unknown_token():
         )
         reader = AnnotationReader(TaskType.SEQUENCE, writer.save_dir())
         assert reader.validate() is False
+
+
+def test_instance_reads_legacy_segmentation_key() -> None:
+    inst = Instance.from_dict(
+        {
+            "id": 0,
+            "category_id": 1,
+            "bbox": [0, 0, 10, 10],
+            "segmentation": {"size": [480, 640], "counts": "6320004"},
+        }
+    )
+    assert inst.rle_mask is not None
+    assert inst.to_dict()["rle_mask"]["counts"] == "6320004"
+    assert "segmentation" not in inst.to_dict()
+
+
+def test_keypoint_instance_without_bbox() -> None:
+    writer = AnnotationWriter(TaskType.KEYPOINT, label={1: "person"})
+    writer.append(
+        filename="images/kp_only.jpg",
+        width=100,
+        height=100,
+        instances=[
+            {
+                "id": 0,
+                "category_id": 1,
+                "keypoints": {"body": [[10, 20, 2]]},
+            }
+        ],
+    )
+    writer.save()
+    data, _, rows = _read_annotations(writer, expected_count=1)
+    assert "bbox" not in rows[0]["instances"][0]
+    assert data[0].instances[0].bbox is None
+
+
+def test_detection_instance_polygon_only() -> None:
+    writer = AnnotationWriter(TaskType.DETECTION, label={1: "region"})
+    writer.append(
+        filename="images/poly.jpg",
+        width=100,
+        height=100,
+        instances=[
+            {"id": 0, "category_id": 1, "polygon": [0, 0, 10, 0, 10, 10, 0, 10]},
+        ],
+    )
+    writer.save()
+    data, _, _ = _read_annotations(writer, expected_count=1)
+    assert data[0].instances[0].polygon == [0.0, 0.0, 10.0, 0.0, 10.0, 10.0, 0.0, 10.0]
+
+
+def test_segmentation_instance_polygon_only() -> None:
+    writer = AnnotationWriter(TaskType.SEGMENTATION, label={1: "region"})
+    writer.append(
+        filename="images/seg_poly.jpg",
+        width=100,
+        height=100,
+        instances=[
+            {"id": 0, "category_id": 1, "polygon": [1, 1, 9, 1, 9, 9, 1, 9]},
+        ],
+    )
+    writer.save()
+    data, _, _ = _read_annotations(writer, expected_count=1)
+    assert data[0].instances[0].rle_mask is None

@@ -10,7 +10,9 @@ import pytest
 from vdschema import AnnotationReader, Source, TaskType, switch
 
 
-def test_vdswitch_det_requires_input_label(det_legacy_dir: Path, tmp_path: Path) -> None:
+def test_vdswitch_det_requires_input_label(
+    det_legacy_dir: Path, tmp_path: Path
+) -> None:
     with pytest.raises(ValueError, match="--input-label is required"):
         switch(
             task=TaskType.DETECTION,

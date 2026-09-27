@@ -221,7 +221,7 @@
     "instance": {
       "type": "object",
       "additionalProperties": false,
-      "description": "单实例：可选 `bbox`、`polygon`、`polyline`（均为 flat `[x1,y1,...]`）、`rle_mask`（pycocotools RLE）、`keypoints`、`text`。",
+      "description": "单实例：可选 `bbox`、`polygon`、`polyline`、`point`（`[x,y]`）、`rle_mask`（pycocotools RLE）、`keypoints`、`text`。",
       "properties": {
         "id": {
           "type": "integer",
@@ -268,6 +268,15 @@
           "type": "array",
           "description": "可选。开放折线（如车道线），flat `[x1,y1,x2,y2,...]`，至少 2 个顶点（4 个数）。",
           "minItems": 4,
+          "items": {
+            "type": "number"
+          }
+        },
+        "point": {
+          "type": "array",
+          "description": "可选。单点目标（计数、锚点等），`[x, y]`。",
+          "minItems": 2,
+          "maxItems": 2,
           "items": {
             "type": "number"
           }

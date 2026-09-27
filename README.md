@@ -27,11 +27,14 @@ JSON examples for each task: [src/vdschema/schema/example.md](src/vdschema/schem
 
 **Detection geometry** — each instance must include at least one of:
 
-| Format | Field | Shape |
-| ------ | ----- | ----- |
-| Horizontal box | `bbox` | `[x1, y1, x2, y2]` (xyxy) |
-| Oriented box / closed contour | `polygon` | flat `[x1, y1, x2, y2, …]`, ≥3 vertices |
+
+| Format                          | Field      | Shape                                   |
+| ------------------------------- | ---------- | --------------------------------------- |
+| Horizontal box                  | `bbox`     | `[x1, y1, x2, y2]` (xyxy)               |
+| Oriented box / closed contour   | `polygon`  | flat `[x1, y1, x2, y2, …]`, ≥3 vertices |
 | Open polyline (e.g. lane lines) | `polyline` | flat `[x1, y1, x2, y2, …]`, ≥2 vertices |
+| Point target (e.g. counting)    | `point`    | `[x, y]`                                |
+
 
 Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.json), [annotation_data.json](src/vdschema/schema/annotation_data.json). Sequence tasks use `**annotation_vocab.txt`** instead of `annotation_meta.json`.
 
@@ -75,13 +78,11 @@ Each task directory holds `annotation_data.jsonl` plus optional label meta:
 
 Expand a task below for a full example (GitHub renders `<details>` as collapsible sections).
 
-<details>
-<summary><strong>Detection</strong></summary>
+**Detection**
 
-Each instance needs at least one geometry: horizontal **`bbox`**, oriented **`polygon`**, or open **`polyline`** (see table above).
+Each instance needs at least one geometry: horizontal `**bbox`**, oriented `**polygon**`, open `**polyline**`, or `**point**` (see table above).
 
-<details>
-<summary>Axis-aligned bbox</summary>
+Axis-aligned bounding box (bbox)
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -107,10 +108,9 @@ data, label = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 print(label[1].name, label[1].alias)  # person ('human',)
 ```
 
-</details>
 
-<details>
-<summary>Oriented box (polygon)</summary>
+
+Oriented box (polygon)
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -132,10 +132,9 @@ writer.save()
 data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 ```
 
-</details>
 
-<details>
-<summary>Open polyline</summary>
+
+Open polyline
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -157,12 +156,32 @@ writer.save()
 data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 ```
 
-</details>
 
-</details>
 
-<details>
-<summary><strong>Keypoint</strong></summary>
+Point
+
+```python
+from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
+
+writer = AnnotationWriter(TaskType.DETECTION, label={1: Name("defect")})
+writer.append(
+    filename="images/count_001.jpg",
+    width=640,
+    height=480,
+    instances=[
+        {"id": 0, "category_id": 1, "point": [120.5, 340.0]},
+        {"id": 1, "category_id": 1, "point": [400, 200]},
+    ],
+)
+writer.save()
+data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
+```
+
+
+
+
+
+**Keypoint**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -187,10 +206,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Segmentation</strong></summary>
+
+**Segmentation**
 
 ```python
 from vdschema import (
@@ -229,10 +247,9 @@ writer.save()
 data, label = AnnotationReader(TaskType.SEGMENTATION, task_dir).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Classification</strong></summary>
+
+**Classification**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -259,10 +276,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Relationship</strong></summary>
+
+**Relationship**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -290,10 +306,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>VLM</strong></summary>
+
+**VLM**
 
 No label dictionary file. Omit `label` for tasks without vocabulary.
 
@@ -314,10 +329,9 @@ data, label = AnnotationReader(
 assert label is None
 ```
 
-</details>
 
-<details>
-<summary><strong>Conversation</strong></summary>
+
+**Conversation**
 
 ```python
 from vdschema import (
@@ -348,10 +362,9 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
 
-<details>
-<summary><strong>Sequence</strong></summary>
+
+**Sequence**
 
 Vocabulary is provided as an external file and copied to the output directory as `annotation_vocab.txt`. The file must contain **exactly one token per line** (no spaces/tabs within a line). See [assets/](assets/) for examples such as `alphanumeric_vocab.txt`. Each token in `sequences` must appear in the vocabulary file; validation runs on `append()` and on read.
 
@@ -375,10 +388,9 @@ data, label = AnnotationReader(
 assert label == {"vocab": "annotation_vocab.txt"}
 ```
 
-</details>
 
-<details>
-<summary><strong>Action</strong></summary>
+
+**Action**
 
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
@@ -409,7 +421,7 @@ data, label = AnnotationReader(
 ).load()
 ```
 
-</details>
+
 
 ### More examples
 
@@ -448,19 +460,21 @@ vdswitch help --task classification    # 分类任务的文件格式与示例
 vdswitch help --task detection --source monolith
 ```
 
-| Task             | `--source monolith`                      | other sources                                        |
-| ---------------- | ---------------------------------------- | ---------------------------------------------------- |
-| `detection`      | JSONL + `label_dict.json`                | COCO `instances_*.json`（类别在 JSON 内，可省略 `--input-label`；标注里已是绝对路径时可省略 `--input-root`）     |
-|                |                                          | YOLO `train.txt` + `classes.txt` + `labels/*.txt`        |
-|                |                                          | LabelBee `**/*.json` General Data（`rectTool` / `lineTool` / `polygonTool`） |
-| `keypoint`       | —                                        | COCO instances JSON（含 `keypoints` / 类别 `keypoints` 名） |
-|                |                                          | LabelBee `pointTool` JSON 目录 |
-| `segmentation`   | —                                        | COCO instances JSON（`segmentation` 多边形或 RLE）         |
-|                |                                          | LabelBee `polygonTool` JSON 目录 |
-| `classification` | JSONL + 多头 `label_dict.json`             | ImageNet 目录 `train/<class>/`（可只传 `--input-data`，省略 `--input-label` / `--input-root`） |
-|                |                                          | LabelBee `tagTool` JSON 目录 |
-| `action`         | 视频 meta + kmot                         | 无标准 COCO 格式                                          |
-| `sequence`       | JSONL + `vocab.txt`                      | OCR 清单 `anno.txt`（路径 TAB 文本）+ `vocab.txt`              |
+
+| Task             | `--source monolith`          | other sources                                                                        |
+| ---------------- | ---------------------------- | ------------------------------------------------------------------------------------ |
+| `detection`      | JSONL + `label_dict.json`    | COCO `instances_*.json`（类别在 JSON 内，可省略 `--input-label`；标注里已是绝对路径时可省略 `--input-root`） |
+|                  |                              | YOLO `train.txt` + `classes.txt` + `labels/*.txt`                                    |
+|                  |                              | LabelBee `**/*.json` General Data（`rectTool` / `lineTool` / `polygonTool`）           |
+| `keypoint`       | —                            | COCO instances JSON（含 `keypoints` / 类别 `keypoints` 名）                                |
+|                  |                              | LabelBee `pointTool` JSON 目录                                                         |
+| `segmentation`   | —                            | COCO instances JSON（`segmentation` 多边形或 RLE）                                         |
+|                  |                              | LabelBee `polygonTool` JSON 目录                                                       |
+| `classification` | JSONL + 多头 `label_dict.json` | ImageNet 目录 `train/<class>/`（可只传 `--input-data`，省略 `--input-label` / `--input-root`） |
+|                  |                              | LabelBee `tagTool` JSON 目录                                                           |
+| `action`         | 视频 meta + kmot               | 无标准 COCO 格式                                                                          |
+| `sequence`       | JSONL + `vocab.txt`          | OCR 清单 `anno.txt`（路径 TAB 文本）+ `vocab.txt`                                            |
+
 
 COCO 示例：
 
@@ -473,7 +487,6 @@ vdswitch \
 ```
 
 （`vdswitch help --task detection --source coco` 中的示例与上述最小参数一致；相对路径图片时需再加 `--input-root`。）
-
 
 运行 `vdswitch -h` 会提示使用 `vdswitch help`；各任务完整样例见 `vdswitch help --task <name>`。
 
@@ -500,14 +513,14 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 更多用例见 [tests/test_vdswitch.py](tests/test_vdswitch.py)。
 
 
-| Flag            | Values                                              | Notes                                                                                      |
-| --------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `--task`        | `detection`, `classification`, `action`, `sequence` | vdschema task type                                                                         |
-| `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`, `labelbee` | legacy monolith layout or third-party dataset formats                                      |
-| `--input-data`  | one or more file paths                              | annotation data file path(s)                                                               |
-| `--input-label` | file path (optional for some `--source`)            | Label or vocab file; omit when native format embeds labels (COCO JSON, ImageNet layout); see `vdswitch help` |
-| `--input-root`  | directory (optional for some `--source`)            | dataset root; omit when media paths in annotations are already absolute; see `vdswitch help` |
-| `--output`      | directory (default: `output`)                       | output directory; see output filename rules below                                          |
+| Flag            | Values                                                    | Notes                                                                                                        |
+| --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `--task`        | `detection`, `classification`, `action`, `sequence`       | vdschema task type                                                                                           |
+| `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`, `labelbee` | legacy monolith layout or third-party dataset formats                                                        |
+| `--input-data`  | one or more file paths                                    | annotation data file path(s)                                                                                 |
+| `--input-label` | file path (optional for some `--source`)                  | Label or vocab file; omit when native format embeds labels (COCO JSON, ImageNet layout); see `vdswitch help` |
+| `--input-root`  | directory (optional for some `--source`)                  | dataset root; omit when media paths in annotations are already absolute; see `vdswitch help`                 |
+| `--output`      | directory (default: `output`)                             | output directory; see output filename rules below                                                            |
 
 
 **Output filenames**

@@ -90,6 +90,13 @@ def test_instance_polyline_roundtrip() -> None:
     assert inst.to_dict()["polyline"] == [0.0, 0.0, 1.0, 1.0, 2.0, 0.0]
 
 
+def test_instance_point_roundtrip() -> None:
+    from vdschema.annotation_format import Instance
+
+    inst = Instance.from_dict({"id": 0, "category_id": 1, "point": [1.5, 2]})
+    assert inst.to_dict()["point"] == [1.5, 2.0]
+
+
 def test_conversation_turn_legacy_fields() -> None:
     from vdschema import ConversationRole, ConversationTurn
 

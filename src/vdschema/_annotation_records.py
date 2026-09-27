@@ -79,9 +79,10 @@ class DetectionAnnotation(BaseAnnotation):
                 instance.bbox is None
                 and instance.polygon is None
                 and instance.polyline is None
+                and instance.point is None
             ):
                 raise AnnotationFormatError(
-                    "detection instances require bbox, polygon, or polyline"
+                    "detection instances require bbox, polygon, polyline, or point"
                 )
 
     def to_dict(self) -> dict[str, Any]:

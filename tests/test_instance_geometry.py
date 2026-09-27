@@ -21,7 +21,7 @@ def test_detection_requires_bbox_or_polygon(tmp_path: Path) -> None:
         label={1: "x"},
         task_dir=tmp_path / "det",
     )
-    with pytest.raises(AnnotationFormatError, match="bbox, polygon, or polyline"):
+    with pytest.raises(AnnotationFormatError, match="bbox, polygon, polyline, or point"):
         writer.append(
             filename="a.jpg",
             width=10,
@@ -153,6 +153,28 @@ def test_detection_polyline_only(tmp_path: Path) -> None:
 def test_polyline_invalid_coordinates() -> None:
     with pytest.raises(AnnotationFormatError, match="polyline"):
         Instance.from_dict({"id": 0, "category_id": 1, "polyline": [0, 0, 1]})
+
+
+def test_detection_point_only(tmp_path: Path) -> None:
+    writer = AnnotationWriter(
+        TaskType.DETECTION,
+        label={1: "mark"},
+        task_dir=tmp_path / "det_pt",
+    )
+    writer.append(
+        filename="a.jpg",
+        width=10,
+        height=10,
+        instances=[{"id": 0, "category_id": 1, "point": [3.5, 4.5]}],
+    )
+    writer.save()
+    data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
+    assert data[0].instances[0].point == [3.5, 4.5]
+
+
+def test_point_invalid_coordinates() -> None:
+    with pytest.raises(AnnotationFormatError, match="point must"):
+        Instance.from_dict({"id": 0, "category_id": 1, "point": [0, 0, 1]})
 
 
 def test_jsonl_legacy_segmentation_key(tmp_path: Path) -> None:

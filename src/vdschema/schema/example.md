@@ -2,7 +2,7 @@
 
 Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory (sequence tasks use `annotation_vocab.txt` instead).
 
-`bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` entries are `[x, y, visibility]` (`visibility`: 0/1/2). `segmentation` follows pycocotools RLE (`size`: `[height, width]`).
+`bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` entries are `[x, y, visibility]` (`visibility`: 0/1/2). `polygon` is flat `[x1,y1,x2,y2,...]`. `rle_mask` follows pycocotools RLE (`size`: `[height, width]`).
 
 ---
 
@@ -83,7 +83,7 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
       "id": 0,
       "category_id": 1,
       "bbox": [10, 20, 100, 200],
-      "segmentation": {"size": [480, 640], "counts": "eNq..."}
+      "rle_mask": {"size": [480, 640], "counts": "eNq..."}
     }
   ]
 }

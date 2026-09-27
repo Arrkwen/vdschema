@@ -141,7 +141,7 @@
               ]
             ]
           },
-          "segmentation": {
+          "rle_mask": {
             "size": [
               480,
               640
@@ -203,7 +203,7 @@
                 620,
                 380
               ],
-              "segmentation": {
+              "rle_mask": {
                 "size": [
                   1080,
                   1920
@@ -221,7 +221,7 @@
     "instance": {
       "type": "object",
       "additionalProperties": false,
-      "description": "单实例：`bbox` 轴对齐框；可选 `keypoints`、pycocotools `segmentation` RLE 和 `text`。",
+      "description": "单实例：可选 `bbox`、`polygon`（flat `[x1,y1,...]`）、`rle_mask`（pycocotools RLE）、`keypoints`、`text`。",
       "properties": {
         "id": {
           "type": "integer",
@@ -256,8 +256,16 @@
             }
           }
         },
-        "segmentation": {
-          "description": "可选。COCO / pycocotools RLE。",
+        "polygon": {
+          "type": "array",
+          "description": "可选。单个闭合环，flat `[x1,y1,x2,y2,...]`，至少 3 个顶点（6 个数）。",
+          "minItems": 6,
+          "items": {
+            "type": "number"
+          }
+        },
+        "rle_mask": {
+          "description": "可选。COCO / pycocotools RLE 掩码。",
           "allOf": [
             {
               "$ref": "#/$defs/segmentation_rle"
@@ -276,7 +284,6 @@
       },
       "required": [
         "id",
-        "bbox",
         "category_id"
       ]
     },
@@ -431,7 +438,7 @@
             }
           ]
         },
-        "segmentation": {
+        "rle_mask": {
           "description": "可选。该主体的实例掩码（与 bbox 同语义）。",
           "allOf": [
             {

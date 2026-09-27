@@ -169,7 +169,7 @@ class CocoSegmentationConverter(_CocoConverter):
                     "id": int(ann.get("id", idx)),
                     "category_id": int(ann["category_id"]),
                     "bbox": coco_bbox_xyxy(ann),
-                    "segmentation": segmentation.to_dict(),
+                    "rle_mask": segmentation.to_dict(),
                 }
                 if int(ann.get("iscrowd", 0)) == 1:
                     item["is_ignored"] = True

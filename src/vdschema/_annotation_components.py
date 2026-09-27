@@ -116,10 +116,10 @@ class SegmentationRLE:
     def validate(self) -> None:
         if self.height < 1 or self.width < 1:
             raise AnnotationFormatError(
-                "segmentation.size must contain positive integers"
+                "rle_mask.size must contain positive integers"
             )
         if not self.counts:
-            raise AnnotationFormatError("segmentation.counts must not be empty")
+            raise AnnotationFormatError("rle_mask.counts must not be empty")
 
     def _rle_dict(self) -> dict[str, Any]:
         """RLE dict for pycocotools.decode."""
@@ -198,21 +198,26 @@ class Keypoint:
 class Instance:
     """
     annotation_data instance。
-    Required: id / category_id / bbox. Optional: keypoints / segmentation / text / is_ignored.
+    Required: id / category_id. Optional: bbox / polygon / rle_mask / keypoints / text.
+    Task-specific rules (e.g. detection requires bbox or polygon) apply at read time.
     """
 
     id: int
     category_id: int
-    bbox: Bbox
+    bbox: Bbox | None = None
+    polygon: list[float] | None = None
     keypoints: dict[str, list[Keypoint]] | None = None
-    segmentation: SegmentationRLE | None = None
+    rle_mask: SegmentationRLE | None = None
     text: str | None = None
     is_ignored: bool = False
 
     def validate(self) -> None:
         if self.id < 0 or self.category_id < 0:
             raise AnnotationFormatError("id / category_id must be >= 0")
-        self.bbox.validate()
+        if self.bbox is not None:
+            self.bbox.validate()
+        if self.polygon is not None:
+            _validate_polygon_flat(self.polygon)
         if self.keypoints:
             for part, points in self.keypoints.items():
                 if not part or not part[0].islower():
@@ -221,23 +226,26 @@ class Instance:
                     )
                 for kp in points:
                     kp.validate()
-        if self.segmentation:
-            self.segmentation.validate()
+        if self.rle_mask is not None:
+            self.rle_mask.validate()
 
     def to_dict(self) -> dict[str, Any]:
         self.validate()
         out: dict[str, Any] = {
             "id": int(self.id),
             "category_id": int(self.category_id),
-            "bbox": self.bbox.to_list(),
         }
+        if self.bbox is not None:
+            out["bbox"] = self.bbox.to_list()
+        if self.polygon is not None:
+            out["polygon"] = list(self.polygon)
         if self.keypoints:
             out["keypoints"] = {
                 part: [kp.to_list() for kp in points]
                 for part, points in self.keypoints.items()
             }
-        if self.segmentation:
-            out["segmentation"] = self.segmentation.to_dict()
+        if self.rle_mask is not None:
+            out["rle_mask"] = self.rle_mask.to_dict()
         if self.text is not None:
             out["text"] = self.text
         out["is_ignored"] = bool(self.is_ignored)
@@ -251,17 +259,16 @@ class Instance:
                 part: [Keypoint.from_list(p) for p in points]
                 for part, points in raw["keypoints"].items()
             }
-        seg = (
-            SegmentationRLE.from_dict(raw["segmentation"])
-            if raw.get("segmentation")
-            else None
-        )
+        bbox = Bbox.from_list(raw["bbox"]) if "bbox" in raw else None
+        polygon = _polygon(raw.get("polygon"))
+        rle = _rle_mask(_rle_mask_field(raw))
         return cls(
             id=int(raw["id"]),
             category_id=int(raw["category_id"]),
-            bbox=Bbox.from_list(raw["bbox"]),
+            bbox=bbox,
+            polygon=polygon,
             keypoints=kps,
-            segmentation=seg,
+            rle_mask=rle,
             text=raw.get("text"),
             is_ignored=bool(raw.get("is_ignored", False)),
         )
@@ -416,14 +423,14 @@ class TrackItem:
 
     frame_idx: int
     bbox: Bbox
-    segmentation: SegmentationRLE | None = None
+    rle_mask: SegmentationRLE | None = None
 
     def validate(self) -> None:
         if self.frame_idx < 0:
             raise AnnotationFormatError("frame_idx must be >= 0")
         self.bbox.validate()
-        if self.segmentation:
-            self.segmentation.validate()
+        if self.rle_mask is not None:
+            self.rle_mask.validate()
 
     def to_dict(self) -> dict[str, Any]:
         self.validate()
@@ -431,21 +438,17 @@ class TrackItem:
             "frame_idx": int(self.frame_idx),
             "bbox": self.bbox.to_list(),
         }
-        if self.segmentation:
-            out["segmentation"] = self.segmentation.to_dict()
+        if self.rle_mask is not None:
+            out["rle_mask"] = self.rle_mask.to_dict()
         return out
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> TrackItem:
-        seg = (
-            SegmentationRLE.from_dict(raw["segmentation"])
-            if raw.get("segmentation")
-            else None
-        )
+        rle = _rle_mask(_rle_mask_field(raw))
         return cls(
             frame_idx=int(raw["frame_idx"]),
             bbox=Bbox.from_list(raw["bbox"]),
-            segmentation=seg,
+            rle_mask=rle,
         )
 
 
@@ -512,7 +515,7 @@ def _bbox(value: Any) -> Bbox:
     return Bbox.from_list(list(value))
 
 
-def _segmentation(value: Any) -> SegmentationRLE | None:
+def _rle_mask(value: Any) -> SegmentationRLE | None:
     if value is None:
         return None
     if isinstance(value, SegmentationRLE):
@@ -523,6 +526,30 @@ def _segmentation(value: Any) -> SegmentationRLE | None:
         if "size" in value and "counts" in value:
             return SegmentationRLE.from_dict(value)
     return SegmentationRLE.from_mask(value)
+
+
+def _validate_polygon_flat(coords: list[float]) -> None:
+    if len(coords) < 6 or len(coords) % 2 != 0:
+        raise AnnotationFormatError(
+            "polygon must be flat [x1,y1,x2,y2,...] with at least 3 vertices"
+        )
+
+
+def _polygon(value: Any) -> list[float] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise AnnotationFormatError("polygon must be a flat list of coordinates")
+    coords = [float(v) for v in value]
+    _validate_polygon_flat(coords)
+    return coords
+
+
+def _rle_mask_field(data: dict[str, Any]) -> Any:
+    for key in ("rle_mask", "segmentation", "segmentation_mask", "mask"):
+        if key in data:
+            return data[key]
+    return None
 
 
 def _keypoint(value: Any) -> Keypoint:
@@ -540,23 +567,18 @@ def _keypoints(value: Any) -> dict[str, list[Keypoint]] | None:
     }
 
 
-def _segmentation_field(data: dict[str, Any]) -> Any:
-    for key in ("segmentation", "segmentation_mask", "mask"):
-        if key in data:
-            return data[key]
-    return None
-
-
 def _instance(raw: Any) -> Instance:
     if isinstance(raw, Instance):
         return raw
     data = dict(raw)
+    bbox = _bbox(data["bbox"]) if "bbox" in data else None
     return Instance(
         id=int(data["id"]),
         category_id=int(data["category_id"]),
-        bbox=_bbox(data["bbox"]),
+        bbox=bbox,
+        polygon=_polygon(data.get("polygon")),
         keypoints=_keypoints(data.get("keypoints")),
-        segmentation=_segmentation(_segmentation_field(data)),
+        rle_mask=_rle_mask(_rle_mask_field(data)),
         text=data.get("text"),
         is_ignored=bool(data.get("is_ignored", False)),
     )
@@ -618,7 +640,7 @@ def _track_item(raw: Any) -> TrackItem:
     return TrackItem(
         frame_idx=int(data["frame_idx"]),
         bbox=_bbox(data["bbox"]),
-        segmentation=_segmentation(_segmentation_field(data)),
+        rle_mask=_rle_mask(_rle_mask_field(data)),
     )
 
 

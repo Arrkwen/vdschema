@@ -75,6 +75,10 @@ class DetectionAnnotation(BaseAnnotation):
         self.validate_base()
         for instance in self.instances:
             instance.validate()
+            if instance.bbox is None and instance.polygon is None:
+                raise AnnotationFormatError(
+                    "detection instances require bbox or polygon"
+                )
 
     def to_dict(self) -> dict[str, Any]:
         self.validate()
@@ -98,8 +102,9 @@ class DetectionAnnotation(BaseAnnotation):
 @dataclass(kw_only=True)
 class KeypointAnnotation(DetectionAnnotation):
     def validate(self) -> None:
-        super().validate()
+        self.validate_base()
         for instance in self.instances:
+            instance.validate()
             if not instance.keypoints:
                 raise AnnotationFormatError(
                     "keypoint annotations require instance.keypoints"
@@ -109,11 +114,12 @@ class KeypointAnnotation(DetectionAnnotation):
 @dataclass(kw_only=True)
 class SegmentationAnnotation(DetectionAnnotation):
     def validate(self) -> None:
-        super().validate()
+        self.validate_base()
         for instance in self.instances:
-            if not instance.segmentation:
+            instance.validate()
+            if instance.rle_mask is None and instance.polygon is None:
                 raise AnnotationFormatError(
-                    "segmentation annotations require instance.segmentation"
+                    "segmentation instances require rle_mask or polygon"
                 )
 
 
@@ -174,6 +180,10 @@ class RelationshipAnnotation(BaseAnnotation):
         instance_ids = {instance.id for instance in self.instances}
         for instance in self.instances:
             instance.validate()
+            if instance.bbox is None and instance.polygon is None:
+                raise AnnotationFormatError(
+                    "relationship instances require bbox or polygon"
+                )
         for relationship in self.relationships:
             relationship.validate()
             if relationship.subject_id not in instance_ids:

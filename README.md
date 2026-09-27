@@ -100,7 +100,7 @@ data, label = AnnotationReader(
 ).load()
 
 print(label[1].name, label[1].alias)  # person ('human',)
-print(data) # [DetectionAnnotation(filename='images/sample.jpg', width=640, height=480, instances=[Instance(id=0, category_id=1, bbox=Bbox(x1=10.0, y1=20.0, x2=100.0, y2=200.0), keypoints=None, segmentation=None, text=None)], description=None)]
+print(data) # [DetectionAnnotation(..., instances=[Instance(..., rle_mask=None, ...)], ...)]
 ```
 
 **Keypoint**
@@ -161,7 +161,7 @@ writer.append(
             "id": 0,
             "category_id": 1,
             "bbox": Bbox.from_xywh([120, 30, 200, 180]),
-            "segmentation": SegmentationRLE.from_mask(mask),
+            "rle_mask": SegmentationRLE.from_mask(mask),
         }
     ],
 )

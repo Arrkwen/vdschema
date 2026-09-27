@@ -14,12 +14,14 @@ _CONVERTERS: dict[tuple[TaskType, Source], type[BaseConverter]] = {}
 ConverterT = TypeVar("ConverterT", bound=type[BaseConverter])
 
 
-def register_converter(*, task: TaskType, source: Source) -> Callable[[ConverterT], ConverterT]:
+def register_converter(
+    *, task: TaskType, source: Source
+) -> Callable[[ConverterT], ConverterT]:
     """Register a converter class for one task/source pair."""
 
     def decorator(cls: ConverterT) -> ConverterT:
-        cls.task_type = task
-        cls.source = source
+        cls.task_type = task  # type: ignore[attr-defined]
+        cls.source = source  # type: ignore[attr-defined]
         _CONVERTERS[(task, source)] = cls
         return cls
 
@@ -34,7 +36,7 @@ def register_converter_for_sources(
     source_list = tuple(sources)
 
     def decorator(cls: ConverterT) -> ConverterT:
-        cls.task_type = task
+        cls.task_type = task  # type: ignore[attr-defined]
         for source in source_list:
             _CONVERTERS[(task, source)] = cls
         return cls
@@ -48,13 +50,19 @@ def get_converter_class(task: TaskType, source: Source) -> type[BaseConverter]:
     except KeyError as exc:
         task_sources = supported_sources(task)
         if task_sources:
-            allowed = ", ".join(item.value for item in sorted(task_sources, key=lambda s: s.value))
+            allowed = ", ".join(
+                item.value for item in sorted(task_sources, key=lambda s: s.value)
+            )
             raise ValueError(
                 f"unsupported source={source.value!r} for task={task.value!r}, "
                 f"allowed: {allowed}"
             ) from exc
-        allowed = ", ".join(item.value for item in sorted(supported_tasks(), key=lambda t: t.value))
-        raise ValueError(f"unsupported task={task.value!r}, allowed: {allowed}") from exc
+        allowed = ", ".join(
+            item.value for item in sorted(supported_tasks(), key=lambda t: t.value)
+        )
+        raise ValueError(
+            f"unsupported task={task.value!r}, allowed: {allowed}"
+        ) from exc
 
 
 def supported_tasks() -> frozenset[TaskType]:

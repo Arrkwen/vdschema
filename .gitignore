@@ -12,3 +12,8 @@ discard
 
 # Virtual environments
 .venv
+.agents
+.cursor
+.claude
+.coverage
+htmlcov

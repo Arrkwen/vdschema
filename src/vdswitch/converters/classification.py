@@ -7,6 +7,7 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, Name, TaskType
 
+from ..utils.jsonl import load_jsonl_object
 from .base import BaseConverter
 from .registry import register_converter_for_sources
 from .sources import Source
@@ -47,11 +48,11 @@ class MonolithUpClassificationConverter(BaseConverter):
         )
 
         with self.input_data.open(encoding="utf-8") as f:
-            for line in f:
+            for lineno, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line:
                     continue
-                record = json.loads(line)
+                record = load_jsonl_object(line, path=self.input_data, lineno=lineno)
                 attribute = record.get("attribute") or {}
                 categories = []
                 for attr_name, one_hot in attribute.items():

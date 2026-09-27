@@ -23,15 +23,17 @@ class BaseConverter(ABC):
     def __init__(
         self,
         *,
-        input_data: Path,
-        input_label: Path,
-        output_dir: Path,
-        input_root: Path | None = None,
+        input_data: str | Path,
+        input_label: str | Path,
+        output_dir: str | Path,
+        input_root: str | Path | None = None,
     ) -> None:
         self.input_data = Path(input_data).expanduser().resolve()
         self.input_label = Path(input_label).expanduser().resolve()
         self.output_dir = Path(output_dir).expanduser().resolve()
-        self.input_root = Path(input_root).expanduser().resolve() if input_root is not None else None
+        self.input_root = (
+            Path(input_root).expanduser().resolve() if input_root is not None else None
+        )
         self.output_data_filename, self.output_meta_filename = resolve_output_filenames(
             input_data=self.input_data,
             input_label=self.input_label,

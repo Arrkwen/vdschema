@@ -5,19 +5,17 @@ from __future__ import annotations
 import argparse
 import sys
 
+from vdschema import AnnotationFormatError
+
 from . import converters  # noqa: F401 — register built-in converters
 from .converters.registry import parse_task, supported_sources, supported_tasks
 from .converters.sources import Source
-from .switch import switch, DEFAULT_OUTPUT_DIR
+from .switch import DEFAULT_OUTPUT_DIR, switch
 
 
 def build_parser() -> argparse.ArgumentParser:
-    task_choices = tuple(
-        sorted(task.value for task in supported_tasks())
-    )
-    source_choices = tuple(
-        sorted(source.value for source in supported_sources())
-    )
+    task_choices = tuple(sorted(task.value for task in supported_tasks()))
+    source_choices = tuple(sorted(source.value for source in supported_sources()))
     parser = argparse.ArgumentParser(
         prog="vdswitch",
         description="Convert third party annotations to vdschema format.",
@@ -68,14 +66,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    out = switch(
-        task=parse_task(args.task),
-        source=Source.parse(args.source),
-        input_data=args.input_data,
-        input_label=args.input_label,
-        output=args.output,
-        input_root=args.input_root,
-    )
+    try:
+        out = switch(
+            task=parse_task(args.task),
+            source=Source.parse(args.source),
+            input_data=args.input_data,
+            input_label=args.input_label,
+            output=args.output,
+            input_root=args.input_root,
+        )
+    except (AnnotationFormatError, ValueError, FileNotFoundError, OSError) as exc:
+        print(f"vdswitch: error: {exc}", file=sys.stderr)
+        return 1
     print(f"vdswitch: wrote vdschema dataset to {out}")
     return 0
 

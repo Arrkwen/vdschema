@@ -9,7 +9,9 @@ import pytest
 from vdswitch.utils import find_image_root, find_video_root
 
 
-def test_find_image_root_with_explicit_root(det_legacy_dir: Path, tmp_path: Path) -> None:
+def test_find_image_root_with_explicit_root(
+    det_legacy_dir: Path, tmp_path: Path
+) -> None:
     root = find_image_root(
         output_dir=tmp_path / "out",
         input_data=det_legacy_dir / "meta/train_baseline.jsonl",
@@ -18,7 +20,9 @@ def test_find_image_root_with_explicit_root(det_legacy_dir: Path, tmp_path: Path
     assert root == det_legacy_dir / "images"
 
 
-def test_find_video_root_with_explicit_root(act_legacy_dir: Path, tmp_path: Path) -> None:
+def test_find_video_root_with_explicit_root(
+    act_legacy_dir: Path, tmp_path: Path
+) -> None:
     root = find_video_root(
         output_dir=tmp_path / "out",
         input_data=act_legacy_dir / "meta/video_train.txt",

@@ -7,11 +7,11 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, Name, TaskType
 
+from ..utils.kmot import parse_kmot_file
+from ..utils.video_size import VideoSizeResolver, find_video_root
 from .base import BaseConverter
 from .registry import register_converter_for_sources
 from .sources import Source
-from ..utils.kmot import parse_kmot_file
-from ..utils.video_size import VideoSizeResolver, find_video_root
 
 
 def _load_act_label(label_path: Path) -> tuple[dict[int, Name], dict[str, int]]:

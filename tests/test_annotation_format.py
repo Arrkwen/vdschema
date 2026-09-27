@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 import numpy as np
+import pytest
 
-from vdschema.annotation_dict import ANNOTATION_VOCAB_FILENAME
 from vdschema import (
     ActionAnnotation,
     AnnotationFormatError,
@@ -13,25 +13,27 @@ from vdschema import (
     AnnotationWriter,
     BaseAnnotation,
     Bbox,
-    Name,
     ClassificationAnnotation,
     ConversationAnnotation,
     ConversationRole,
     ConversationTurn,
     DetectionAnnotation,
     KeypointAnnotation,
+    Name,
     RelationshipAnnotation,
-    SegmentationRLE,
     SegmentationAnnotation,
+    SegmentationRLE,
     SequenceAnnotation,
     TaskType,
     VlmAnnotation,
 )
+from vdschema.annotation_dict import ANNOTATION_VOCAB_FILENAME
 
 TAnnotation = TypeVar("TAnnotation", bound=BaseAnnotation)
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 ALPHANUMERIC_VOCAB = ASSETS_DIR / "alphanumeric_vocab.txt"
+PROVINCE_VOCAB = ASSETS_DIR / "province_vocab.txt"
 
 
 def _read_annotations(
@@ -101,7 +103,7 @@ def test_detection_annotation_format():
                 "id": 1,
                 "category_id": 4,
                 "bbox": Bbox.from_cxcywh([290, 190, 140, 220]),
-                "text": "AB0000FF"
+                "text": "AB0000FF",
             },
         ],
     )
@@ -313,9 +315,7 @@ def test_relationship_annotation_format():
             {"id": 0, "category_id": 1, "bbox": [10, 20, 100, 200]},
             {"id": 1, "category_id": 2, "bbox": [120, 30, 200, 180]},
         ],
-        relationships=[
-            {"subject_id": 0, "object_id": 1, "relation_type": "near"}
-        ],
+        relationships=[{"subject_id": 0, "object_id": 1, "relation_type": "near"}],
     )
     writer.append(
         filename="images/relationship_002.jpg",
@@ -325,9 +325,7 @@ def test_relationship_annotation_format():
             {"id": 0, "category_id": 1, "bbox": [20, 20, 110, 210]},
             {"id": 1, "category_id": 2, "bbox": [140, 40, 240, 190]},
         ],
-        relationships=[
-            {"subject_id": 1, "object_id": 0, "relation_type": "left_of"}
-        ],
+        relationships=[{"subject_id": 1, "object_id": 0, "relation_type": "left_of"}],
     )
     writer.append(
         filename="images/relationship_003.jpg",
@@ -601,9 +599,9 @@ def test_sequence_annotation_format():
 
         assert writer.meta_path.is_file()
         assert writer.meta_path.name == ANNOTATION_VOCAB_FILENAME
-        assert writer.meta_path.read_text(encoding="utf-8") == ALPHANUMERIC_VOCAB.read_text(
+        assert writer.meta_path.read_text(
             encoding="utf-8"
-        )
+        ) == ALPHANUMERIC_VOCAB.read_text(encoding="utf-8")
 
         data, label, rows = _read_annotations(writer, expected_count=2)
         assert label == {"vocab": ANNOTATION_VOCAB_FILENAME}
@@ -651,17 +649,34 @@ def test_sequence_unknown_token_raises():
             label=ALPHANUMERIC_VOCAB,
             task_dir=Path(tmp) / "sequence",
         )
-        try:
+        with pytest.raises(AnnotationFormatError):
             writer.append(
                 filename="bad.jpg",
                 width=224,
                 height=128,
                 sequences=["B", "z"],
             )
-            raised = False
-        except AnnotationFormatError:
-            raised = True
-        assert raised
+
+
+def test_sequence_province_vocab():
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        writer = AnnotationWriter(
+            TaskType.SEQUENCE,
+            label=PROVINCE_VOCAB,
+            task_dir=Path(tmp) / "sequence",
+        )
+        writer.append(
+            filename="plates/guangdong_sichuan.jpg",
+            width=224,
+            height=128,
+            sequences=["广东", "四川"],
+        )
+        writer.save()
+        data, label, _rows = _read_annotations(writer, expected_count=1)
+        assert label == {"vocab": ANNOTATION_VOCAB_FILENAME}
+        assert data[0].sequences == ["广东", "四川"]
 
 
 def test_sequence_vocab_file_format():
@@ -672,55 +687,39 @@ def test_sequence_vocab_file_format():
 
         multi_token = tmp_path / "bad_multi.txt"
         multi_token.write_text("A B\n", encoding="utf-8")
-        try:
+        with pytest.raises(AnnotationFormatError):
             AnnotationWriter(
                 TaskType.SEQUENCE,
                 label=multi_token,
                 task_dir=tmp_path / "sequence",
             )
-            raised = False
-        except AnnotationFormatError:
-            raised = True
-        assert raised
 
         duplicate = tmp_path / "bad_dup.txt"
         duplicate.write_text("A\nA\n", encoding="utf-8")
-        try:
+        with pytest.raises(AnnotationFormatError):
             AnnotationWriter(
                 TaskType.SEQUENCE,
                 label=duplicate,
                 task_dir=tmp_path / "sequence",
             )
-            raised = False
-        except AnnotationFormatError:
-            raised = True
-        assert raised
 
         trailing_space = tmp_path / "bad_space.txt"
         trailing_space.write_text("A \n", encoding="utf-8")
-        try:
+        with pytest.raises(AnnotationFormatError):
             AnnotationWriter(
                 TaskType.SEQUENCE,
                 label=trailing_space,
                 task_dir=tmp_path / "sequence",
             )
-            raised = False
-        except AnnotationFormatError:
-            raised = True
-        assert raised
 
         empty = tmp_path / "bad_empty.txt"
         empty.write_text("\n\n", encoding="utf-8")
-        try:
+        with pytest.raises(AnnotationFormatError):
             AnnotationWriter(
                 TaskType.SEQUENCE,
                 label=empty,
                 task_dir=tmp_path / "sequence",
             )
-            raised = False
-        except AnnotationFormatError:
-            raised = True
-        assert raised
 
 
 def test_sequence_reader_rejects_unknown_token():
@@ -748,29 +747,3 @@ def test_sequence_reader_rejects_unknown_token():
         )
         reader = AnnotationReader(TaskType.SEQUENCE, writer.save_dir())
         assert reader.validate() is False
-
-
-def run_all():
-    from pathlib import Path
-    import tempfile
-
-    test_detection_annotation_format()
-    test_keypoint_annotation_format()
-    test_segmentation_annotation_format()
-    test_classification_annotation_format()
-    test_relationship_annotation_format()
-    test_vlm_annotation_format()
-    test_conversation_annotation_format()
-    test_sequence_annotation_format()
-    test_sequence_custom_vocab_filename()
-    test_sequence_unknown_token_raises()
-    test_sequence_vocab_file_format()
-    test_sequence_reader_rejects_unknown_token()
-    test_action_annotation_format()
-    with tempfile.TemporaryDirectory() as tmp:
-        test_reader_validate_returns_false_on_invalid_data(Path(tmp))
-
-
-if __name__ == "__main__":
-    run_all()
-    print("all annotation format tests passed")

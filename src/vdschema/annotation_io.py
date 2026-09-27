@@ -8,21 +8,21 @@ written or read automatically according to ``task_type``.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from .annotation_dict import (
     NoLabelDict,
     TaskLabelDict,
     build_label_dict,
-    load_label_dict,
     data_path_for,
+    load_label_dict,
     meta_path_for,
     resolve_data_filename,
     resolve_meta_filename,
 )
 from .annotation_format import AnnotationFormatError, BaseAnnotation, TaskType
-
 
 DEFAULT_OUTPUT_DIR = "output"
 
@@ -69,7 +69,7 @@ class AnnotationWriter:
 
     @property
     def meta_path(self) -> Path:
-        """Path to the label-meta (vocabulary) file."""
+        """Path to task-level label meta (JSON or vocabulary file, depending on task)."""
         return meta_path_for(self.task_dir, self.task_meta_filename)
 
     def append_annotation(self, annotation: BaseAnnotation) -> BaseAnnotation:
@@ -133,7 +133,7 @@ class AnnotationReader:
 
     @property
     def meta_path(self) -> Path:
-        """Path to the label-meta (vocabulary) file."""
+        """Path to task-level label meta (JSON or vocabulary file, depending on task)."""
         return meta_path_for(self.task_dir, self.task_meta_filename)
 
     def iter_raw(self) -> Iterator[dict[str, Any]]:
@@ -188,9 +188,14 @@ class AnnotationReader:
         return data, label
 
     def validate(self) -> bool:
-        """Return ``True`` if all records and label meta are valid, else ``False``."""
+        """Return ``True`` if all records and label meta are valid, else ``False``.
+
+        Returns ``False`` on schema or vocabulary validation failures
+        (``AnnotationFormatError``) and on missing or unreadable label/data files
+        (``OSError``).
+        """
         try:
             self.load()
-        except AnnotationFormatError:
+        except (AnnotationFormatError, OSError):
             return False
         return True

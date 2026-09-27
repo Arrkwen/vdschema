@@ -10,6 +10,29 @@ import pytest
 from PIL import Image
 
 FIXTURES = Path(__file__).parent / "fixtures"
+SAMPLE_VIDEO_REL = "video/sample.avi"
+
+
+def _write_sample_video(path: Path) -> None:
+    """Write a short test clip that OpenCV can open on CI and macOS."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    writer = cv2.VideoWriter(
+        str(path),
+        cv2.VideoWriter_fourcc(*"MJPG"),
+        25,
+        (640, 480),
+    )
+    if not writer.isOpened():
+        raise RuntimeError(f"cannot create test video: {path}")
+    frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    for _ in range(8):
+        writer.write(frame)
+    writer.release()
+    capture = cv2.VideoCapture(str(path))
+    if not capture.isOpened():
+        capture.release()
+        raise RuntimeError(f"OpenCV cannot read test video: {path}")
+    capture.release()
 
 
 @pytest.fixture
@@ -21,7 +44,9 @@ def det_legacy_dir(tmp_path: Path) -> Path:
     meta.mkdir(parents=True)
 
     Image.new("RGB", (320, 240), color=(128, 64, 32)).save(images / "sample.jpg")
-    (meta / "label_dict.json").write_text('{"1": "person", "2": "car"}\n', encoding="utf-8")
+    (meta / "label_dict.json").write_text(
+        '{"1": "person", "2": "car"}\n', encoding="utf-8"
+    )
     (meta / "train_baseline.jsonl").write_text(
         '{"filename":"sample.jpg","image_width":0,"image_height":0,'
         '"instances":[{"id":0,"label":1,"bbox":[10,10,100,100]}]}\n',
@@ -56,17 +81,8 @@ def act_legacy_dir(tmp_path: Path) -> Path:
     video_dir.mkdir(parents=True)
     kmot_dir.mkdir(parents=True)
 
-    video_path = video_dir / "sample.mp4"
-    writer = cv2.VideoWriter(
-        str(video_path),
-        cv2.VideoWriter_fourcc(*"mp4v"),
-        25,
-        (640, 480),
-    )
-    frame = np.zeros((480, 640, 3), dtype=np.uint8)
-    for _ in range(500):
-        writer.write(frame)
-    writer.release()
+    video_path = video_dir / "sample.avi"
+    _write_sample_video(video_path)
 
     (kmot_dir / "sample.txt").write_text(
         "442,18,76.0,280.0,104.0,230.0,221488,1.0,1,package_tossing\n"
@@ -80,7 +96,7 @@ def act_legacy_dir(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     (root / "meta" / "video_train.txt").write_text(
-        "video/sample.mp4;4;443;446;1;kmot/sample.txt\n",
+        f"{SAMPLE_VIDEO_REL};4;443;446;1;kmot/sample.txt\n",
         encoding="utf-8",
     )
     return root

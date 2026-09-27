@@ -9,9 +9,13 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",
+    "pycocotools>=2.0.7",
+]
+
+[project.optional-dependencies]
+vdswitch = [
     "opencv-python-headless>=4.8",
     "pillow>=10.0",
-    "pycocotools>=2.0.7",
 ]
 
 [project.urls]
@@ -26,11 +30,13 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "pytest-cov>=6.0",
     "ruff>=0.8.0",
+    "ty>=0.0.1a20",
+    "pip-audit>=2.7",
     "build>=1.2.0",
     "twine>=5.0.0",
 ]
-
 
 [project.scripts]
 vdswitch = "vdswitch.cli:main"
@@ -57,3 +63,18 @@ filterwarnings = [
 
 [tool.ruff]
 line-length = 88
+exclude = [".agents", ".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/vdswitch/converters/registry.py" = ["B010"]
+
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.ty.src]
+include = ["src/vdschema", "src/vdswitch"]
+exclude = ["src/vdswitch/converters/registry.py"]

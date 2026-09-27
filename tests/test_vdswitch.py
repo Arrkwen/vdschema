@@ -46,8 +46,12 @@ def test_vdswitch_det_up_alias(det_legacy_dir: Path, tmp_path: Path) -> None:
 def test_vdswitch_det_same_dir(det_legacy_dir: Path, tmp_path: Path) -> None:
     data = tmp_path / "train_baseline.jsonl"
     label = tmp_path / "label_dict.json"
-    original_data = (det_legacy_dir / "meta/train_baseline.jsonl").read_text(encoding="utf-8")
-    original_label = (det_legacy_dir / "meta/label_dict.json").read_text(encoding="utf-8")
+    original_data = (det_legacy_dir / "meta/train_baseline.jsonl").read_text(
+        encoding="utf-8"
+    )
+    original_label = (det_legacy_dir / "meta/label_dict.json").read_text(
+        encoding="utf-8"
+    )
     data.write_text(original_data, encoding="utf-8")
     label.write_text(original_label, encoding="utf-8")
     images = tmp_path / "images"
@@ -147,7 +151,7 @@ def test_vdswitch_action_one_jsonl_per_meta_line(
     meta_path = act_legacy_dir / "meta/video_train.txt"
     meta_path.write_text(
         meta_path.read_text(encoding="utf-8")
-        + "video/sample.mp4;4;100;103;0;kmot/sample.txt\n",
+        + "video/sample.avi;4;100;103;0;kmot/sample.txt\n",
         encoding="utf-8",
     )
     out = tmp_path / "vdschema_act_multi"
@@ -166,7 +170,7 @@ def test_vdswitch_action_one_jsonl_per_meta_line(
         task_meta_filename="label_dict.json",
     ).load()
     assert len(data) == 2
-    assert all(item.filename == "video/sample.mp4" for item in data)
+    assert all(item.filename == "video/sample.avi" for item in data)
     assert all(len(item.actions) == 1 for item in data)
 
 
@@ -203,7 +207,9 @@ def test_vdswitch_sequence_same_dir(seq_legacy_dir: Path, tmp_path: Path) -> Non
     images.mkdir()
     shutil.copy(seq_legacy_dir / "images/sample.jpg", images / "sample.jpg")
     shutil.copy(seq_legacy_dir / "meta/vocab.txt", meta / "vocab.txt")
-    shutil.copy(seq_legacy_dir / "meta/train_baseline.jsonl", meta / "train_baseline.jsonl")
+    shutil.copy(
+        seq_legacy_dir / "meta/train_baseline.jsonl", meta / "train_baseline.jsonl"
+    )
 
     switch(
         task=TaskType.SEQUENCE,
@@ -218,11 +224,16 @@ def test_vdswitch_sequence_same_dir(seq_legacy_dir: Path, tmp_path: Path) -> Non
     assert not (meta / "annotation_vocab.txt").is_file()
 
 
-def test_vdswitch_sequence_mixed_input_dirs(seq_legacy_dir: Path, tmp_path: Path) -> None:
+def test_vdswitch_sequence_mixed_input_dirs(
+    seq_legacy_dir: Path, tmp_path: Path
+) -> None:
     labels = tmp_path / "labels"
     labels.mkdir()
     vocab = labels / "vocab.txt"
-    vocab.write_text((seq_legacy_dir / "meta/vocab.txt").read_text(encoding="utf-8"), encoding="utf-8")
+    vocab.write_text(
+        (seq_legacy_dir / "meta/vocab.txt").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
     out = seq_legacy_dir / "meta"
     switch(
         task=TaskType.SEQUENCE,

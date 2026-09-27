@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "skills": {
+    "async-python-patterns": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/async-python-patterns/SKILL.md",
+      "computedHash": "e8e80abff40e9fad3f2753d1b1cacdc08f7e79af348c294fb81d146bc54c7e2f"
+    },
+    "code-reviewer": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/code-reviewer/SKILL.md",
+      "computedHash": "a75e2fd3fcf554513af22a1dd7d1c6b7846e0a9b0372e28a6e54f61202fb96ae"
+    },
+    "django-expert": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/django-expert/SKILL.md",
+      "computedHash": "231ab879eb15f1f00eb8a8c95f26660cf0b113a6c1a220a5aa50cb63995b312e"
+    },
+    "django-patterns": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/django-patterns/SKILL.md",
+      "computedHash": "578bb1c7b59fa06568d6d6f57fc87030394ca6e7ccceb00569cb169aa29dd328"
+    },
+    "fastapi": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/fastapi/SKILL.md",
+      "computedHash": "1a2c58b00c02913b045eb78f90a9556a1c4fdf42d4cdaa46b7615baec983006e"
+    },
+    "find-skills": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/find-skills/SKILL.md",
+      "computedHash": "bbecab625f71c4304173c97b41899ca981693473b6637426f761418db1e0cee7"
+    },
+    "modern-python": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/modern-python/SKILL.md",
+      "computedHash": "71fc08f4d495b066cf062e8ae96142310e06518f5460a67a5610e043dab03648"
+    },
+    "python-anti-patterns": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-anti-patterns/SKILL.md",
+      "computedHash": "99534cfc787aed1fb62b0425fc4b3acfb389ef8950302778ec806758f49963e6"
+    },
+    "python-background-jobs": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-background-jobs/SKILL.md",
+      "computedHash": "45b66a7e8378ec71d4c950448472f827a9db7decd9b03c9e652398581e3a27f2"
+    },
+    "python-code-style": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-code-style/SKILL.md",
+      "computedHash": "7a2119dbf17970dd70ceba2f5dfb77e2a4f79d4f7e5fc533456d42733e6d4047"
+    },
+    "python-configuration": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-configuration/SKILL.md",
+      "computedHash": "0ccdca2a2fd1aeda9184816823acca2be023cd9334f177b9180754e0d85a2569"
+    },
+    "python-design-patterns": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-design-patterns/SKILL.md",
+      "computedHash": "c8f314c8b4f4d957950b02fa4158f9eca5c467685218ee6f1af7ec09056b7c07"
+    },
+    "python-error-handling": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-error-handling/SKILL.md",
+      "computedHash": "0e3215d25a50619c2e00d72d74a5d1c270f5bc642be4fd0c91928be0ed407204"
+    },
+    "python-observability": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-observability/SKILL.md",
+      "computedHash": "cb794df04c8ac7cd1411ee0402be571eb70ccd28271ec1775b3e303c371dd78d"
+    },
+    "python-packaging": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-packaging/SKILL.md",
+      "computedHash": "ca949e5a669771b79f360ecb2b8c86392f0c3da7f9204a79631cde4e54f46a6c"
+    },
+    "python-performance-optimization": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-performance-optimization/SKILL.md",
+      "computedHash": "f60fdcdba28c63e1c74346a6dd4793445bddc9d09856818d35c9245fa4b46402"
+    },
+    "python-project-structure": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-project-structure/SKILL.md",
+      "computedHash": "f8597ae9e27cb8944e6140fd2a526fd23e62cb705645f3f95c5e802570ca5dd3"
+    },
+    "python-resilience": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-resilience/SKILL.md",
+      "computedHash": "76903a7a1c26209ffd65f8d80336cf4f0978256441a909babc8e3249db811c03"
+    },
+    "python-resource-management": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-resource-management/SKILL.md",
+      "computedHash": "89c90d56b2c1bd42c84c128a42290e11dbaf9bcc5fb7673066354b7c85cd8507"
+    },
+    "python-testing-patterns": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-testing-patterns/SKILL.md",
+      "computedHash": "81c4566bbf839c512d10203edee94ce1adee14c53ef1180812a1227d4a663db0"
+    },
+    "python-type-safety": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/python-type-safety/SKILL.md",
+      "computedHash": "a29b814b09d3ee8f9c07a9128fb4e44842c875a6e8988fd344600f31922b1fe3"
+    },
+    "security-best-practices": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/security-best-practices/SKILL.md",
+      "computedHash": "578bb9b23e7d1422ff6d56e9883fd95098f48d480652880041aa97501295f172"
+    },
+    "sql-optimization-patterns": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/sql-optimization-patterns/SKILL.md",
+      "computedHash": "05f6e9dc675e050dd0b6b960f3fa00613cb134dce3bb10fa8cc9d5d59462a4b4"
+    },
+    "sqlalchemy-alembic-expert-best-practices-code-review": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/sqlalchemy-alembic-expert-best-practices-code-review/SKILL.md",
+      "computedHash": "4814f9220e40efb3b6047e79f5be3dca234e86e192134ba7083b2878db39e89b"
+    },
+    "typer": {
+      "source": "Arrkwen/SkillHub",
+      "sourceType": "github",
+      "skillPath": "skills/python/typer/SKILL.md",
+      "computedHash": "2359a71099568043320a4b0d79f14fe3a974b6bb14052802cc888868b5d5428c"
+    }
+  }
+}

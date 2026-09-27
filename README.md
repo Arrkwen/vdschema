@@ -33,6 +33,9 @@ Schema definitions: [annotation_meta.json](src/vdschema/schema/annotation_meta.j
 
 ```bash
 pip install vdschema
+
+# Legacy conversion CLI (opencv, pillow)
+pip install "vdschema[vdswitch]"
 ```
 
 **PyPI (uv)**
@@ -49,8 +52,16 @@ uv add vdschema
 ```bash
 git clone https://github.com/Arrkwen/vdschema.git
 cd vdschema
-pip install -e .
+uv sync --extra vdswitch --group dev
+pip install -e ".[vdswitch]"
 ```
+
+### Paths on disk
+
+Each task directory holds `annotation_data.jsonl` plus optional label meta:
+
+- **`data_path`** — per-image/per-video JSONL records.
+- **`meta_path`** — task-level label information (not always JSON). Detection uses `annotation_meta.json`; sequence uses a vocabulary text file (default `annotation_vocab.txt`). Override the meta filename with `task_meta_filename` when needed.
 
 ## Basic Usage
 
@@ -412,9 +423,11 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 ```bash
 git clone https://github.com/Arrkwen/vdschema.git
 cd vdschema
-uv sync --group dev
+uv sync --extra vdswitch --group dev
 uv run pytest
 uv run ruff check .
+uv run ruff format --check .
+uv run ty check
 uv build
 ```
 

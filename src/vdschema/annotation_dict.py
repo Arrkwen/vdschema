@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import shutil
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar, Mapping, Sequence
+from typing import Any, ClassVar, cast
 
 from .annotation_format import (
     ActionAnnotation,
@@ -19,9 +20,7 @@ from .annotation_format import (
     TaskType,
 )
 
-SCHEMA_BASE_URL = (
-    "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema"
-)
+SCHEMA_BASE_URL = "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema"
 ANNOTATION_SCHEMA_ID = f"{SCHEMA_BASE_URL}/annotation_data.json"
 ANNOTATION_DATA_FILENAME = "annotation_data.jsonl"
 ANNOTATION_META_FILENAME = "annotation_meta.json"
@@ -80,6 +79,7 @@ def resolve_data_filename(task_data_filename: str | None = None) -> str:
         return ANNOTATION_DATA_FILENAME
     return task_data_filename
 
+
 @dataclass(frozen=True)
 class Name:
     """A canonical label name with optional aliases and prompts."""
@@ -120,8 +120,7 @@ def _coerce_name(value: Name | str | Any) -> Name:
     if isinstance(value, str):
         return Name(value)
     raise AnnotationFormatError(
-        "label values must be Name(...) or str, "
-        f"got {type(value).__name__}"
+        f"label values must be Name(...) or str, got {type(value).__name__}"
     )
 
 
@@ -260,13 +259,6 @@ class TaskLabelDict:
         )
 
     @classmethod
-    def from_writer_label(
-        cls,
-        label: dict[str, Any] | Mapping[int, Name | str] | str | Path,
-    ) -> TaskLabelDict:
-        return cls(label)  # type: ignore[arg-type,call-arg]
-
-    @classmethod
     def load(cls, path: str | Path) -> TaskLabelDict:
         raise NotImplementedError(f"{cls.__name__}.load is not implemented")
 
@@ -288,8 +280,8 @@ class SingleVocabLabelDict(TaskLabelDict):
         self.annotation_schema_ref = annotation_schema_ref
         self.vocab = LabelMap.from_id_map(mapping)
 
-    def to_label(self) -> dict[int, Name]:
-        return self.vocab.to_label()
+    def to_label(self) -> dict[str, Any]:
+        return cast(dict[str, Any], self.vocab.to_label())
 
     def to_data(self) -> dict[str, Any]:
         return {
@@ -347,11 +339,14 @@ class ClassificationLabelDict(TaskLabelDict):
             for category_attr, category_label in heads.items()
         }
 
-    def to_label(self) -> dict[str, dict[int, Name]]:
-        return {
-            category_attr: vocab.to_label()
-            for category_attr, vocab in self.heads.items()
-        }
+    def to_label(self) -> dict[str, Any]:
+        return cast(
+            dict[str, Any],
+            {
+                category_attr: vocab.to_label()
+                for category_attr, vocab in self.heads.items()
+            },
+        )
 
     def to_data(self) -> dict[str, Any]:
         return {
@@ -407,11 +402,14 @@ class RelationshipLabelDict(TaskLabelDict):
         self.detection = LabelMap.from_id_map(detection)
         self.relationship = LabelMap.from_id_map(relationship)
 
-    def to_label(self) -> dict[str, dict[int, Name]]:
-        return {
-            "detection": self.detection.to_label(),
-            "relationship": self.relationship.to_label(),
-        }
+    def to_label(self) -> dict[str, Any]:
+        return cast(
+            dict[str, Any],
+            {
+                "detection": self.detection.to_label(),
+                "relationship": self.relationship.to_label(),
+            },
+        )
 
     def to_data(self) -> dict[str, Any]:
         return {
@@ -440,10 +438,11 @@ class RelationshipLabelDict(TaskLabelDict):
     ) -> RelationshipLabelDict:
         if not isinstance(label, dict):
             raise AnnotationFormatError("relationship label must be a mapping")
+        mapping = cast(dict[str, Any], label)
         try:
             return cls(
-                detection=label["detection"],
-                relationship=label["relationship"],
+                detection=cast(Mapping[int, Name | str], mapping["detection"]),
+                relationship=cast(Mapping[int, Name | str], mapping["relationship"]),
             )
         except KeyError as exc:
             raise AnnotationFormatError(
@@ -517,14 +516,17 @@ class SequenceLabelDict(TaskLabelDict):
     @classmethod
     def from_writer_label(
         cls,
-        label: str | Path | Mapping[str, Any],
+        label: dict[str, Any] | Mapping[int, Name | str] | str | Path,
     ) -> SequenceLabelDict:
         if isinstance(label, (str, Path)):
             source = Path(label)
         elif isinstance(label, dict):
-            if "vocab" not in label:
-                raise AnnotationFormatError("sequence label requires a vocabulary file path")
-            source = Path(label["vocab"])
+            label_dict = cast(dict[str, Any], label)
+            if "vocab" not in label_dict:
+                raise AnnotationFormatError(
+                    "sequence label requires a vocabulary file path"
+                )
+            source = Path(str(label_dict["vocab"]))
         else:
             raise AnnotationFormatError("sequence label must be a vocabulary file path")
         if not source.is_file():
@@ -595,8 +597,14 @@ def build_label_dict(
     if label is None:
         raise AnnotationFormatError(f"{task_type.value} requires label")
 
+    if task_type is TaskType.SEQUENCE:
+        return SequenceLabelDict.from_writer_label(label)  # type: ignore[arg-type]
+    if task_type is TaskType.RELATIONSHIP:
+        return RelationshipLabelDict.from_writer_label(label)  # type: ignore[arg-type]
+
     label_cls = _LABEL_DICT_BY_TASK[task_type]
-    return label_cls.from_writer_label(label)  # type: ignore[arg-type]
+    factory = cast(Callable[[Any], TaskLabelDict], label_cls)
+    return factory(label)
 
 
 def load_label_dict(

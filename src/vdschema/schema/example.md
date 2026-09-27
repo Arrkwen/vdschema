@@ -218,7 +218,7 @@ No `annotation_meta.json`.
 
 ## sequence
 
-**annotation_vocab.txt** (exactly one token per line; copied from the Writer `label` path on save). Example vocab files: [assets/alphanumeric_vocab.txt](assets/alphanumeric_vocab.txt), [assets/digits_vocab.txt](assets/digits_vocab.txt), [assets/letters_vocab.txt](assets/letters_vocab.txt).
+**annotation_vocab.txt** (exactly one token per line; copied from the Writer `label` path on save). Example vocab files: [assets/alphanumeric_vocab.txt](assets/alphanumeric_vocab.txt), [assets/digits_vocab.txt](assets/digits_vocab.txt), [assets/letters_vocab.txt](assets/letters_vocab.txt), [assets/province_vocab.txt](assets/province_vocab.txt).
 
 ```
 0

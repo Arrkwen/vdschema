@@ -43,7 +43,7 @@ class KmotTrack:
                 "frame_idx": frame_idx,
                 "bbox": item.bbox_xyxy,
             }
-            for item, frame_idx in zip(ordered, frame_indices)
+            for item, frame_idx in zip(ordered, frame_indices, strict=True)
         ]
         return {
             "category_id": self.category_id,
@@ -87,7 +87,9 @@ def _resolve_category_id(raw: Any, name_to_id: dict[str, int]) -> int:
         return name_to_id[text]
     except KeyError as exc:
         allowed = ", ".join(sorted(name_to_id))
-        raise ValueError(f"unknown action category={text!r}, allowed: {allowed}") from exc
+        raise ValueError(
+            f"unknown action category={text!r}, allowed: {allowed}"
+        ) from exc
 
 
 def parse_kmot_file(
@@ -119,7 +121,9 @@ def parse_kmot_file(
                     category_raw=category_raw,
                 )
             )
-            category_votes[track_id][_resolve_category_id(category_raw, name_to_id)] += 1
+            category_votes[track_id][
+                _resolve_category_id(category_raw, name_to_id)
+            ] += 1
 
     for track_id, track in grouped.items():
         track.category_id = category_votes[track_id].most_common(1)[0][0]

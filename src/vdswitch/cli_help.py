@@ -71,6 +71,17 @@ def _example_command(task: TaskType, source: Source) -> str:
             "  --output output"
         )
 
+    if source is Source.OCR and task is TaskType.SEQUENCE:
+        return (
+            "vdswitch \\\n"
+            "  --task sequence \\\n"
+            "  --source ocr \\\n"
+            "  --input-data /path/to/anno.txt \\\n"
+            "  --input-label /path/to/vocab.txt \\\n"
+            "  --input-root /path/to/dataset \\\n"
+            "  --output output"
+        )
+
     if task is TaskType.ACTION:
         return (
             "vdswitch \\\n"

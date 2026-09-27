@@ -10,6 +10,7 @@ class Source(str, Enum):
     COCO = "coco"
     YOLO = "yolo"
     IMAGENET = "imagenet"
+    OCR = "ocr"
 
     @classmethod
     def parse(cls, value: str | Source) -> Source:

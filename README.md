@@ -361,6 +361,7 @@ uv run pytest
 - [x] coco (detection / keypoint / segmentation)
 - [x] yolo (detection)
 - [x] imagenet (classification)
+- [x] ocr (sequence)
 
 ```bash
 vdswitch \
@@ -388,7 +389,7 @@ vdswitch help --task detection --source up
 | `segmentation`   | —                                        | COCO instances JSON（`segmentation` 多边形或 RLE）         |
 | `classification` | JSONL + 多头 `label_dict.json`             | ImageNet 目录 `train/<class>/`（`--input-data`/`--input-label` 同路径） |
 | `action`         | 视频 meta + kmot                         | 无标准 COCO 格式                                          |
-| `sequence`       | JSONL + `vocab.txt`                      | 无标准 COCO 格式                                          |
+| `sequence`       | JSONL + `vocab.txt`                      | OCR 清单 `anno.txt`（路径 TAB 文本）+ `vocab.txt`              |
 
 COCO 示例：
 

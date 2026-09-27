@@ -185,3 +185,17 @@ def coco_keypoint_instances_path(coco_instances_path: Path) -> Path:
     path = coco_instances_path.with_name("instances_keypoints.json")
     path.write_text(json.dumps(payload), encoding="utf-8")
     return path
+
+
+@pytest.fixture
+def yolo_legacy_dir(tmp_path: Path) -> Path:
+    root = tmp_path / "yolo"
+    images = root / "images" / "train"
+    labels = root / "labels" / "train"
+    images.mkdir(parents=True)
+    labels.mkdir(parents=True)
+    Image.new("RGB", (200, 100), color=(255, 128, 64)).save(images / "sample.jpg")
+    (labels / "sample.txt").write_text("0 0.5 0.5 0.4 0.4\n", encoding="utf-8")
+    (root / "classes.txt").write_text("person\ncar\n", encoding="utf-8")
+    (root / "train.txt").write_text("images/train/sample.jpg\n", encoding="utf-8")
+    return root

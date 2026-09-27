@@ -359,7 +359,7 @@ uv run pytest
 
 - [x] unified-perception (up)
 - [x] coco (detection / keypoint / segmentation)
-- [ ] yolo
+- [x] yolo (detection)
 
 ```bash
 vdswitch \
@@ -382,6 +382,7 @@ vdswitch help --task detection --source up
 | Task             | `--source up`                            | `--source coco`                                      |
 | ---------------- | ---------------------------------------- | ---------------------------------------------------- |
 | `detection`      | JSONL + `label_dict.json`                | COCO `instances_*.json`（`categories` 可与 data 同文件）     |
+|                |                                          | YOLO `train.txt` + `classes.txt` + `labels/*.txt`        |
 | `keypoint`       | —                                        | COCO instances JSON（含 `keypoints` / 类别 `keypoints` 名） |
 | `segmentation`   | —                                        | COCO instances JSON（`segmentation` 多边形或 RLE）         |
 | `classification` | JSONL + 多头 `label_dict.json`             | 无标准 COCO 格式                                          |

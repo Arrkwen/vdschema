@@ -49,6 +49,17 @@ def _example_command(task: TaskType, source: Source) -> str:
             "  --output output"
         )
 
+    if source is Source.YOLO and task is TaskType.DETECTION:
+        return (
+            "vdswitch \\\n"
+            "  --task detection \\\n"
+            "  --source yolo \\\n"
+            "  --input-data /path/to/train.txt \\\n"
+            "  --input-label /path/to/classes.txt \\\n"
+            "  --input-root /path/to/dataset \\\n"
+            "  --output output"
+        )
+
     if task is TaskType.ACTION:
         return (
             "vdswitch \\\n"

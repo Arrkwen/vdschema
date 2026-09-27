@@ -1,6 +1,6 @@
 """Built-in converters; import submodules to populate the registry."""
 
-from . import action, classification, coco, detection, sequence
+from . import action, classification, coco, detection, sequence, yolo
 
 __all__ = [
     "action",
@@ -8,6 +8,7 @@ __all__ = [
     "detection",
     "sequence",
     "coco",
+    "yolo",
     "MonolithUpActionConverter",
     "MonolithUpClassificationConverter",
     "MonolithUpDetectionConverter",
@@ -15,6 +16,7 @@ __all__ = [
     "CocoDetectionConverter",
     "CocoKeypointConverter",
     "CocoSegmentationConverter",
+    "YoloDetectionConverter",
 ]
 
 from .action import MonolithUpActionConverter
@@ -26,3 +28,4 @@ from .coco import (
 )
 from .detection import MonolithUpDetectionConverter
 from .sequence import MonolithUpSequenceConverter
+from .yolo import YoloDetectionConverter

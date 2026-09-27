@@ -8,6 +8,7 @@ from enum import Enum
 class Source(str, Enum):
     UP = "up"
     COCO = "coco"
+    YOLO = "yolo"
 
     @classmethod
     def parse(cls, value: str | Source) -> Source:

@@ -1,0 +1,178 @@
+"""PASCAL VOC → vdschema (detection XML / segmentation class PNG)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from PIL import Image
+
+from vdschema import AnnotationWriter, Name, TaskType
+
+from ..utils.voc_dataset import (
+    collect_detection_class_names,
+    detection_instances_from_record,
+    detection_label_dict,
+    iter_voc_image_ids,
+    load_optional_class_list,
+    parse_voc_detection_xml,
+    resolve_media_filename,
+    resolve_voc_root,
+    segmentation_instances_from_class_png,
+    voc2012_label_dict,
+    voc_annotation_xml_path,
+    voc_segmentation_class_path,
+)
+from .base import BaseConverter
+from .registry import register_converter
+from .sources import Source
+
+_VOC_LAYOUT = (
+    "  VOC2007/ (or VOC2012/)\n"
+    "    Annotations/{id}.xml     — detection boxes\n"
+    "    JPEGImages/{id}.jpg\n"
+    "    SegmentationClass/{id}.png — semantic labels (seg task)\n"
+    "    ImageSets/Main/train.txt   — image ids, one per line"
+)
+
+
+class _VocConverterBase(BaseConverter):
+    source_note = "PASCAL VOC devkit (XML detection + SegmentationClass PNG)."
+
+    input_data_help = (
+        "VOC ImageSets list (e.g. ImageSets/Main/train.txt), a single "
+        "Annotations/*.xml, or the Annotations/ directory."
+    )
+    input_label_help = (
+        "Optional. Omit when same as --input-data. Detection: infer class "
+        "names from XML. Segmentation: VOC2012 20-class ids 1–20. "
+        "Or a text file with one class name per line (line index + 1 = id)."
+    )
+    input_data_sample = "ImageSets/Main/train.txt"
+    input_label_sample = "(optional) classes.txt — one VOC class name per line"
+    typical_layout = _VOC_LAYOUT
+    input_label_same_as_data = True
+    input_root_optional = True
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        same_dir = self.output_dir == self.input_data.parent
+        stem = self.input_data.stem if self.input_data.is_file() else self.input_data.name
+        self.output_data_filename = (
+            f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
+        )
+        self.output_meta_filename = "annotation_meta.json"
+
+    def _ensure_inputs(self) -> None:
+        if not self.input_data.exists():
+            raise FileNotFoundError(f"input data not found: {self.input_data}")
+
+    def _voc_root(self) -> Path:
+        return resolve_voc_root(self.input_data, self.input_root)
+
+    def _image_ids(self, voc_root: Path) -> list[str]:
+        ids = iter_voc_image_ids(self.input_data, voc_root)
+        if not ids:
+            raise ValueError(f"no VOC image ids from {self.input_data}")
+        return ids
+
+    def _optional_class_list(self) -> dict[int, Name] | None:
+        if self.input_label.resolve() == self.input_data.resolve():
+            return None
+        return load_optional_class_list(self.input_label)
+
+
+@register_converter(task=TaskType.DETECTION, source=Source.VOC)
+class VocDetectionConverter(_VocConverterBase):
+    """VOC Annotations/*.xml → vdschema detection."""
+
+    def _convert(self) -> None:
+        voc_root = self._voc_root()
+        image_ids = self._image_ids(voc_root)
+        optional = self._optional_class_list()
+        if optional is not None:
+            name_to_id = {name.name: cid for cid, name in optional.items()}
+        else:
+            name_to_id = collect_detection_class_names(voc_root, image_ids)
+        writer = AnnotationWriter(
+            TaskType.DETECTION,
+            label=detection_label_dict(name_to_id),
+            task_dir=self.output_dir,
+            task_data_filename=self.output_data_filename,
+            task_meta_filename=self.output_meta_filename,
+        )
+        for image_id in image_ids:
+            xml_path = voc_annotation_xml_path(voc_root, image_id)
+            if not xml_path.is_file():
+                continue
+            record = parse_voc_detection_xml(xml_path)
+            instances = detection_instances_from_record(
+                record, name_to_id=name_to_id
+            )
+            if not instances:
+                continue
+            filename = resolve_media_filename(
+                voc_root,
+                image_id,
+                record,
+                input_root=self.input_root,
+            )
+            writer.append(
+                filename=filename,
+                width=record.width,
+                height=record.height,
+                instances=instances,
+            )
+        writer.save()
+
+
+@register_converter(task=TaskType.SEGMENTATION, source=Source.VOC)
+class VocSegmentationConverter(_VocConverterBase):
+    """VOC SegmentationClass/*.png → vdschema segmentation (RLE per class)."""
+
+    def _convert(self) -> None:
+        voc_root = self._voc_root()
+        seg_dir = voc_root / "SegmentationClass"
+        if not seg_dir.is_dir():
+            raise FileNotFoundError(
+                f"SegmentationClass/ not found under VOC root: {voc_root}"
+            )
+        image_ids = self._image_ids(voc_root)
+        label = self._optional_class_list() or voc2012_label_dict()
+        writer = AnnotationWriter(
+            TaskType.SEGMENTATION,
+            label=label,
+            task_dir=self.output_dir,
+            task_data_filename=self.output_data_filename,
+            task_meta_filename=self.output_meta_filename,
+        )
+        for image_id in image_ids:
+            png_path = voc_segmentation_class_path(voc_root, image_id)
+            instances = segmentation_instances_from_class_png(png_path, label=label)
+            if not instances:
+                continue
+            xml_path = voc_annotation_xml_path(voc_root, image_id)
+            if xml_path.is_file():
+                record = parse_voc_detection_xml(xml_path)
+                width, height = record.width, record.height
+                filename = resolve_media_filename(
+                    voc_root,
+                    image_id,
+                    record,
+                    input_root=self.input_root,
+                )
+            else:
+                jpeg = voc_root / "JPEGImages" / f"{image_id}.jpg"
+                if not jpeg.is_file():
+                    continue
+                with Image.open(jpeg) as img:
+                    width, height = img.size
+                filename = resolve_media_filename(
+                    voc_root, image_id, None, input_root=self.input_root
+                )
+            writer.append(
+                filename=filename,
+                width=width,
+                height=height,
+                instances=instances,
+            )
+        writer.save()

@@ -442,6 +442,7 @@ uv run pytest
 - [x] ocr (sequence)
 - [x] labelbee (detection / segmentation / keypoint / classification; [format docs](https://github.com/open-mmlab/labelbee-client/tree/main/docs/annotation))
 - [x] labelme (detection / segmentation / keypoint; [LabelMe JSON](https://github.com/wkentaro/labelme))
+- [x] voc (detection XML + SegmentationClass PNG; PASCAL VOC devkit)
 
 ```bash
 vdswitch \
@@ -468,12 +469,14 @@ vdswitch help --task detection --source monolith
 |                  |                              | YOLO `train.txt` + `classes.txt` + `labels/*.txt`                                    |
 |                  |                              | LabelBee `**/*.json` General Data（`rectTool` / `lineTool` / `polygonTool`）           |
 |                  |                              | LabelMe `*.json`（`rectangle` / `polygon` / `linestrip` / `point` / `circle`→bbox）      |
+|                  |                              | VOC `ImageSets/Main/*.txt` + `Annotations/*.xml`（检测）                                  |
 | `keypoint`       | —                            | COCO instances JSON（含 `keypoints` / 类别 `keypoints` 名）                                |
 |                  |                              | LabelBee `pointTool` JSON 目录                                                         |
 |                  |                              | LabelMe `point` shapes JSON 目录                                                       |
 | `segmentation`   | —                            | COCO instances JSON（`segmentation` 多边形或 RLE）                                         |
 |                  |                              | LabelBee `polygonTool` JSON 目录                                                       |
 |                  |                              | LabelMe `polygon` shapes JSON 目录                                                      |
+|                  |                              | VOC `SegmentationClass/*.png`（每类一个 RLE 实例，默认 VOC2012 20 类）                          |
 | `classification` | JSONL + 多头 `label_dict.json` | ImageNet 目录 `train/<class>/`（可只传 `--input-data`，省略 `--input-label` / `--input-root`） |
 |                  |                              | LabelBee `tagTool` JSON 目录                                                           |
 | `action`         | 视频 meta + kmot               | 无标准 COCO 格式                                                                          |
@@ -520,7 +523,7 @@ data, label = AnnotationReader(TaskType.DETECTION, out).load()
 | Flag            | Values                                                    | Notes                                                                                                        |
 | --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `--task`        | `detection`, `classification`, `action`, `sequence`       | vdschema task type                                                                                           |
-| `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`, `labelbee`, `labelme` | legacy monolith layout or third-party dataset formats                                                        |
+| `--source`      | `monolith`, `coco`, `yolo`, `imagenet`, `ocr`, `labelbee`, `labelme`, `voc` | legacy monolith layout or third-party dataset formats                                                        |
 | `--input-data`  | one or more file paths                                    | annotation data file path(s)                                                                                 |
 | `--input-label` | file path (optional for some `--source`)                  | Label or vocab file; omit when native format embeds labels (COCO JSON, ImageNet layout); see `vdswitch help` |
 | `--input-root`  | directory (optional for some `--source`)                  | dataset root; omit when media paths in annotations are already absolute; see `vdswitch help`                 |

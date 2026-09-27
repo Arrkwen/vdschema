@@ -13,6 +13,7 @@ class Source(str, Enum):
     OCR = "ocr"
     LABELBEE = "labelbee"
     LABELME = "labelme"
+    VOC = "voc"
 
     @classmethod
     def parse(cls, value: str | Source) -> Source:

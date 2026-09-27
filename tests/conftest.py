@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import cv2
@@ -33,6 +34,26 @@ def _write_sample_video(path: Path) -> None:
         capture.release()
         raise RuntimeError(f"OpenCV cannot read test video: {path}")
     capture.release()
+
+
+@pytest.fixture
+def cls_legacy_dir(tmp_path: Path) -> Path:
+    root = tmp_path / "cls"
+    images = root / "images"
+    meta = root / "meta"
+    images.mkdir(parents=True)
+    meta.mkdir(parents=True)
+
+    Image.new("RGB", (100, 80), color=(200, 100, 50)).save(images / "sample.jpg")
+    (meta / "label_dict.json").write_text(
+        '{"gender":["male","female"]}\n', encoding="utf-8"
+    )
+    (meta / "train_baseline.jsonl").write_text(
+        '{"filename":"sample.jpg","image_width":100,"image_height":80,'
+        '"attribute":{"gender":{"male":0,"female":1}}}\n',
+        encoding="utf-8",
+    )
+    return root
 
 
 @pytest.fixture
@@ -100,3 +121,67 @@ def act_legacy_dir(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return root
+
+
+@pytest.fixture
+def coco_instances_path(tmp_path: Path) -> Path:
+    root = tmp_path / "coco"
+    images = root / "images"
+    ann_dir = root / "annotations"
+    images.mkdir(parents=True)
+    ann_dir.mkdir(parents=True)
+    Image.new("RGB", (200, 100), color=(10, 20, 30)).save(images / "sample.jpg")
+    payload = {
+        "images": [
+            {"id": 1, "file_name": "sample.jpg", "width": 200, "height": 100},
+        ],
+        "categories": [{"id": 1, "name": "cat"}],
+        "annotations": [
+            {
+                "id": 10,
+                "image_id": 1,
+                "category_id": 1,
+                "bbox": [10.0, 10.0, 50.0, 40.0],
+                "iscrowd": 0,
+                "segmentation": [[10, 10, 60, 10, 60, 50, 10, 50]],
+                "keypoints": [20.0, 20.0, 2, 30.0, 25.0, 2],
+            },
+            {
+                "id": 11,
+                "image_id": 1,
+                "category_id": 1,
+                "bbox": [80.0, 20.0, 20.0, 20.0],
+                "iscrowd": 1,
+            },
+        ],
+    }
+    path = ann_dir / "instances.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def coco_keypoint_instances_path(coco_instances_path: Path) -> Path:
+    payload = json.loads(coco_instances_path.read_text(encoding="utf-8"))
+    payload["categories"] = [
+        {
+            "id": 1,
+            "name": "person",
+            "keypoints": ["nose", "left_eye"],
+            "skeleton": [[1, 2]],
+        }
+    ]
+    payload["annotations"] = [
+        {
+            "id": 10,
+            "image_id": 1,
+            "category_id": 1,
+            "bbox": [10.0, 10.0, 50.0, 40.0],
+            "iscrowd": 0,
+            "num_keypoints": 2,
+            "keypoints": [20.0, 20.0, 2, 30.0, 25.0, 2],
+        }
+    ]
+    path = coco_instances_path.with_name("instances_keypoints.json")
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path

@@ -1,0 +1,182 @@
+"""Tests for COCO source converters."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from vdschema import AnnotationReader, Source, TaskType, switch
+from vdswitch.cli import main
+from vdswitch.cli_help import format_help_text
+from vdswitch.converters.registry import get_converter_class
+from vdswitch.utils.coco_dataset import (
+    coco_bbox_xyxy,
+    coco_segmentation_rle,
+    load_category_map,
+)
+
+
+def test_coco_bbox_xyxy() -> None:
+    assert coco_bbox_xyxy({"bbox": [10.0, 20.0, 30.0, 40.0]}) == [10.0, 20.0, 40.0, 60.0]
+
+
+def test_load_category_map_from_categories_only(tmp_path: Path) -> None:
+    path = tmp_path / "categories.json"
+    path.write_text(
+        json.dumps({"categories": [{"id": 2, "name": "dog"}]}),
+        encoding="utf-8",
+    )
+    label = load_category_map(path, task=TaskType.DETECTION)
+    assert label[2].name == "dog"
+
+
+def test_coco_segmentation_polygon_roundtrip() -> None:
+    rle = coco_segmentation_rle(
+        [[10, 10, 60, 10, 60, 50, 10, 50]],
+        height=100,
+        width=200,
+    )
+    assert rle is not None
+    mask = rle.to_mask()
+    assert mask.shape == (100, 200)
+
+
+def test_vdswitch_coco_detection(coco_instances_path: Path, tmp_path: Path) -> None:
+    root = coco_instances_path.parent.parent
+    out = tmp_path / "vdschema_coco_det"
+    switch(
+        task=TaskType.DETECTION,
+        source=Source.COCO,
+        input_data=coco_instances_path,
+        input_label=coco_instances_path,
+        output=out,
+        input_root=root,
+    )
+    data, label = AnnotationReader(
+        TaskType.DETECTION,
+        out,
+        task_data_filename="instances.jsonl",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert label
+    assert len(data) == 1
+    assert data[0].width == 200
+    assert data[0].height == 100
+    assert len(data[0].instances) == 2
+    assert data[0].instances[0].bbox.to_list() == [10.0, 10.0, 60.0, 50.0]
+    assert data[0].instances[1].is_ignored is True
+
+
+def test_vdswitch_coco_detection_separate_categories(
+    coco_instances_path: Path, tmp_path: Path
+) -> None:
+    categories = tmp_path / "categories.json"
+    categories.write_text(
+        json.dumps({"categories": [{"id": 1, "name": "cat"}]}),
+        encoding="utf-8",
+    )
+    out = tmp_path / "out"
+    switch(
+        task=TaskType.DETECTION,
+        source=Source.COCO,
+        input_data=coco_instances_path,
+        input_label=categories,
+        output=out,
+    )
+    assert (out / "instances.jsonl").is_file()
+    assert (out / "label_dict.json").is_file()
+
+
+def test_vdswitch_coco_keypoint(
+    coco_keypoint_instances_path: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "vdschema_coco_kp"
+    switch(
+        task=TaskType.KEYPOINT,
+        source=Source.COCO,
+        input_data=coco_keypoint_instances_path,
+        input_label=coco_keypoint_instances_path,
+        output=out,
+    )
+    data, _ = AnnotationReader(
+        TaskType.KEYPOINT,
+        out,
+        task_data_filename="instances_keypoints.jsonl",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert len(data) == 1
+    inst = data[0].instances[0]
+    assert "nose" in inst.keypoints
+    assert "left_eye" in inst.keypoints
+
+
+def test_vdswitch_coco_segmentation(coco_instances_path: Path, tmp_path: Path) -> None:
+    out = tmp_path / "vdschema_coco_seg"
+    switch(
+        task=TaskType.SEGMENTATION,
+        source=Source.COCO,
+        input_data=coco_instances_path,
+        input_label=coco_instances_path,
+        output=out,
+    )
+    data, _ = AnnotationReader(
+        TaskType.SEGMENTATION,
+        out,
+        task_data_filename="instances.jsonl",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert len(data) == 1
+    assert len(data[0].instances) == 1
+    assert data[0].instances[0].segmentation is not None
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        TaskType.CLASSIFICATION,
+        TaskType.ACTION,
+        TaskType.SEQUENCE,
+    ],
+)
+def test_coco_unsupported_tasks(task: TaskType) -> None:
+    with pytest.raises(ValueError, match="unsupported source='coco'"):
+        get_converter_class(task, Source.COCO)
+
+
+def test_vdswitch_cli_coco_detection(
+    coco_instances_path: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "cli_coco"
+    assert (
+        main(
+            [
+                "--task",
+                "detection",
+                "--source",
+                "coco",
+                "--input-data",
+                str(coco_instances_path),
+                "--input-label",
+                str(coco_instances_path),
+                "--output",
+                str(out),
+            ]
+        )
+        == 0
+    )
+    assert (out / "instances.jsonl").is_file()
+
+
+def test_vdswitch_help_coco_detection() -> None:
+    text = format_help_text(task=TaskType.DETECTION, source=Source.COCO)
+    assert "--source coco" in text
+    assert "instances_train2017.json" in text
+    assert main(["help", "--task", "detection", "--source", "coco"]) == 0
+
+
+def test_vdswitch_help_detection_defaults_to_up() -> None:
+    text = format_help_text(task=TaskType.DETECTION, source=None)
+    assert "train_baseline.jsonl" in text
+    assert "--source up" in text

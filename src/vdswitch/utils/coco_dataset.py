@@ -1,0 +1,139 @@
+"""Load MS COCO instance JSON for vdswitch converters."""
+
+from __future__ import annotations
+
+import json
+from collections import defaultdict
+from collections.abc import Iterator
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from pycocotools import mask as mask_util
+
+from vdschema import Name, SegmentationRLE, TaskType
+
+from ..messages import help_hint
+
+
+@dataclass(frozen=True)
+class CocoImage:
+    id: int
+    file_name: str
+    width: int
+    height: int
+
+
+def load_coco_json(path: Path) -> dict[str, Any]:
+    with path.open(encoding="utf-8") as f:
+        raw = json.load(f)
+    if not isinstance(raw, dict):
+        raise ValueError(f"invalid COCO JSON (expected object): {path}")
+    return raw
+
+
+def load_category_map(label_path: Path, *, task: TaskType) -> dict[int, Name]:
+    raw = load_coco_json(label_path)
+    categories = raw.get("categories")
+    if not isinstance(categories, list) or not categories:
+        raise ValueError(
+            f"missing categories[] in COCO label file: {label_path}. "
+            f"{help_hint(task)}"
+        )
+    label: dict[int, Name] = {}
+    for item in categories:
+        if not isinstance(item, dict):
+            continue
+        label[int(item["id"])] = Name(str(item["name"]))
+    if not label:
+        raise ValueError(f"empty categories in COCO label file: {label_path}")
+    return label
+
+
+def iter_coco_images(raw: dict[str, Any]) -> Iterator[CocoImage]:
+    images = raw.get("images") or []
+    if not isinstance(images, list):
+        raise ValueError("COCO images must be a list")
+    for item in images:
+        if not isinstance(item, dict):
+            continue
+        yield CocoImage(
+            id=int(item["id"]),
+            file_name=str(item["file_name"]),
+            width=int(item["width"]),
+            height=int(item["height"]),
+        )
+
+
+def group_annotations(raw: dict[str, Any]) -> dict[int, list[dict[str, Any]]]:
+    grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    annotations = raw.get("annotations") or []
+    if not isinstance(annotations, list):
+        raise ValueError("COCO annotations must be a list")
+    for ann in annotations:
+        if not isinstance(ann, dict):
+            continue
+        grouped[int(ann["image_id"])].append(ann)
+    return grouped
+
+
+def coco_bbox_xyxy(ann: dict[str, Any]) -> list[float]:
+    x, y, width, height = (float(v) for v in ann["bbox"])
+    return [x, y, x + width, y + height]
+
+
+def category_keypoint_names(
+    categories: dict[int, Name], category_id: int, raw: dict[str, Any]
+) -> list[str] | None:
+    for item in raw.get("categories") or []:
+        if int(item.get("id", -1)) != category_id:
+            continue
+        names = item.get("keypoints")
+        if isinstance(names, list) and names:
+            return [str(name) for name in names]
+    return None
+
+
+def coco_keypoints_dict(
+    ann: dict[str, Any],
+    *,
+    categories: dict[int, Name],
+    raw: dict[str, Any],
+) -> dict[str, list[list[float | int]]] | None:
+    flat = ann.get("keypoints")
+    if not isinstance(flat, list) or not flat:
+        return None
+    triplets = [
+        [float(flat[i]), float(flat[i + 1]), int(flat[i + 2])]
+        for i in range(0, len(flat), 3)
+    ]
+    names = category_keypoint_names(categories, int(ann["category_id"]), raw)
+    if names and len(names) == len(triplets):
+        return {
+            str(name): [triplet]
+            for name, triplet in zip(names, triplets, strict=True)
+        }
+    return {"body": triplets}
+
+
+def coco_segmentation_rle(
+    segm: Any, *, height: int, width: int
+) -> SegmentationRLE | None:
+    if segm is None:
+        return None
+    if isinstance(segm, dict):
+        size = segm.get("size") or [height, width]
+        return SegmentationRLE.from_dict(
+            {"size": size, "counts": segm["counts"]}
+        )
+    if isinstance(segm, list) and segm:
+        polys = segm if isinstance(segm[0], list) else [segm]
+        rles = mask_util.frPyObjects(polys, height, width)
+        merged = mask_util.merge(rles)
+        counts = merged["counts"]
+        if isinstance(counts, bytes):
+            counts = counts.decode("ascii")
+        return SegmentationRLE._create(
+            int(merged["size"][0]), int(merged["size"][1]), str(counts)
+        )
+    return None

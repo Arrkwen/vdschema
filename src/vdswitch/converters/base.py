@@ -20,6 +20,14 @@ class BaseConverter(ABC):
     task_type: ClassVar[TaskType]
     source: ClassVar[Source]
 
+    #: Shown by ``vdswitch help``.
+    source_note: ClassVar[str] = "Unified perception (UP) legacy on-disk layout."
+    input_data_help: ClassVar[str] = ""
+    input_label_help: ClassVar[str] = ""
+    input_data_sample: ClassVar[str] = ""
+    input_label_sample: ClassVar[str] = ""
+    typical_layout: ClassVar[str] = ""
+
     def __init__(
         self,
         *,

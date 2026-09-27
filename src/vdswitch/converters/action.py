@@ -7,10 +7,11 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, Name, TaskType
 
+from ..messages import help_hint
 from ..utils.kmot import parse_kmot_file
 from ..utils.video_size import VideoSizeResolver, find_video_root
 from .base import BaseConverter
-from .registry import register_converter_for_sources
+from .registry import register_converter
 from .sources import Source
 
 
@@ -18,7 +19,10 @@ def _load_act_label(label_path: Path) -> tuple[dict[int, Name], dict[str, int]]:
     with label_path.open(encoding="utf-8") as f:
         raw = json.load(f)
     if not isinstance(raw, dict) or not raw:
-        raise ValueError(f"invalid act label_dict: {label_path}")
+        raise ValueError(
+            f"invalid action label file: {label_path}. "
+            f"{help_hint(TaskType.ACTION)}"
+        )
 
     if "action" in raw and isinstance(raw["action"], list):
         label: dict[int, Name] = {}
@@ -71,12 +75,31 @@ def _parse_legacy_meta_line(line: str) -> tuple[str, str] | None:
     return video_path, kmot_rel
 
 
-@register_converter_for_sources(
-    task=TaskType.ACTION,
-    sources=(Source.MONOLITH, Source.UP),
-)
+@register_converter(task=TaskType.ACTION, source=Source.UP)
 class MonolithUpActionConverter(BaseConverter):
-    """monolith/up video meta txt + kmot → vdschema action."""
+    """UP video meta txt + kmot → vdschema action."""
+
+    input_data_help = (
+        "Text meta file: one video per line, semicolon-separated fields.\n"
+        "Format: video_path;num_frames;start;end;unused;kmot_relative_path\n"
+        "kmot paths are resolved relative to the meta file directory."
+    )
+    input_label_help = (
+        "JSON file: either {\"action\":[{\"category_id\":1,\"category_name\":\"…\"},…]} "
+        "or a single head mapping {\"head_name\":[\"class_a\",\"class_b\",…]} "
+        "(class names must match kmot track labels)."
+    )
+    input_data_sample = "video/sample.avi;4;443;446;1;kmot/sample.txt"
+    input_label_sample = (
+        '{"action":[{"category_id":1,"category_name":"package_tossing"}]}\n'
+        'or {"package_tossing":["normal","package_tossing"]}'
+    )
+    typical_layout = (
+        "  meta/video_train.txt       — video list + kmot pointers\n"
+        "  meta/kmot/*.txt            — kmot tracks\n"
+        "  meta/label_dict.json       — action categories\n"
+        "  video/…                    — media (use --input-root)"
+    )
 
     def _convert(self) -> None:
         label, name_to_id = _load_act_label(self.input_label)

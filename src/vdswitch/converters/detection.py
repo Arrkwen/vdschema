@@ -7,9 +7,10 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, Name, TaskType
 
+from ..messages import help_hint
 from ..utils.jsonl import load_jsonl_object
 from .base import BaseConverter
-from .registry import register_converter_for_sources
+from .registry import register_converter
 from .sources import Source
 
 
@@ -17,16 +18,36 @@ def _load_det_label(label_path: Path) -> dict[int, Name]:
     with label_path.open(encoding="utf-8") as f:
         raw = json.load(f)
     if not isinstance(raw, dict) or not raw:
-        raise ValueError(f"invalid det label_dict: {label_path}")
+        raise ValueError(
+            f"invalid detection label file: {label_path} "
+            f'(expected JSON {{"1":"name1","2":"name2", ...}}). '
+            f"{help_hint(TaskType.DETECTION)}"
+        )
     return {int(key): Name(str(name)) for key, name in raw.items()}
 
 
-@register_converter_for_sources(
-    task=TaskType.DETECTION,
-    sources=(Source.MONOLITH, Source.UP),
-)
+@register_converter(task=TaskType.DETECTION, source=Source.UP)
 class MonolithUpDetectionConverter(BaseConverter):
-    """monolith/up baseline jsonl + label_dict.json → vdschema detection."""
+    """UP baseline jsonl + label_dict.json → vdschema detection."""
+
+    input_data_help = (
+        "JSONL file: one JSON object per line with filename and instances "
+        "(bbox, label or category_id, optional is_ignored)."
+    )
+    input_label_help = (
+        "JSON file: string keys are category ids, values are class names "
+        '(e.g. {"1":"person","2":"car"}).'
+    )
+    input_data_sample = (
+        '{"filename":"img.jpg","instances":[{"id":0,"label":1,'
+        '"bbox":[10,10,100,100]}]}'
+    )
+    input_label_sample = '{"1":"person","2":"car"}'
+    typical_layout = (
+        "  meta/train_baseline.jsonl  — annotation JSONL\n"
+        "  meta/label_dict.json       — id → class name map\n"
+        "  images/…                   — media (use --input-root)"
+    )
 
     def _convert(self) -> None:
         writer = AnnotationWriter(

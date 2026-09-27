@@ -5,14 +5,16 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import pytest
+
 from vdschema import AnnotationReader, Source, TaskType, switch
 
 
-def test_vdswitch_det_monolith(det_legacy_dir: Path, tmp_path: Path) -> None:
+def test_vdswitch_det_up(det_legacy_dir: Path, tmp_path: Path) -> None:
     out = tmp_path / "vdschema_det"
     switch(
         task=TaskType.DETECTION,
-        source=Source.MONOLITH,
+        source=Source.UP,
         input_data=det_legacy_dir / "meta/train_baseline.jsonl",
         input_label=det_legacy_dir / "meta/label_dict.json",
         output=out,
@@ -30,17 +32,9 @@ def test_vdswitch_det_monolith(det_legacy_dir: Path, tmp_path: Path) -> None:
     assert data[0].height == 240
 
 
-def test_vdswitch_det_up_alias(det_legacy_dir: Path, tmp_path: Path) -> None:
-    out = tmp_path / "vdschema_det_up"
-    switch(
-        task=TaskType.DETECTION,
-        source=Source.UP,
-        input_data=det_legacy_dir / "meta/train_baseline.jsonl",
-        input_label=det_legacy_dir / "meta/label_dict.json",
-        output=out,
-    )
-    assert (out / "train_baseline.jsonl").is_file()
-    assert (out / "label_dict.json").is_file()
+def test_vdswitch_rejects_monolith_source(det_legacy_dir: Path) -> None:
+    with pytest.raises(ValueError, match="monolith"):
+        Source.parse("monolith")
 
 
 def test_vdswitch_det_same_dir(det_legacy_dir: Path, tmp_path: Path) -> None:
@@ -60,7 +54,7 @@ def test_vdswitch_det_same_dir(det_legacy_dir: Path, tmp_path: Path) -> None:
 
     switch(
         task=TaskType.DETECTION,
-        source=Source.MONOLITH,
+        source=Source.UP,
         input_data=data,
         input_label=label,
         output=tmp_path,
@@ -76,7 +70,7 @@ def test_vdswitch_det_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) 
     out = tmp_path / "vdschema_det_multi"
     switch(
         task=TaskType.DETECTION,
-        source=Source.MONOLITH,
+        source=Source.UP,
         input_data=[train, test],
         input_label=det_legacy_dir / "meta/label_dict.json",
         output=out,
@@ -84,7 +78,49 @@ def test_vdswitch_det_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) 
     )
     assert (out / "train_baseline.jsonl").is_file()
     assert (out / "test_baseline.jsonl").is_file()
-    assert (out / "label_dict.json").is_file()
+    assert (out / "test_baseline.jsonl").is_file()
+
+
+def test_vdswitch_cls_up(cls_legacy_dir: Path, tmp_path: Path) -> None:
+    out = tmp_path / "vdschema_cls"
+    switch(
+        task=TaskType.CLASSIFICATION,
+        source=Source.UP,
+        input_data=cls_legacy_dir / "meta/train_baseline.jsonl",
+        input_label=cls_legacy_dir / "meta/label_dict.json",
+        output=out,
+        input_root=cls_legacy_dir,
+    )
+    data, label = AnnotationReader(
+        TaskType.CLASSIFICATION,
+        out,
+        task_data_filename="train_baseline.jsonl",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert data
+    assert label
+    assert data[0].width == 100
+    assert data[0].height == 80
+    assert data[0].categories[0].category_attr == "gender"
+    assert data[0].categories[0].category_ids == [2]
+
+
+def test_vdswitch_help_classification() -> None:
+    from vdswitch.cli import main
+
+    assert main(["help", "--task", "classification"]) == 0
+
+
+def test_vdswitch_help_list_tasks() -> None:
+    from vdswitch.cli import main
+
+    assert main(["help"]) == 0
+
+
+def test_vdswitch_help_requires_task_with_source() -> None:
+    from vdswitch.cli import main
+
+    assert main(["help", "--source", "up"]) == 2
 
 
 def test_vdswitch_cli_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) -> None:
@@ -100,7 +136,7 @@ def test_vdswitch_cli_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) 
                 "--task",
                 "detection",
                 "--source",
-                "monolith",
+                "up",
                 "--input-data",
                 str(train),
                 str(test),

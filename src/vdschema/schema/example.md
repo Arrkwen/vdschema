@@ -1,5 +1,7 @@
 # Annotation format examples
 
+Python API and conversion: [docs/vdschema.md](../../docs/vdschema.md) · [docs/vdswitch.md](../../docs/vdswitch.md) · [docs/api.md](../../docs/api.md)
+
 Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory (sequence tasks use `annotation_vocab.txt` instead).
 
 `bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` is COCO flat `[x1, y1, v1, x2, y2, v2, ...]` (`v`: 0/1/2). `polygon` is a flat closed ring or oriented box `[x1,y1,...]` (≥3 vertices). `polyline` is an open line `[x1,y1,...]` (≥2 vertices). `point` is `[x, y]` for single-point detection. `rle_mask` follows pycocotools RLE (`size`: `[height, width]`).

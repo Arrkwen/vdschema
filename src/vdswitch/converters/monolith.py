@@ -59,8 +59,7 @@ def _load_act_label(label_path: Path) -> tuple[dict[int, Name], dict[str, int]]:
         raw = json.load(f)
     if not isinstance(raw, dict) or not raw:
         raise ValueError(
-            f"invalid action label file: {label_path}. "
-            f"{help_hint(TaskType.ACTION)}"
+            f"invalid action label file: {label_path}. {help_hint(TaskType.ACTION)}"
         )
 
     if "action" in raw and isinstance(raw["action"], list):
@@ -127,8 +126,7 @@ class MonolithUpDetectionConverter(BaseConverter):
         '(e.g. {"1":"person","2":"car"}).'
     )
     input_data_sample = (
-        '{"filename":"img.jpg","instances":[{"id":0,"label":1,'
-        '"bbox":[10,10,100,100]}]}'
+        '{"filename":"img.jpg","instances":[{"id":0,"label":1,"bbox":[10,10,100,100]}]}'
     )
     input_label_sample = '{"1":"person","2":"car"}'
     typical_layout = _MONOLITH_JSONL_LAYOUT
@@ -288,8 +286,8 @@ class MonolithUpActionConverter(BaseConverter):
         "kmot paths are resolved relative to the meta file directory."
     )
     input_label_help = (
-        "JSON file: either {\"action\":[{\"category_id\":1,\"category_name\":\"…\"},…]} "
-        "or a single head mapping {\"head_name\":[\"class_a\",\"class_b\",…]} "
+        'JSON file: either {"action":[{"category_id":1,"category_name":"…"},…]} '
+        'or a single head mapping {"head_name":["class_a","class_b",…]} '
         "(class names must match kmot track labels)."
     )
     input_data_sample = "video/sample.avi;4;443;446;1;kmot/sample.txt"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from vdschema import TaskType
 
+from .converters.base import BaseConverter
 from .converters.registry import get_converter_class, supported_sources, supported_tasks
 from .converters.sources import Source
 from .messages import help_hint
@@ -22,7 +23,9 @@ def _resolve_source(task: TaskType, source: Source | None) -> Source:
     allowed = supported_sources(task)
     if source is not None:
         if source not in allowed:
-            names = ", ".join(item.value for item in sorted(allowed, key=lambda s: s.value))
+            names = ", ".join(
+                item.value for item in sorted(allowed, key=lambda s: s.value)
+            )
             raise ValueError(
                 f"unsupported source={source.value!r} for task={task.value!r}, "
                 f"allowed: {names}"
@@ -79,11 +82,11 @@ def _example_command(task: TaskType, source: Source) -> str:
     return "\n".join(lines)
 
 
-def _converter_class_for_task(task: TaskType) -> type:
+def _converter_class_for_task(task: TaskType) -> type[BaseConverter]:
     return get_converter_class(task, _default_source_for_task(task))
 
 
-def _optional_flag_notes(cls: type) -> list[str]:
+def _optional_flag_notes(cls: type[BaseConverter]) -> list[str]:
     notes: list[str] = []
     if cls.input_label_same_as_data:
         notes.append("--input-label: optional (defaults to each --input-data path)")
@@ -100,7 +103,8 @@ def format_task_summary_lines() -> list[str]:
     for task in sorted(supported_tasks(), key=lambda item: item.value):
         cls = _converter_class_for_task(task)
         sources = ", ".join(
-            item.value for item in sorted(supported_sources(task), key=lambda s: s.value)
+            item.value
+            for item in sorted(supported_sources(task), key=lambda s: s.value)
         )
         first = cls.input_data_help.split("\n", maxsplit=1)[0].strip()
         if first:
@@ -141,7 +145,9 @@ def format_help_text(*, task: TaskType | None, source: Source | None) -> str:
     ]
     optional_notes = _optional_flag_notes(cls)
     if optional_notes:
-        sections.extend(["", "Optional flags:", *[f"  {note}" for note in optional_notes]])
+        sections.extend(
+            ["", "Optional flags:", *[f"  {note}" for note in optional_notes]]
+        )
     sections.extend(
         [
             "",

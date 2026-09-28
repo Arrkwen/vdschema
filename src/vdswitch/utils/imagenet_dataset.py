@@ -25,7 +25,9 @@ def sorted_class_dirs(root: Path) -> list[Path]:
     return dirs
 
 
-def build_imagenet_head(root: Path) -> tuple[dict[str, dict[int, Name]], dict[str, int]]:
+def build_imagenet_head(
+    root: Path,
+) -> tuple[dict[str, dict[int, Name]], dict[str, int]]:
     class_dirs = sorted_class_dirs(root)
     name_to_id = {path.name: idx + 1 for idx, path in enumerate(class_dirs)}
     head = {name_to_id[name]: Name(name) for name in name_to_id}

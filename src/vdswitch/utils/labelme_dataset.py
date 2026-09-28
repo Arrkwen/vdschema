@@ -149,9 +149,7 @@ def collect_label_ids(paths: list[Path], shape_types: frozenset[str]) -> dict[st
 
 
 def label_dict_from_label_map(label_to_id: dict[str, int]) -> dict[int, Name]:
-    return {
-        cid: Name(label or "object") for label, cid in label_to_id.items()
-    }
+    return {cid: Name(label or "object") for label, cid in label_to_id.items()}
 
 
 def _shape_text(shape: dict[str, Any]) -> str | None:

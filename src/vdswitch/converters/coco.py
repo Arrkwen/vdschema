@@ -45,7 +45,7 @@ class _CocoConverter(BaseConverter):
         '"annotations":[{"id":1,"image_id":1,"category_id":1,'
         '"bbox":[10,20,100,200]}]}'
     )
-    input_label_sample = "Same file as --input-data, or {\"categories\":[…]}"
+    input_label_sample = 'Same file as --input-data, or {"categories":[…]}'
     typical_layout = _COCO_TYPICAL
 
     def __init__(self, **kwargs) -> None:

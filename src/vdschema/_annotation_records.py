@@ -99,9 +99,7 @@ class DetectionAnnotation(BaseAnnotation):
     def from_dict(cls, raw: dict[str, Any]) -> DetectionAnnotation:
         return cls(
             **cls._base_kwargs(raw),
-            instances=[
-                Instance.from_dict(item) for item in raw.get("instances", [])
-            ],
+            instances=[Instance.from_dict(item) for item in raw.get("instances", [])],
             description=raw.get("description"),
         )
 
@@ -158,8 +156,7 @@ class ClassificationAnnotation(BaseAnnotation):
         return cls(
             **cls._base_kwargs(raw),
             categories=[
-                ClassificationHead.from_dict(item)
-                for item in raw.get("categories", [])
+                ClassificationHead.from_dict(item) for item in raw.get("categories", [])
             ],
             description=raw.get("description"),
         )
@@ -214,12 +211,9 @@ class RelationshipAnnotation(BaseAnnotation):
     def from_dict(cls, raw: dict[str, Any]) -> RelationshipAnnotation:
         return cls(
             **cls._base_kwargs(raw),
-            instances=[
-                Instance.from_dict(item) for item in raw.get("instances", [])
-            ],
+            instances=[Instance.from_dict(item) for item in raw.get("instances", [])],
             relationships=[
-                Relationship.from_dict(item)
-                for item in raw.get("relationships", [])
+                Relationship.from_dict(item) for item in raw.get("relationships", [])
             ],
             description=raw.get("description"),
         )
@@ -332,9 +326,7 @@ class ActionAnnotation(BaseAnnotation):
     def from_dict(cls, raw: dict[str, Any]) -> ActionAnnotation:
         return cls(
             **cls._base_kwargs(raw),
-            actions=[
-                ActionEvent.from_dict(item) for item in raw.get("actions", [])
-            ],
+            actions=[ActionEvent.from_dict(item) for item in raw.get("actions", [])],
             description=raw.get("description"),
         )
 

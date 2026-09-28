@@ -37,8 +37,7 @@ def load_category_map(label_path: Path, *, task: TaskType) -> dict[int, Name]:
     categories = raw.get("categories")
     if not isinstance(categories, list) or not categories:
         raise ValueError(
-            f"missing categories[] in COCO label file: {label_path}. "
-            f"{help_hint(task)}"
+            f"missing categories[] in COCO label file: {label_path}. {help_hint(task)}"
         )
     label: dict[int, Name] = {}
     for item in categories:
@@ -105,9 +104,7 @@ def coco_segmentation_rle(
         return None
     if isinstance(segm, dict):
         size = segm.get("size") or [height, width]
-        return SegmentationRLE.from_dict(
-            {"size": size, "counts": segm["counts"]}
-        )
+        return SegmentationRLE.from_dict({"size": size, "counts": segm["counts"]})
     if isinstance(segm, list) and segm:
         polys = segm if isinstance(segm[0], list) else [segm]
         rles = mask_util.frPyObjects(polys, height, width)

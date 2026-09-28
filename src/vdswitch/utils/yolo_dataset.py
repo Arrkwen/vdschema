@@ -19,7 +19,9 @@ def load_yolo_class_names(path: Path) -> dict[int, Name]:
     return {idx: Name(name) for idx, name in enumerate(names)}
 
 
-def resolve_image_path(line: str, *, root: Path | None, list_file: Path) -> tuple[Path, str]:
+def resolve_image_path(
+    line: str, *, root: Path | None, list_file: Path
+) -> tuple[Path, str]:
     raw = line.strip()
     if not raw:
         raise ValueError(f"empty path line in {list_file}")
@@ -41,9 +43,7 @@ def yolo_label_path_for_image(image_path: Path) -> Path:
     return image_path.with_suffix(".txt")
 
 
-def parse_yolo_label_file(
-    label_path: Path, *, width: int, height: int
-) -> list[dict]:
+def parse_yolo_label_file(label_path: Path, *, width: int, height: int) -> list[dict]:
     if not label_path.is_file():
         return []
     instances: list[dict] = []
@@ -56,7 +56,12 @@ def parse_yolo_label_file(
         if len(parts) < 5:
             raise ValueError(f"invalid YOLO label line in {label_path}: {line!r}")
         category_id = int(parts[0])
-        cx, cy, bw, bh = (float(parts[1]), float(parts[2]), float(parts[3]), float(parts[4]))
+        cx, cy, bw, bh = (
+            float(parts[1]),
+            float(parts[2]),
+            float(parts[3]),
+            float(parts[4]),
+        )
         x1 = (cx - bw / 2) * width
         y1 = (cy - bh / 2) * height
         x2 = (cx + bw / 2) * width

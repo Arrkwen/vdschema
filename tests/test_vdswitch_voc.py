@@ -110,9 +110,10 @@ def test_voc_segmentation_custom_label(tmp_path: Path) -> None:
 
 def test_voc_resolve_root(mini_voc_root: Path) -> None:
     assert resolve_voc_root(mini_voc_root, None) == mini_voc_root.resolve()
-    assert resolve_voc_root(
-        mini_voc_root / "ImageSets" / "Main" / "train.txt", None
-    ) == mini_voc_root.resolve()
+    assert (
+        resolve_voc_root(mini_voc_root / "ImageSets" / "Main" / "train.txt", None)
+        == mini_voc_root.resolve()
+    )
 
 
 def test_voc_collect_names(mini_voc_root: Path) -> None:
@@ -261,7 +262,9 @@ def test_voc_segmentation_bad_mask(tmp_path: Path) -> None:
         segmentation_instances_from_class_png(rgb, label=voc2012_label_dict())
 
 
-def test_voc_iter_root_dir_and_empty_labels(mini_voc_root: Path, tmp_path: Path) -> None:
+def test_voc_iter_root_dir_and_empty_labels(
+    mini_voc_root: Path, tmp_path: Path
+) -> None:
     from vdswitch.utils.voc_dataset import (
         collect_detection_class_names,
         iter_voc_image_ids,
@@ -286,7 +289,9 @@ def test_voc_iter_root_dir_and_empty_labels(mini_voc_root: Path, tmp_path: Path)
     assert rel.startswith("JPEGImages/")
 
 
-def test_voc_detection_skips_missing_annotation(mini_voc_root: Path, tmp_path: Path) -> None:
+def test_voc_detection_skips_missing_annotation(
+    mini_voc_root: Path, tmp_path: Path
+) -> None:
     (mini_voc_root / "ImageSets" / "Main" / "train.txt").write_text(
         "000001\nmissing_id\n", encoding="utf-8"
     )

@@ -115,9 +115,7 @@ class SegmentationRLE:
 
     def validate(self) -> None:
         if self.height < 1 or self.width < 1:
-            raise AnnotationFormatError(
-                "rle_mask.size must contain positive integers"
-            )
+            raise AnnotationFormatError("rle_mask.size must contain positive integers")
         if not self.counts:
             raise AnnotationFormatError("rle_mask.counts must not be empty")
 

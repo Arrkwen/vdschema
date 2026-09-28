@@ -143,7 +143,9 @@ def parse_voc_detection_xml(path: Path) -> VocDetectionRecord:
     )
 
 
-def collect_detection_class_names(voc_root: Path, image_ids: list[str]) -> dict[str, int]:
+def collect_detection_class_names(
+    voc_root: Path, image_ids: list[str]
+) -> dict[str, int]:
     names: set[str] = set()
     for image_id in image_ids:
         xml_path = voc_annotation_xml_path(voc_root, image_id)
@@ -199,7 +201,9 @@ def resolve_media_filename(
                 text = f"JPEGImages/{Path(text).name}"
         rel_root = input_root or voc_root.parent
         try:
-            return (voc_root / text).resolve().relative_to(rel_root.resolve()).as_posix()
+            return (
+                (voc_root / text).resolve().relative_to(rel_root.resolve()).as_posix()
+            )
         except ValueError:
             return text
 

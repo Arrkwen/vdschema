@@ -56,7 +56,9 @@ class _VocConverterBase(BaseConverter):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         same_dir = self.output_dir == self.input_data.parent
-        stem = self.input_data.stem if self.input_data.is_file() else self.input_data.name
+        stem = (
+            self.input_data.stem if self.input_data.is_file() else self.input_data.name
+        )
         self.output_data_filename = (
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
@@ -105,9 +107,7 @@ class VocDetectionConverter(_VocConverterBase):
             if not xml_path.is_file():
                 continue
             record = parse_voc_detection_xml(xml_path)
-            instances = detection_instances_from_record(
-                record, name_to_id=name_to_id
-            )
+            instances = detection_instances_from_record(record, name_to_id=name_to_id)
             if not instances:
                 continue
             filename = resolve_media_filename(

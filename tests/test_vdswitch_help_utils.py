@@ -147,6 +147,7 @@ def test_coco_dataset_errors_and_keypoints(tmp_path: Path) -> None:
     }
     cat_path = _write_json(tmp_path, "cats.json", raw)
     cats = load_category_map(cat_path, task=TaskType.KEYPOINT)
+    assert cats[1].name == "cat"
     kps = coco_keypoints_flat(raw["annotations"][0])
     assert kps == [1.0, 2.0, 2]
 

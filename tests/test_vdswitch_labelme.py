@@ -241,7 +241,11 @@ def test_labelme_collect_labels(tmp_path: Path) -> None:
         json.dumps(
             {
                 "shapes": [
-                    {"label": "a", "shape_type": "rectangle", "points": [[0, 0], [1, 1]]}
+                    {
+                        "label": "a",
+                        "shape_type": "rectangle",
+                        "points": [[0, 0], [1, 1]],
+                    }
                 ],
                 "imageWidth": 1,
                 "imageHeight": 1,

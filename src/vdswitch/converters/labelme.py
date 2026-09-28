@@ -54,7 +54,9 @@ class _LabelMeConverterBase(BaseConverter):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         same_dir = self.output_dir == self.input_data.parent
-        stem = self.input_data.stem if self.input_data.is_file() else self.input_data.name
+        stem = (
+            self.input_data.stem if self.input_data.is_file() else self.input_data.name
+        )
         self.output_data_filename = (
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
@@ -95,9 +97,7 @@ class LabelMeDetectionConverter(_LabelMeConverterBase):
         )
         for json_path in paths:
             doc = load_labelme_document(json_path)
-            instances = detection_instances_from_document(
-                doc, label_to_id=label_to_id
-            )
+            instances = detection_instances_from_document(doc, label_to_id=label_to_id)
             if not instances:
                 continue
             width, height = document_size(doc)
@@ -169,9 +169,7 @@ class LabelMeKeypointConverter(_LabelMeConverterBase):
         )
         for json_path in paths:
             doc = load_labelme_document(json_path)
-            instances = keypoint_instances_from_document(
-                doc, label_to_id=label_to_id
-            )
+            instances = keypoint_instances_from_document(doc, label_to_id=label_to_id)
             if not instances:
                 continue
             width, height = document_size(doc)

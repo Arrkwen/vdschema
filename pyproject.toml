@@ -16,7 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 vdswitch = [
     "opencv-python-headless>=4.8",
-    "pillow>=10.0",
+    "pillow>=12.3.0",
 ]
 
 [project.urls]

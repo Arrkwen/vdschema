@@ -30,8 +30,7 @@ class YoloDetectionConverter(BaseConverter):
         "Paths are relative to --input-root when set."
     )
     input_label_help = (
-        "classes.txt: one class name per line; line index is YOLO class_id "
-        "(0-based)."
+        "classes.txt: one class name per line; line index is YOLO class_id (0-based)."
     )
     input_data_sample = "images/train/sample.jpg"
     input_label_sample = "person\ncar\n"
@@ -76,9 +75,7 @@ class YoloDetectionConverter(BaseConverter):
             with Image.open(image_path) as img:
                 width, height = img.size
             label_path = yolo_label_path_for_image(image_path)
-            instances = parse_yolo_label_file(
-                label_path, width=width, height=height
-            )
+            instances = parse_yolo_label_file(label_path, width=width, height=height)
             writer.append(
                 filename=self._media_relative(image_path, list_relative),
                 width=width,

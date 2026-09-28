@@ -24,9 +24,7 @@ from .base import BaseConverter
 from .registry import register_converter
 from .sources import Source
 
-_DOC_LINK = (
-    "https://github.com/open-mmlab/labelbee-client/tree/main/docs/annotation"
-)
+_DOC_LINK = "https://github.com/open-mmlab/labelbee-client/tree/main/docs/annotation"
 
 
 class _LabelBeeConverterBase(BaseConverter):
@@ -55,7 +53,9 @@ class _LabelBeeConverterBase(BaseConverter):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         same_dir = self.output_dir == self.input_data.parent
-        stem = self.input_data.stem if self.input_data.is_file() else self.input_data.name
+        stem = (
+            self.input_data.stem if self.input_data.is_file() else self.input_data.name
+        )
         self.output_data_filename = (
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
@@ -130,9 +130,7 @@ class LabelBeeSegmentationConverter(_LabelBeeConverterBase):
         )
         for json_path in paths:
             doc = load_labelbee_document(json_path)
-            instances = segmentation_instances_from_document(
-                doc, attr_to_id=attr_to_id
-            )
+            instances = segmentation_instances_from_document(doc, attr_to_id=attr_to_id)
             if not instances:
                 continue
             filename = resolve_media_filename(

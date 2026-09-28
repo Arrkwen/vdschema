@@ -28,7 +28,11 @@ def _enable_windows_vt() -> bool:  # pragma: no cover
         return _WINDOWS_VT
     import ctypes  # pragma: no cover — exercised only on Windows consoles
 
-    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]  # pragma: no cover
+    windll = getattr(ctypes, "windll", None)
+    if windll is None:
+        _WINDOWS_VT = False
+        return False
+    kernel32 = windll.kernel32  # pragma: no cover
     enable_vt = 0x0004
     ok = True
     for handle_id in (-11, -12):  # stdout, stderr
@@ -58,7 +62,7 @@ def _terminal_bold(text: str, *, stream: TextIO | None = None) -> str:
 class _HelpArgumentParser(argparse.ArgumentParser):
     """Apply bold epilog when printing help to a terminal."""
 
-    def print_help(self, file: TextIO | None = None) -> None:
+    def print_help(self, file: TextIO | None = None) -> None:  # ty: ignore[invalid-method-override]
         if file is None:
             file = sys.stdout
         epilog = self.epilog
@@ -74,7 +78,9 @@ def _join_choices(choices: tuple[str, ...]) -> str:
     return "{" + ",".join(choices) + "}"
 
 
-def _convert_usage(task_choices: tuple[str, ...], source_choices: tuple[str, ...]) -> str:
+def _convert_usage(
+    task_choices: tuple[str, ...], source_choices: tuple[str, ...]
+) -> str:
     i = _USAGE_INDENT
     tasks = _join_choices(task_choices)
     sources = _join_choices(source_choices)
@@ -95,11 +101,7 @@ def _help_subcommand_usage(
     i = _USAGE_INDENT
     tasks = _join_choices(task_choices)
     sources = _join_choices(source_choices)
-    return (
-        "vdswitch help [-h]\n"
-        f"{i}[--task {tasks}]\n"
-        f"{i}[--source {sources}]"
-    )
+    return f"vdswitch help [-h]\n{i}[--task {tasks}]\n{i}[--source {sources}]"
 
 
 def build_convert_parser() -> argparse.ArgumentParser:

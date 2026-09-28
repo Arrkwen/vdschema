@@ -144,9 +144,7 @@ def test_labelbee_segmentation_polygon(tmp_path: Path) -> None:
         out,
         task_data_filename="json.jsonl",
     ).load()
-    assert data[0].instances[0].polygon == pytest.approx(
-        [0, 0, 10, 0, 10, 10, 0, 10]
-    )
+    assert data[0].instances[0].polygon == pytest.approx([0, 0, 10, 0, 10, 10, 0, 10])
 
 
 def test_labelbee_keypoint(tmp_path: Path) -> None:

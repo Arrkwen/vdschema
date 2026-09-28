@@ -21,7 +21,9 @@ def test_detection_requires_bbox_or_polygon(tmp_path: Path) -> None:
         label={1: "x"},
         task_dir=tmp_path / "det",
     )
-    with pytest.raises(AnnotationFormatError, match="bbox, polygon, polyline, or point"):
+    with pytest.raises(
+        AnnotationFormatError, match="bbox, polygon, polyline, or point"
+    ):
         writer.append(
             filename="a.jpg",
             width=10,

@@ -11,6 +11,9 @@ It supports two primary workflows:
 
 VDswitch converts common vision dataset annotation formats to the VDschema annotation format.
 
+<p align="center">
+  <img src="docs/vdswitch-pipeline.svg" alt="Sources annotation format → VDswitch → VDschema annotation format" width="820" />
+</p>
 
 
 ## Install

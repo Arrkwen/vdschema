@@ -1,16 +1,24 @@
 # VDschema
 
-**VDschema**: A unified annotation **schema** for **V**ision **D**atasets with JSONL I/O support.
+**VDschema**: A unified annotation **schema** for **V**ision **D**atasets with JSONL I/O support. One JSON object per line in `annotation_data.jsonl`. More tasks and fields: [example.md](src/vdschema/schema/example.md) · [docs/vdschema.md](docs/vdschema.md).
+
+<p align="center">
+  <img src="docs/vdschema-jsonl-layout.svg" alt="annotation_data.jsonl line examples for detection and vlm tasks" width="820" height="260" />
+</p>
 
 It supports two primary workflows:
 
 - **Write** — annotation pipelines produce unified JSONL annotation data
 - **Read** — training pipelines load JSONL into typed Python annotation objects
 
+
 ## VDswitch
 
-VDswitch converts common vision dataset annotation formats to the VDschema annotation format.
+VDswitch converts common vision dataset annotation formats to the VDschema annotation format. See [docs/vdswitch.md](docs/vdswitch.md)
 
+<p align="center">
+  <img src="docs/vdswitch-pipeline.svg" alt="Sources annotation format to VDswitch to VDschema annotation format" width="820" />
+</p>
 
 
 ## Install
@@ -63,8 +71,6 @@ data, label = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 print(label[1].name)  # person
 ```
 
-More tasks and options: [docs/vdschema.md](docs/vdschema.md). Public types and parameters: [docs/api.md](docs/api.md).
-
 ### vdswitch
 
 ```bash
@@ -74,8 +80,6 @@ vdswitch --task detection --source coco \
 
 vdswitch help --task detection --source coco
 ```
-
-More tasks and options: [docs/vdswitch.md](docs/vdswitch.md).
 
 ## Development
 
@@ -111,7 +115,6 @@ The [publish.yml](.github/workflows/publish.yml) workflow runs on release publis
 | [LabelBee](https://github.com/open-mmlab/labelbee-client) | [General Data annotation spec](https://github.com/open-mmlab/labelbee-client/tree/main/docs/annotation)                                      |
 | [ImageNet](https://www.image-net.org/)                    | [Download / terms](https://www.image-net.org/download.php)                                                                                   |
 | YOLO-style labels                                         | De-facto layout (`images` + `labels` + `classes.txt`); see your dataset or [Ultralytics docs](https://docs.ultralytics.com/datasets/detect/) |
-
 
 Thanks to the authors and maintainers of these formats and tools.
 

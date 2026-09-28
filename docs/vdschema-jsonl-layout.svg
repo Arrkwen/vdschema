@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 260" width="820" height="260" role="img" aria-label="annotation_data.jsonl one JSON per line detection and vlm">
+  <defs>
+    <style>
+      .box { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; }
+      .heading { font: 600 13px system-ui, -apple-system, Segoe UI, sans-serif; fill: #1f2328; }
+      .sub { font: 11px system-ui, sans-serif; fill: #57606a; }
+      .code { font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #24292f; }
+    </style>
+  </defs>
+  <text class="heading" x="410" y="20" text-anchor="middle">annotation_data.jsonl</text>
+  <text class="sub" x="410" y="36" text-anchor="middle">Each line is one JSON object (one sample).</text>
+
+  <rect class="box" x="8" y="48" width="804" height="96" rx="10"/>
+  <text class="heading" x="410" y="68" text-anchor="middle">detection</text>
+  <text class="code" x="16" y="84">{"filename":"images/detection_001.jpg","width":640,"height":480,"instances":[{"id":0,"category_id":1,"bbox":[10,20,100,200]}]}</text>
+  <text class="code" x="16" y="98">{"filename":"images/detection_002.jpg","width":640,"height":480,"instances":[{"id":0,"category_id":2,"bbox":[120,30,200,180]}]}</text>
+  <text class="code" x="16" y="112">{"filename":"images/detection_obb_001.jpg","width":640,"height":480,"instances":[{"id":0,"category_id":3,"polygon":[120,80,200,60,220,140,140,160]}]}</text>
+  <text class="sub" x="410" y="132" text-anchor="middle">+ annotation_meta.json for labels</text>
+
+  <rect class="box" x="8" y="156" width="804" height="96" rx="10"/>
+  <text class="heading" x="410" y="176" text-anchor="middle">vlm</text>
+  <text class="code" x="16" y="192">{"filename":"images/vlm_001.jpg","width":640,"height":480,"description":"A street intersection with three people crossing."}</text>
+  <text class="code" x="16" y="206">{"filename":"images/vlm_002.jpg","width":800,"height":600,"description":"A dog sitting on a bench in the park."}</text>
+  <text class="code" x="16" y="220">{"filename":"images/vlm_003.jpg","width":1024,"height":768,"description":"Close-up of a red traffic sign."}</text>
+  <text class="sub" x="410" y="240" text-anchor="middle">no annotation_meta.json</text>
+</svg>

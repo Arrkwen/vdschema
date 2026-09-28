@@ -11,9 +11,6 @@ It supports two primary workflows:
 
 VDswitch converts common vision dataset annotation formats to the VDschema annotation format.
 
-<p align="center">
-  <img src="docs/vdswitch-pipeline.svg" alt="Sources annotation format → VDswitch → VDschema annotation format" width="820" />
-</p>
 
 
 ## Install
@@ -86,10 +83,11 @@ More tasks and options: [docs/vdswitch.md](docs/vdswitch.md).
 git clone https://github.com/Arrkwen/vdschema.git
 cd vdschema
 uv sync --extra vdswitch --group dev
+
+# Hook `git commit`: Ruff, ty, and Bandit on `src/`. Run once per clone:
+uv run pre-commit install
+
 uv run pytest
-uv run ruff check .
-uv run ruff format --check .
-uv run ty check
 uv build
 ```
 

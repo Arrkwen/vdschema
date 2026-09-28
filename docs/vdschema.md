@@ -402,4 +402,3 @@ Full runnable tests: [tests/test_annotation_format.py](../tests/test_annotation_
 ```bash
 uv run pytest tests/test_annotation_format.py
 ```
-

@@ -37,6 +37,7 @@ dev = [
     "ty>=0.0.1a20",
     "pip-audit>=2.7",
     "bandit>=1.8",
+    "pre-commit>=4.0",
     "build>=1.2.0",
     "twine>=5.0.0",
 ]

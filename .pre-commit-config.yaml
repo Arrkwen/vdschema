@@ -1,0 +1,32 @@
+# Git commit hooks: style (Ruff), types (ty), and Bandit on src/.
+#
+# One-time setup:
+#   uv sync --extra vdswitch --group dev
+#   uv run pre-commit install
+#
+# After that, every `git commit` runs these checks on staged files (ty scans all of src/).
+# Manual full run: uv run pre-commit run --all-files
+
+minimum_pre_commit_version: "3.2.0"
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: ty-check
+        name: ty check
+        entry: uv run ty check
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: bandit
+        name: bandit (src)
+        entry: uv run bandit -r src -c pyproject.toml
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

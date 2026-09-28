@@ -9,63 +9,7 @@ It supports two primary workflows:
 
 ## VDswitch
 
-vdswitch is a converter: convert the common vision dataset annotation format to vdschema annotation format.  
-
-```mermaid
-flowchart LR
-  subgraph S["Sources Annotation Format"]
-    direction TB
-    s_monolith[monolith]
-    s_coco[coco]
-    s_yolo[yolo]
-    s_imagenet[imagenet]
-    s_labelbee[labelbee]
-    s_labelme[labelme]
-    s_voc[voc]
-    s_ocr[ocr]
-    s_monolith ~~~ s_coco
-    s_yolo ~~~ s_imagenet
-    s_labelbee ~~~ s_labelme
-    s_voc ~~~ s_ocr
-    s_monolith ~~~ s_yolo
-    s_coco ~~~ s_imagenet
-    s_yolo ~~~ s_labelbee
-    s_imagenet ~~~ s_labelme
-    s_labelbee ~~~ s_voc
-    s_labelme ~~~ s_ocr
-  end
-
-  SW["vdswitch"]
-
-  subgraph F["VDschema Annotation Format"]
-    direction TB
-    f_manifest[manifest]
-    f_detection[detection]
-    f_keypoint[keypoint]
-    f_segmentation[segmentation]
-    f_classification[classification]
-    f_relationship[relationship]
-    f_vlm[vlm]
-    f_conversation[conversation]
-    f_sequence[sequence]
-    f_action[action]
-    f_manifest ~~~ f_detection
-    f_keypoint ~~~ f_segmentation
-    f_classification ~~~ f_relationship
-    f_vlm ~~~ f_conversation
-    f_sequence ~~~ f_action
-    f_manifest ~~~ f_keypoint
-    f_detection ~~~ f_segmentation
-    f_keypoint ~~~ f_classification
-    f_segmentation ~~~ f_relationship
-    f_classification ~~~ f_vlm
-    f_relationship ~~~ f_conversation
-    f_vlm ~~~ f_sequence
-    f_conversation ~~~ f_action
-  end
-
-  S --> SW --> F
-```
+VDswitch converts common vision dataset annotation formats to the VDschema annotation format.
 
 
 
@@ -157,14 +101,16 @@ The [publish.yml](.github/workflows/publish.yml) workflow runs on release publis
 
 **vdschema** defines its own JSONL schema. **vdswitch** only reads common *file layouts*; it does not ship or grant rights to third-party datasets. If you convert or train on external data, follow that dataset’s terms.
 
-| Format / tool | Reference |
-| ------------- | --------- |
-| [MS COCO](https://cocodataset.org/) | [Terms of use](https://cocodataset.org/#termsofuse) (annotations under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) |
-| [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/) | [FAQ / conditions](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/htm/documents.html) |
-| [LabelMe](https://github.com/wkentaro/labelme) | JSON export format ([MIT](https://github.com/wkentaro/labelme/blob/main/LICENSE)) |
-| [LabelBee](https://github.com/open-mmlab/labelbee-client) | [General Data annotation spec](https://github.com/open-mmlab/labelbee-client/tree/main/docs/annotation) |
-| [ImageNet](https://www.image-net.org/) | [Download / terms](https://www.image-net.org/download.php) |
-| YOLO-style labels | De-facto layout (`images` + `labels` + `classes.txt`); see your dataset or [Ultralytics docs](https://docs.ultralytics.com/datasets/detect/) |
+
+| Format / tool                                             | Reference                                                                                                                                    |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [MS COCO](https://cocodataset.org/)                       | [Terms of use](https://cocodataset.org/#termsofuse) (annotations under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/))            |
+| [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/)     | [FAQ / conditions](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/htm/documents.html)                                                        |
+| [LabelMe](https://github.com/wkentaro/labelme)            | JSON export format ([MIT](https://github.com/wkentaro/labelme/blob/main/LICENSE))                                                            |
+| [LabelBee](https://github.com/open-mmlab/labelbee-client) | [General Data annotation spec](https://github.com/open-mmlab/labelbee-client/tree/main/docs/annotation)                                      |
+| [ImageNet](https://www.image-net.org/)                    | [Download / terms](https://www.image-net.org/download.php)                                                                                   |
+| YOLO-style labels                                         | De-facto layout (`images` + `labels` + `classes.txt`); see your dataset or [Ultralytics docs](https://docs.ultralytics.com/datasets/detect/) |
+
 
 Thanks to the authors and maintainers of these formats and tools.
 

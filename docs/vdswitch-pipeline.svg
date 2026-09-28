@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 200" width="820" height="200" role="img" aria-label="Sources to VDswitch to VDschema formats">
+  <defs>
+    <style>
+      .box { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; }
+      .title { font: 600 13px system-ui, -apple-system, Segoe UI, sans-serif; fill: #1f2328; }
+      .tag { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #0969da; }
+      .hub { font: 600 14px system-ui, sans-serif; fill: #1f2328; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#57606a"/>
+    </marker>
+  </defs>
+  <rect class="box" x="8" y="12" width="248" height="176" rx="10"/>
+  <text class="title" x="132" y="36" text-anchor="middle">Sources annotation format</text>
+  <g class="tag">
+    <text x="92" y="79" text-anchor="middle">monolith</text><text x="172" y="79" text-anchor="middle">coco</text>
+    <text x="92" y="103" text-anchor="middle">yolo</text><text x="172" y="103" text-anchor="middle">imagenet</text>
+    <text x="92" y="127" text-anchor="middle">labelbee</text><text x="172" y="127" text-anchor="middle">labelme</text>
+    <text x="92" y="151" text-anchor="middle">voc</text><text x="172" y="151" text-anchor="middle">ocr</text>
+  </g>
+  <line x1="262" y1="100" x2="284" y2="100" stroke="#57606a" stroke-width="2" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+  <rect class="box" x="290" y="72" width="120" height="56" rx="10"/>
+  <text class="hub" x="350" y="105" text-anchor="middle">VDswitch</text>
+  <line x1="416" y1="100" x2="434" y2="100" stroke="#57606a" stroke-width="2" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+  <rect class="box" x="438" y="12" width="374" height="176" rx="10"/>
+  <text class="title" x="625" y="36" text-anchor="middle">VDschema annotation format</text>
+  <g class="tag">
+    <text x="555" y="67" text-anchor="middle">manifest</text><text x="695" y="67" text-anchor="middle">detection</text>
+    <text x="555" y="91" text-anchor="middle">keypoint</text><text x="695" y="91" text-anchor="middle">segmentation</text>
+    <text x="555" y="115" text-anchor="middle">classification</text><text x="695" y="115" text-anchor="middle">relationship</text>
+    <text x="555" y="139" text-anchor="middle">vlm</text><text x="695" y="139" text-anchor="middle">conversation</text>
+    <text x="555" y="163" text-anchor="middle">sequence</text><text x="695" y="163" text-anchor="middle">action</text>
+  </g>
+</svg>

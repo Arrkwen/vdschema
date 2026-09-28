@@ -17,6 +17,7 @@ dependencies = [
 vdswitch = [
     "opencv-python-headless>=4.8",
     "pillow>=12.3.0",
+    "defusedxml>=0.7",
 ]
 
 [project.urls]
@@ -35,6 +36,7 @@ dev = [
     "ruff>=0.8.0",
     "ty>=0.0.1a20",
     "pip-audit>=2.7",
+    "bandit>=1.8",
     "build>=1.2.0",
     "twine>=5.0.0",
 ]
@@ -53,6 +55,9 @@ vdschema = ["schema/*.json", "schema/*.md"]
 name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
+
+[tool.uv]
+constraint-dependencies = ["cryptography>=50.0.1"]
 
 [tool.coverage.run]
 source = ["src/vdschema", "src/vdswitch"]
@@ -79,6 +84,9 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/vdswitch/converters/registry.py" = ["B010"]
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]
 
 [tool.ty.environment]
 python-version = "3.10"

@@ -208,7 +208,7 @@ class Instance:
     polygon: list[float] | None = None
     polyline: list[float] | None = None
     point: list[float] | None = None
-    keypoints: dict[str, list[Keypoint]] | None = None
+    keypoints: list[Keypoint] | None = None
     rle_mask: SegmentationRLE | None = None
     text: str | None = None
     is_ignored: bool = False
@@ -225,13 +225,8 @@ class Instance:
         if self.point is not None:
             _validate_point_xy(self.point)
         if self.keypoints:
-            for part, points in self.keypoints.items():
-                if not part or not part[0].islower():
-                    raise AnnotationFormatError(
-                        f"keypoint part names should use snake_case: {part!r}"
-                    )
-                for kp in points:
-                    kp.validate()
+            for kp in self.keypoints:
+                kp.validate()
         if self.rle_mask is not None:
             self.rle_mask.validate()
 
@@ -250,10 +245,10 @@ class Instance:
         if self.point is not None:
             out["point"] = list(self.point)
         if self.keypoints:
-            out["keypoints"] = {
-                part: [kp.to_list() for kp in points]
-                for part, points in self.keypoints.items()
-            }
+            flat: list[float | int] = []
+            for kp in self.keypoints:
+                flat.extend(kp.to_list())
+            out["keypoints"] = flat
         if self.rle_mask is not None:
             out["rle_mask"] = self.rle_mask.to_dict()
         if self.text is not None:
@@ -263,12 +258,7 @@ class Instance:
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Instance:
-        kps = None
-        if "keypoints" in raw:
-            kps = {
-                part: [Keypoint.from_list(p) for p in points]
-                for part, points in raw["keypoints"].items()
-            }
+        kps = parse_keypoints(raw.get("keypoints"))
         bbox = Bbox.from_list(raw["bbox"]) if "bbox" in raw else None
         polygon = _polygon(raw.get("polygon"))
         polyline = _polyline(raw.get("polyline"))
@@ -604,13 +594,36 @@ def _keypoint(value: Any) -> Keypoint:
     return Keypoint.from_list(list(value))
 
 
-def _keypoints(value: Any) -> dict[str, list[Keypoint]] | None:
-    if value is None:
+def parse_keypoints(raw: Any) -> list[Keypoint] | None:
+    """Parse COCO flat ``[x,y,v,...]`` or a list of ``[x,y,v]`` triplets."""
+    if raw is None:
         return None
-    return {
-        part: [_keypoint(point) for point in points]
-        for part, points in dict(value).items()
-    }
+    if isinstance(raw, dict):
+        raise AnnotationFormatError(
+            "keypoints must be a COCO flat list, not an object keyed by name"
+        )
+    if not isinstance(raw, list):
+        raise AnnotationFormatError("keypoints must be a list")
+    if not raw:
+        return []
+    if isinstance(raw[0], (int, float)):
+        if len(raw) % 3 != 0:
+            raise AnnotationFormatError(
+                "keypoints flat list length must be a multiple of 3"
+            )
+        return [
+            Keypoint.from_list([raw[i], raw[i + 1], raw[i + 2]])
+            for i in range(0, len(raw), 3)
+        ]
+    if isinstance(raw[0], (list, tuple)):
+        return [_keypoint(item) for item in raw]
+    raise AnnotationFormatError(
+        "keypoints must be COCO flat numbers or a list of [x,y,v]"
+    )
+
+
+def _keypoints(value: Any) -> list[Keypoint] | None:
+    return parse_keypoints(value)
 
 
 def _instance(raw: Any) -> Instance:

@@ -10,7 +10,7 @@ from vdschema import TaskType
 from vdswitch.cli_help import format_help_text
 from vdswitch.converters.sources import Source
 from vdswitch.utils.coco_dataset import (
-    coco_keypoints_dict,
+    coco_keypoints_flat,
     coco_segmentation_rle,
     load_category_map,
     load_coco_json,
@@ -147,8 +147,8 @@ def test_coco_dataset_errors_and_keypoints(tmp_path: Path) -> None:
     }
     cat_path = _write_json(tmp_path, "cats.json", raw)
     cats = load_category_map(cat_path, task=TaskType.KEYPOINT)
-    kps = coco_keypoints_dict(raw["annotations"][0], categories=cats, raw=raw)
-    assert kps is not None
+    kps = coco_keypoints_flat(raw["annotations"][0])
+    assert kps == [1.0, 2.0, 2]
 
     assert coco_segmentation_rle(None, height=10, width=10) is None
     rle = coco_segmentation_rle(

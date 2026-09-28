@@ -249,7 +249,7 @@ def keypoint_instances_from_document(
         inst: dict[str, Any] = {
             "id": next_id,
             "category_id": label_to_id[label],
-            "keypoints": {"point": [[flat[0], flat[1], 2]]},
+            "keypoints": [flat[0], flat[1], 2],
         }
         next_id += 1
         text = _shape_text(shape)

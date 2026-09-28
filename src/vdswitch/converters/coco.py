@@ -6,7 +6,7 @@ from vdschema import AnnotationWriter, TaskType
 
 from ..utils.coco_dataset import (
     coco_bbox_xyxy,
-    coco_keypoints_dict,
+    coco_keypoints_flat,
     coco_segmentation_rle,
     group_annotations,
     iter_coco_images,
@@ -113,19 +113,16 @@ class CocoKeypointConverter(_CocoConverter):
         for image in iter_coco_images(raw):
             instances = []
             for idx, ann in enumerate(by_image.get(image.id, [])):
-                if "bbox" not in ann:
-                    continue
-                keypoints = coco_keypoints_dict(
-                    ann, categories=label, raw=raw
-                )
+                keypoints = coco_keypoints_flat(ann)
                 if not keypoints:
                     continue
                 item: dict = {
                     "id": int(ann.get("id", idx)),
                     "category_id": int(ann["category_id"]),
-                    "bbox": coco_bbox_xyxy(ann),
                     "keypoints": keypoints,
                 }
+                if "bbox" in ann:
+                    item["bbox"] = coco_bbox_xyxy(ann)
                 if int(ann.get("iscrowd", 0)) == 1:
                     item["is_ignored"] = True
                 instances.append(item)

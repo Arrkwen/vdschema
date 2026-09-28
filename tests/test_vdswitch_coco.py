@@ -126,8 +126,9 @@ def test_vdswitch_coco_keypoint(
     ).load()
     assert len(data) == 1
     inst = data[0].instances[0]
-    assert "nose" in inst.keypoints
-    assert "left_eye" in inst.keypoints
+    assert inst.keypoints is not None
+    assert len(inst.keypoints) == 2
+    assert inst.keypoints[0].to_list() == [20.0, 20.0, 2]
 
 
 def test_vdswitch_coco_segmentation(coco_instances_path: Path, tmp_path: Path) -> None:

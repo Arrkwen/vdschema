@@ -15,7 +15,9 @@ from .annotation_format import (
     BaseAnnotation,
     ClassificationAnnotation,
     DetectionAnnotation,
+    KeypointAnnotation,
     RelationshipAnnotation,
+    SegmentationAnnotation,
     SequenceAnnotation,
     TaskType,
 )
@@ -214,7 +216,14 @@ def _schema_ref(raw: dict[str, Any]) -> str:
     return raw.get("annotation_schema_ref", ANNOTATION_SCHEMA_ID)
 
 
-_VOCAB_META_KEYS = ("detection", "classification", "relationship", "action")
+_VOCAB_META_KEYS = (
+    "detection",
+    "keypoint",
+    "segmentation",
+    "classification",
+    "relationship",
+    "action",
+)
 
 
 def _meta_has_vocab(raw: dict[str, Any]) -> bool:
@@ -307,12 +316,62 @@ class SingleVocabLabelDict(TaskLabelDict):
 
 
 class DetectionLabelDict(SingleVocabLabelDict):
-    """Vocabulary for detection / keypoint / segmentation tasks."""
+    """Vocabulary for detection tasks."""
 
     _vocab_key = "detection"
 
     def validate_annotation(self, annotation: BaseAnnotation) -> None:
         if not isinstance(annotation, DetectionAnnotation):
+            return
+        _validate_instances(annotation.instances, self.vocab)
+
+
+class KeypointLabelDict(SingleVocabLabelDict):
+    """Vocabulary for keypoint tasks."""
+
+    _vocab_key = "keypoint"
+
+    @classmethod
+    def load(cls, path: str | Path) -> KeypointLabelDict:
+        raw = _read_json_object(path)
+        entries = raw.get("keypoint") or raw.get("detection")
+        if not entries:
+            raise AnnotationFormatError(
+                f"{path}: missing keypoint vocabulary "
+                "(expected 'keypoint' or legacy 'detection')"
+            )
+        return cls(
+            _category_entries_to_label(entries),
+            annotation_schema_ref=_schema_ref(raw),
+        )
+
+    def validate_annotation(self, annotation: BaseAnnotation) -> None:
+        if not isinstance(annotation, KeypointAnnotation):
+            return
+        _validate_instances(annotation.instances, self.vocab)
+
+
+class SegmentationLabelDict(SingleVocabLabelDict):
+    """Vocabulary for segmentation tasks."""
+
+    _vocab_key = "segmentation"
+
+    @classmethod
+    def load(cls, path: str | Path) -> SegmentationLabelDict:
+        raw = _read_json_object(path)
+        entries = raw.get("segmentation") or raw.get("detection")
+        if not entries:
+            raise AnnotationFormatError(
+                f"{path}: missing segmentation vocabulary "
+                "(expected 'segmentation' or legacy 'detection')"
+            )
+        return cls(
+            _category_entries_to_label(entries),
+            annotation_schema_ref=_schema_ref(raw),
+        )
+
+    def validate_annotation(self, annotation: BaseAnnotation) -> None:
+        if not isinstance(annotation, SegmentationAnnotation):
             return
         _validate_instances(annotation.instances, self.vocab)
 
@@ -585,8 +644,8 @@ class NoLabelDict(TaskLabelDict):
 
 _LABEL_DICT_BY_TASK: dict[TaskType, type[TaskLabelDict]] = {
     TaskType.DETECTION: DetectionLabelDict,
-    TaskType.KEYPOINT: DetectionLabelDict,
-    TaskType.SEGMENTATION: DetectionLabelDict,
+    TaskType.KEYPOINT: KeypointLabelDict,
+    TaskType.SEGMENTATION: SegmentationLabelDict,
     TaskType.CLASSIFICATION: ClassificationLabelDict,
     TaskType.RELATIONSHIP: RelationshipLabelDict,
     TaskType.ACTION: ActionLabelDict,
@@ -619,13 +678,17 @@ def _vocab_label_dict_for_reader(
     meta_path: Path,
     raw: dict[str, Any],
 ) -> TaskLabelDict:
-    if reader_task in {
-        TaskType.DETECTION,
-        TaskType.KEYPOINT,
-        TaskType.SEGMENTATION,
-    }:
+    if reader_task is TaskType.DETECTION:
         if raw.get("detection"):
             return DetectionLabelDict.load(meta_path)
+        return NoLabelDict()
+    if reader_task is TaskType.KEYPOINT:
+        if raw.get("keypoint") or raw.get("detection"):
+            return KeypointLabelDict.load(meta_path)
+        return NoLabelDict()
+    if reader_task is TaskType.SEGMENTATION:
+        if raw.get("segmentation") or raw.get("detection"):
+            return SegmentationLabelDict.load(meta_path)
         return NoLabelDict()
     if reader_task is TaskType.CLASSIFICATION:
         if raw.get("classification"):

@@ -82,38 +82,20 @@ def coco_bbox_xyxy(ann: dict[str, Any]) -> list[float]:
     return [x, y, x + width, y + height]
 
 
-def category_keypoint_names(
-    categories: dict[int, Name], category_id: int, raw: dict[str, Any]
-) -> list[str] | None:
-    for item in raw.get("categories") or []:
-        if int(item.get("id", -1)) != category_id:
-            continue
-        names = item.get("keypoints")
-        if isinstance(names, list) and names:
-            return [str(name) for name in names]
-    return None
-
-
-def coco_keypoints_dict(
-    ann: dict[str, Any],
-    *,
-    categories: dict[int, Name],
-    raw: dict[str, Any],
-) -> dict[str, list[list[float | int]]] | None:
+def coco_keypoints_flat(ann: dict[str, Any]) -> list[float | int] | None:
+    """Return COCO annotation ``keypoints`` flat list unchanged when valid."""
     flat = ann.get("keypoints")
-    if not isinstance(flat, list) or not flat:
+    if not isinstance(flat, list) or len(flat) < 3:
         return None
-    triplets = [
-        [float(flat[i]), float(flat[i + 1]), int(flat[i + 2])]
-        for i in range(0, len(flat), 3)
-    ]
-    names = category_keypoint_names(categories, int(ann["category_id"]), raw)
-    if names and len(names) == len(triplets):
-        return {
-            str(name): [triplet]
-            for name, triplet in zip(names, triplets, strict=True)
-        }
-    return {"body": triplets}
+    if len(flat) % 3 != 0:
+        return None
+    out: list[float | int] = []
+    for i, value in enumerate(flat):
+        if i % 3 == 2:
+            out.append(int(value))
+        else:
+            out.append(float(value))
+    return out
 
 
 def coco_segmentation_rle(

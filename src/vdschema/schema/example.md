@@ -2,7 +2,7 @@
 
 Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory (sequence tasks use `annotation_vocab.txt` instead).
 
-`bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` entries are `[x, y, visibility]` (`visibility`: 0/1/2). `polygon` is a flat closed ring or oriented box `[x1,y1,...]` (≥3 vertices). `polyline` is an open line `[x1,y1,...]` (≥2 vertices). `point` is `[x, y]` for single-point detection. `rle_mask` follows pycocotools RLE (`size`: `[height, width]`).
+`bbox` is `[x1, y1, x2, y2]` (xyxy). `keypoints` is COCO flat `[x1, y1, v1, x2, y2, v2, ...]` (`v`: 0/1/2). `polygon` is a flat closed ring or oriented box `[x1,y1,...]` (≥3 vertices). `polyline` is an open line `[x1,y1,...]` (≥2 vertices). `point` is `[x, y]` for single-point detection. `rle_mask` follows pycocotools RLE (`size`: `[height, width]`).
 
 ---
 
@@ -94,7 +94,16 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
 
 ## keypoint
 
-**annotation_meta.json** — same structure as detection.
+**annotation_meta.json**
+
+```json
+{
+  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
+  "keypoint": [
+    {"category_id": 1, "category_name": "person"}
+  ]
+}
+```
 
 **annotation_data.jsonl**
 
@@ -108,9 +117,7 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
       "id": 0,
       "category_id": 1,
       "bbox": [200, 100, 380, 420],
-      "keypoints": {
-        "body": [[210, 120, 2], [230, 140, 2]]
-      }
+      "keypoints": [210, 120, 2, 230, 140, 2]
     }
   ]
 }
@@ -120,7 +127,16 @@ Each task stores one JSON object per line in `annotation_data.jsonl`. When a tas
 
 ## segmentation
 
-**annotation_meta.json** — same structure as detection.
+**annotation_meta.json**
+
+```json
+{
+  "annotation_schema_ref": "https://github.com/Arrkwen/vdschema/blob/main/src/vdschema/schema/annotation_data.json",
+  "segmentation": [
+    {"category_id": 1, "category_name": "person"}
+  ]
+}
+```
 
 **annotation_data.jsonl**
 

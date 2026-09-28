@@ -211,6 +211,8 @@ assert data_vlm[0].description == ""
 
 **Keypoint**
 
+COCO 式 **flat 数组** `[x1, y1, v1, x2, y2, v2, ...]`（长度为 3 的倍数）
+
 ```python
 from vdschema import AnnotationReader, AnnotationWriter, Name, TaskType
 
@@ -223,8 +225,7 @@ writer.append(
         {
             "id": 0,
             "category_id": 1,
-            "bbox": [200, 100, 380, 420],
-            "keypoints": {"body": [[210, 120, 2], [230, 140, 2]]},
+            "keypoints": [210, 120, 2, 230, 140, 2],
         }
     ],
 )

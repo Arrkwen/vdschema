@@ -263,9 +263,7 @@ def keypoint_instances_from_document(
         inst: dict[str, Any] = {
             "id": idx,
             "category_id": attr_to_id[attr],
-            "keypoints": {
-                "point": [[float(item["x"]), float(item["y"]), vis]],
-            },
+            "keypoints": [float(item["x"]), float(item["y"]), vis],
         }
         text = item.get("textAttribute")
         if text:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -162,12 +163,7 @@ def test_keypoint_annotation_format():
                 "id": 0,
                 "category_id": 1,
                 "bbox": [200, 100, 380, 420],
-                "keypoints": {
-                    "body": [
-                        [210, 120, 2],
-                        [230, 140, 2],
-                    ]
-                },
+                "keypoints": [210, 120, 2, 230, 140, 2],
                 "text": "body keypoints",
             }
         ],
@@ -181,24 +177,25 @@ def test_keypoint_annotation_format():
                 "id": 1,
                 "category_id": 1,
                 "bbox": [100, 100, 220, 360],
-                "keypoints": {"face": [[110, 120, 2], [130, 120, 2]]},
+                "keypoints": [110, 120, 2, 130, 120, 2],
             }
         ],
     )
     writer.save()
 
+    meta = json.loads(writer.meta_path.read_text(encoding="utf-8"))
+    assert "keypoint" in meta
+    assert "detection" not in meta
+
     data, _, rows = _read_annotations(writer, expected_count=2)
     assert "task_type" not in rows[0]
     assert "schema_version" not in rows[0]
-    assert rows[0]["instances"][0]["keypoints"]["body"] == [
-        [210, 120, 2],
-        [230.0, 140.0, 2],
-    ]
-    assert rows[1]["instances"][0]["keypoints"]["face"][1] == [130.0, 120.0, 2]
+    assert rows[0]["instances"][0]["keypoints"] == [210, 120, 2, 230, 140, 2]
+    assert rows[1]["instances"][0]["keypoints"][3:6] == [130.0, 120.0, 2]
     assert isinstance(data[0], KeypointAnnotation)
-    assert data[0].instances[0].keypoints["body"][0].visibility == 2
+    assert data[0].instances[0].keypoints[0].visibility == 2
     assert data[0].instances[0].text == "body keypoints"
-    assert list(data[1].instances[0].keypoints["face"][1].to_list()) == [
+    assert data[1].instances[0].keypoints[1].to_list() == [
         130.0,
         120.0,
         2,
@@ -247,6 +244,10 @@ def test_segmentation_annotation_format():
         instances=[],
     )
     writer.save()
+
+    meta = json.loads(writer.meta_path.read_text(encoding="utf-8"))
+    assert "segmentation" in meta
+    assert "detection" not in meta
 
     data, _, rows = _read_annotations(writer, expected_count=3)
     assert "task_type" not in rows[0]
@@ -732,7 +733,7 @@ def test_keypoint_instance_without_bbox() -> None:
             {
                 "id": 0,
                 "category_id": 1,
-                "keypoints": {"body": [[10, 20, 2]]},
+                "keypoints": [10, 20, 2],
             }
         ],
     )

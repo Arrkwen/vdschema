@@ -185,7 +185,7 @@ def test_labelbee_keypoint(tmp_path: Path) -> None:
     ).load()
     kp = data[0].instances[0].keypoints
     assert kp is not None
-    assert kp["point"][0].to_list() == pytest.approx([12, 34, 2])
+    assert kp[0].to_list() == pytest.approx([12, 34, 2])
 
 
 def test_labelbee_classification_tag(tmp_path: Path) -> None:

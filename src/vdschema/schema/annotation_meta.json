@@ -15,7 +15,23 @@
     },
     "detection": {
       "type": "array",
-      "description": "检测/实例类别词表；与标注 **`instances[].category_id`** 对应。",
+      "description": "检测实例类别词表；与标注 **`instances[].category_id`** 对应。",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/category_entry"
+      }
+    },
+    "keypoint": {
+      "type": "array",
+      "description": "关键点实例类别词表；与标注 **`instances[].category_id`** 对应。",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/category_entry"
+      }
+    },
+    "segmentation": {
+      "type": "array",
+      "description": "分割实例类别词表；与标注 **`instances[].category_id`** 对应。",
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/category_entry"
@@ -52,11 +68,21 @@
   },
   "allOf": [
     {
-      "description": "下列词表至少须出现其一，且出现时数组须非空：**`detection`** / **`classification`** / **`relationship`** / **`action`**。",
+      "description": "下列词表至少须出现其一，且出现时数组须非空：**`detection`** / **`keypoint`** / **`segmentation`** / **`classification`** / **`relationship`** / **`action`**。",
       "anyOf": [
         {
           "required": [
             "detection"
+          ]
+        },
+        {
+          "required": [
+            "keypoint"
+          ]
+        },
+        {
+          "required": [
+            "segmentation"
           ]
         },
         {

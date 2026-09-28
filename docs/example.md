@@ -1,6 +1,6 @@
 # Annotation format examples
 
-Python API and conversion: [docs/vdschema.md](../../docs/vdschema.md) · [docs/vdswitch.md](../../docs/vdswitch.md) · [docs/api.md](../../docs/api.md)
+Python API and conversion: [vdschema.md](vdschema.md) · [vdswitch.md](vdswitch.md) · [api.md](api.md) · [README](../README.md)
 
 Each task stores one JSON object per line in `annotation_data.jsonl`. When a task uses a label vocabulary, `annotation_meta.json` is saved in the same directory (sequence tasks use `annotation_vocab.txt` instead).
 
@@ -287,7 +287,7 @@ No `annotation_meta.json`.
 
 ## sequence
 
-**annotation_vocab.txt** (exactly one token per line; copied from the Writer `label` path on save). Example vocab files: [assets/alphanumeric_vocab.txt](assets/alphanumeric_vocab.txt), [assets/digits_vocab.txt](assets/digits_vocab.txt), [assets/letters_vocab.txt](assets/letters_vocab.txt), [assets/province_vocab.txt](assets/province_vocab.txt).
+**annotation_vocab.txt** (exactly one token per line; copied from the Writer `label` path on save). Example vocab files: [assets/alphanumeric_vocab.txt](../assets/alphanumeric_vocab.txt), [assets/digits_vocab.txt](../assets/digits_vocab.txt), [assets/letters_vocab.txt](../assets/letters_vocab.txt), [assets/province_vocab.txt](../assets/province_vocab.txt).
 
 ```
 0

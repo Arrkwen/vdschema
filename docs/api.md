@@ -1,6 +1,6 @@
 # Public API reference
 
-[← README](../README.md) · [Usage guide](vdschema.md) · [vdswitch](vdswitch.md) · [JSON examples](../src/vdschema/schema/example.md)
+[← README](../README.md) · [Usage guide](vdschema.md) · [vdswitch](vdswitch.md) · [JSON examples](example.md)
 
 This page documents symbols exported from `vdschema` (`from vdschema import …`). Install `vdschema[vdswitch]` for `switch` and `Source`.
 

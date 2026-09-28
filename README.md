@@ -1,6 +1,6 @@
 # VDschema
 
-**VDschema**: A unified annotation **schema** for **V**ision **D**atasets with JSONL I/O support. One JSON object per line in `annotation_data.jsonl`. More tasks and fields: [example.md](src/vdschema/schema/example.md) · [docs/vdschema.md](docs/vdschema.md).
+**VDschema**: A unified annotation **schema** for **V**ision **D**atasets with JSONL I/O support. One JSON object per line in `annotation_data.jsonl`. More tasks and fields: [example.md](docs/example.md) · [vdschema.md](docs/vdschema.md).
 
 <p align="center">
   <img src="docs/vdschema-jsonl-layout.svg" alt="annotation_data.jsonl line examples for detection and vlm tasks" width="820" height="260" />

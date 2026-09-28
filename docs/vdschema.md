@@ -1,6 +1,6 @@
 # vdschema usage
 
-[← Back to README](../README.md) · [API reference](api.md) · [JSON examples](../src/vdschema/schema/example.md)
+[← Back to README](../README.md) · [API reference](api.md) · [JSON examples](example.md)
 
 VDschema provides typed **write** and **read** paths over a unified JSONL layout (`annotation_data.jsonl` plus optional label meta).
 
@@ -36,11 +36,8 @@ Each instance must include at least one of:
 | Point target (e.g. counting)    | `point`    | `[x, y]`                                |
 
 
-## Manifest
-
-For **manifest** rows, json lines omit task-specific keys. only `filename`, `width`, and `height` are required. When a key is missing, parsers default to empty lists or empty strings. The same on-disk directory can be read with another `TaskType` on `AnnotationReader` (for example, an inference manifest read as detection).
-
 ## Detection
+
 [API reference](api.md)
 
 ### Axis-aligned bounding box (bbox)
@@ -134,7 +131,7 @@ data, _ = AnnotationReader(TaskType.DETECTION, writer.save_dir()).load()
 
 ## Manifest
 
-Use manifest for **inference or evaluation media lists**: each line has only `filename`, `width`, and `height`. No `label` dictionary and no `annotation_meta.json`. Output goes to `annotation_data.jsonl` under `output/manifest/` when using the default output directory. See [Omitted task fields](#omitted-task-fields) for reading the same file with other task types.
+Use manifest for **inference or evaluation media lists**: each line has only `filename`, `width`, and `height`. No `label` dictionary and no `annotation_meta.json`. The same on-disk directory can be read with another `TaskType` on `AnnotationReader` (for example, an inference manifest read as detection).
 
 ```python
 from vdschema import (
@@ -402,3 +399,4 @@ Full runnable tests: [tests/test_annotation_format.py](../tests/test_annotation_
 ```bash
 uv run pytest tests/test_annotation_format.py
 ```
+

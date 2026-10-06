@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.helpers import vdswitch_options
 from vdschema import AnnotationReader, Source, TaskType, switch
 from vdswitch.converters.registry import get_converter_class
 from vdswitch.utils.yolo_dataset import (
@@ -42,10 +43,12 @@ def test_vdswitch_yolo_detection(yolo_legacy_dir: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.YOLO,
-        input_data=yolo_legacy_dir / "train.txt",
-        input_label=yolo_legacy_dir / "classes.txt",
+        input=yolo_legacy_dir / "train.txt",
         output=out,
-        input_root=yolo_legacy_dir,
+        options=vdswitch_options(
+            category=yolo_legacy_dir / "classes.txt",
+            root=yolo_legacy_dir,
+        ),
     )
     data, label = AnnotationReader(
         TaskType.DETECTION,

@@ -25,7 +25,7 @@ def test_vdswitch_imagenet_minimal_args(
     switch(
         task=TaskType.CLASSIFICATION,
         source=Source.IMAGENET,
-        input_data=imagenet_legacy_dir,
+        input=imagenet_legacy_dir,
         output=out,
     )
     data, _ = AnnotationReader(
@@ -40,15 +40,12 @@ def test_vdswitch_imagenet_minimal_args(
 def test_vdswitch_imagenet_classification(
     imagenet_legacy_dir: Path, tmp_path: Path
 ) -> None:
-    dataset_root = imagenet_legacy_dir.parent
     out = tmp_path / "out"
     switch(
         task=TaskType.CLASSIFICATION,
         source=Source.IMAGENET,
-        input_data=imagenet_legacy_dir,
-        input_label=imagenet_legacy_dir,
+        input=imagenet_legacy_dir,
         output=out,
-        input_root=dataset_root,
     )
     data, label = AnnotationReader(
         TaskType.CLASSIFICATION,

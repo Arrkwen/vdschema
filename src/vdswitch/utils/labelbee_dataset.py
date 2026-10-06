@@ -23,10 +23,10 @@ def load_labelbee_document(path: Path) -> dict[str, Any]:
     return raw
 
 
-def iter_labelbee_json_paths(input_data: Path) -> list[Path]:
-    if input_data.is_file():
-        return [input_data]
-    return sorted(p for p in input_data.rglob("*.json") if p.is_file())
+def iter_labelbee_json_paths(input: Path) -> list[Path]:
+    if input.is_file():
+        return [input]
+    return sorted(p for p in input.rglob("*.json") if p.is_file())
 
 
 def iter_steps(document: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
@@ -137,22 +137,22 @@ def resolve_media_filename(
     json_path: Path,
     document: dict[str, Any],
     *,
-    input_data: Path,
-    input_root: Path | None,
+    input: Path,
+    root: Path | None,
 ) -> str:
     for key in ("file_name", "filename", "path", "img_path"):
         value = document.get(key)
         if value:
             return str(value).replace("\\", "/")
 
-    root = input_root or input_data.parent
+    root = root or input.parent
     stem = json_path.stem
     search_roots = [
         json_path.parent,
-        input_data,
+        input,
         root,
         root / "images",
-        input_data.parent / "images",
+        input.parent / "images",
     ]
     seen: set[Path] = set()
     for base in search_roots:
@@ -167,8 +167,8 @@ def resolve_media_filename(
                 except ValueError:
                     return candidate.name
 
-    if json_path.is_file() and input_data.is_dir():
-        rel = json_path.relative_to(input_data).with_suffix(".jpg")
+    if json_path.is_file() and input.is_dir():
+        rel = json_path.relative_to(input).with_suffix(".jpg")
         return rel.as_posix()
     return f"{stem}.jpg"
 

@@ -11,7 +11,7 @@ from vdswitch.utils import ImageSizeResolver, find_image_root
 def test_resolve_size_from_image_when_missing(det_legacy_dir: Path) -> None:
     image_root = find_image_root(
         output_dir=det_legacy_dir,
-        input_data=det_legacy_dir / "meta/train_baseline.jsonl",
+        input=det_legacy_dir / "meta/train_baseline.jsonl",
     )
     assert image_root == det_legacy_dir / "images"
 

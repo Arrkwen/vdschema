@@ -1,6 +1,6 @@
 [project]
 name = "vdschema"
-version = "0.6.0"
+version = "0.6.1"
 description = "Unified annotation schema and JSONL IO for vision datasets."
 readme = "README.md"
 authors = [
@@ -47,7 +47,7 @@ vdswitch = "vdswitch.cli:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
-packages = ["vdschema", "vdswitch", "vdswitch.converters", "vdswitch.utils"]
+packages = ["vdschema", "vdswitch", "vdswitch.converters", "vdswitch.options", "vdswitch.utils"]
 
 [tool.setuptools.package-data]
 vdschema = ["schema/*.json", "schema/*.md"]
@@ -69,6 +69,7 @@ show_missing = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = ["test_*.py"]
 filterwarnings = [
     # pycocotools + NumPy 2.x: RLE decode via __array__(copy=False)

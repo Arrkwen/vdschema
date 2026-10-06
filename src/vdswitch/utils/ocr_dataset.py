@@ -6,7 +6,7 @@ from pathlib import Path
 
 from vdschema import TaskType
 
-from ..messages import help_hint
+from ..help import help_hint
 
 
 def _split_manifest_line(line: str) -> tuple[str, str]:

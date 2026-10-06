@@ -12,7 +12,7 @@ _SAMPLE_VIDEO = "video/sample.avi"
 def test_find_video_root(act_legacy_dir: Path) -> None:
     root = find_video_root(
         output_dir=act_legacy_dir,
-        input_data=act_legacy_dir / "meta/video_train.txt",
+        input=act_legacy_dir / "meta/video_train.txt",
     )
     assert root == act_legacy_dir / "video"
 

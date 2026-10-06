@@ -25,8 +25,8 @@ def test_resolve_output_filenames_different_dir(tmp_path: Path) -> None:
     label.touch()
 
     data_name, label_name = resolve_output_filenames(
-        input_data=data,
-        input_label=label,
+        input=data,
+        category=label,
         output_dir=out,
     )
     assert data_name == "train_baseline.jsonl"
@@ -40,8 +40,8 @@ def test_resolve_output_filenames_same_dir(tmp_path: Path) -> None:
     label.touch()
 
     data_name, label_name = resolve_output_filenames(
-        input_data=data,
-        input_label=label,
+        input=data,
+        category=label,
         output_dir=tmp_path,
     )
     assert data_name == "train_baseline_vdschema.jsonl"
@@ -58,8 +58,8 @@ def test_resolve_output_filenames_mixed_dirs(tmp_path: Path) -> None:
     label.touch()
 
     data_name, label_name = resolve_output_filenames(
-        input_data=data,
-        input_label=label,
+        input=data,
+        category=label,
         output_dir=out,
     )
     assert data_name == "train_baseline_vdschema.jsonl"

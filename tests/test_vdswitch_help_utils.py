@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from vdschema import TaskType
-from vdswitch.cli_help import format_help_text
 from vdswitch.converters.sources import Source
+from vdswitch.help import format_help_text
 from vdswitch.utils.coco_dataset import (
     coco_keypoints_flat,
     coco_segmentation_rle,

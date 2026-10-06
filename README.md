@@ -75,7 +75,7 @@ print(label[1].name)  # person
 
 ```bash
 vdswitch --task detection --source coco \
-  --input-data /path/to/instances_train2017.json \
+  --input /path/to/instances_train2017.json \
   --output output
 
 vdswitch help --task detection --source coco

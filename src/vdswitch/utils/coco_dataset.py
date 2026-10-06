@@ -13,7 +13,7 @@ from pycocotools import mask as mask_util
 
 from vdschema import Name, SegmentationRLE, TaskType
 
-from ..messages import help_hint
+from ..help import help_hint
 
 
 @dataclass(frozen=True)

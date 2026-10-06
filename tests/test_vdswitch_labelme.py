@@ -8,10 +8,11 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
+from tests.helpers import vdswitch_options
 from vdschema import AnnotationReader, Source, TaskType, switch
-from vdswitch.cli_help import format_help_text
 from vdswitch.converters.labelme import LabelMeDetectionConverter
 from vdswitch.converters.registry import get_converter_class, supported_sources
+from vdswitch.help import format_help_text
 from vdswitch.utils.labelme_dataset import (
     DETECTION_SHAPE_TYPES,
     circle_to_bbox_xyxy,
@@ -86,9 +87,9 @@ def test_labelme_detection_switch(labelme_detection_dir: Path, tmp_path: Path) -
     switch(
         task=TaskType.DETECTION,
         source=Source.LABELME,
-        input_data=labelme_detection_dir / "labelme",
+        input=labelme_detection_dir / "labelme",
         output=out,
-        input_root=labelme_detection_dir,
+        options=vdswitch_options(root=labelme_detection_dir),
     )
     data, label = AnnotationReader(
         TaskType.DETECTION,
@@ -124,7 +125,7 @@ def test_labelme_segmentation(tmp_path: Path) -> None:
     switch(
         task=TaskType.SEGMENTATION,
         source=Source.LABELME,
-        input_data=json_dir,
+        input=json_dir,
         output=out,
     )
     data, _ = AnnotationReader(
@@ -149,7 +150,7 @@ def test_labelme_keypoint(tmp_path: Path) -> None:
     switch(
         task=TaskType.KEYPOINT,
         source=Source.LABELME,
-        input_data=json_dir,
+        input=json_dir,
         output=out,
     )
     data, _ = AnnotationReader(
@@ -177,7 +178,7 @@ def test_labelme_empty_dir(tmp_path: Path) -> None:
         switch(
             task=TaskType.DETECTION,
             source=Source.LABELME,
-            input_data=empty,
+            input=empty,
             output=tmp_path / "out",
         )
 
@@ -187,7 +188,8 @@ def test_labelme_invalid_input_file(tmp_path: Path) -> None:
     path.write_text("x", encoding="utf-8")
     with pytest.raises(ValueError, match=".json"):
         LabelMeDetectionConverter(
-            input_data=path,
+            input=path,
+            category=path,
             output_dir=tmp_path / "out",
         ).run()
 
@@ -208,8 +210,8 @@ def test_labelme_document_size_and_resolve(tmp_path: Path) -> None:
     name = resolve_media_filename(
         json_path,
         {"imagePath": "pics/a.jpg"},
-        input_data=tmp_path,
-        input_root=tmp_path,
+        input=tmp_path,
+        root=tmp_path,
     )
     assert name == "pics/a.jpg"
 
@@ -272,8 +274,8 @@ def test_labelme_resolve_media_from_disk(tmp_path: Path) -> None:
     name = resolve_media_filename(
         json_path,
         load_labelme_document(json_path),
-        input_data=json_dir,
-        input_root=tmp_path,
+        input=json_dir,
+        root=tmp_path,
     )
     assert name == "images/pic.jpg"
 
@@ -309,8 +311,8 @@ def test_labelme_resolve_absolute_and_fallback(tmp_path: Path) -> None:
     name = resolve_media_filename(
         root / "x.json",
         {"imagePath": str(outside.resolve())},
-        input_data=root,
-        input_root=root,
+        input=root,
+        root=root,
     )
     assert name == "outside.jpg"
 
@@ -320,8 +322,8 @@ def test_labelme_resolve_absolute_and_fallback(tmp_path: Path) -> None:
         resolve_media_filename(
             solo,
             {"shapes": []},
-            input_data=solo,
-            input_root=None,
+            input=solo,
+            root=None,
         )
         == "solo.jpg"
     )
@@ -410,7 +412,7 @@ def test_labelme_single_json_file(tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.LABELME,
-        input_data=json_path,
+        input=json_path,
         output=out,
     )
     data, _ = AnnotationReader(

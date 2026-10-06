@@ -7,17 +7,18 @@ from pathlib import Path
 
 import pytest
 
+from tests.helpers import vdswitch_options
 from vdschema import AnnotationReader, Source, TaskType, switch
 
 
 def test_vdswitch_det_requires_input_label(
     det_legacy_dir: Path, tmp_path: Path
 ) -> None:
-    with pytest.raises(ValueError, match="--input-label is required"):
+    with pytest.raises(ValueError, match="missing required --option category"):
         switch(
             task=TaskType.DETECTION,
             source=Source.MONOLITH,
-            input_data=det_legacy_dir / "meta/train_baseline.jsonl",
+            input=det_legacy_dir / "meta/train_baseline.jsonl",
             output=tmp_path / "out",
         )
 
@@ -27,10 +28,12 @@ def test_vdswitch_det_up(det_legacy_dir: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.MONOLITH,
-        input_data=det_legacy_dir / "meta/train_baseline.jsonl",
-        input_label=det_legacy_dir / "meta/label_dict.json",
+        input=det_legacy_dir / "meta/train_baseline.jsonl",
         output=out,
-        input_root=det_legacy_dir,
+        options=vdswitch_options(
+            category=det_legacy_dir / "meta/label_dict.json",
+            root=det_legacy_dir,
+        ),
     )
     data, label = AnnotationReader(
         TaskType.DETECTION,
@@ -67,9 +70,12 @@ def test_vdswitch_det_same_dir(det_legacy_dir: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.MONOLITH,
-        input_data=data,
-        input_label=label,
+        input=data,
         output=tmp_path,
+        options=vdswitch_options(
+            category=label,
+            root=tmp_path,
+        ),
     )
     assert (tmp_path / "train_baseline_vdschema.jsonl").is_file()
     assert (tmp_path / "label_dict_vdschema.json").is_file()
@@ -83,10 +89,12 @@ def test_vdswitch_det_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) 
     switch(
         task=TaskType.DETECTION,
         source=Source.MONOLITH,
-        input_data=[train, test],
-        input_label=det_legacy_dir / "meta/label_dict.json",
+        input=[train, test],
         output=out,
-        input_root=det_legacy_dir,
+        options=vdswitch_options(
+            category=det_legacy_dir / "meta/label_dict.json",
+            root=det_legacy_dir,
+        ),
     )
     assert (out / "train_baseline.jsonl").is_file()
     assert (out / "test_baseline.jsonl").is_file()
@@ -98,10 +106,12 @@ def test_vdswitch_cls_up(cls_legacy_dir: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.CLASSIFICATION,
         source=Source.MONOLITH,
-        input_data=cls_legacy_dir / "meta/train_baseline.jsonl",
-        input_label=cls_legacy_dir / "meta/label_dict.json",
+        input=cls_legacy_dir / "meta/train_baseline.jsonl",
         output=out,
-        input_root=cls_legacy_dir,
+        options=vdswitch_options(
+            category=cls_legacy_dir / "meta/label_dict.json",
+            root=cls_legacy_dir,
+        ),
     )
     data, label = AnnotationReader(
         TaskType.CLASSIFICATION,
@@ -149,15 +159,15 @@ def test_vdswitch_cli_multiple_input_data(det_legacy_dir: Path, tmp_path: Path) 
                 "detection",
                 "--source",
                 "monolith",
-                "--input-data",
+                "--input",
                 str(train),
                 str(test),
-                "--input-label",
-                str(det_legacy_dir / "meta/label_dict.json"),
+                "--option",
+                f"category={det_legacy_dir / 'meta/label_dict.json'}",
+                "--option",
+                f"root={det_legacy_dir}",
                 "--output",
                 str(out),
-                "--input-root",
-                str(det_legacy_dir),
             ]
         )
         == 0
@@ -171,10 +181,12 @@ def test_vdswitch_action(act_legacy_dir: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.ACTION,
         source=Source.MONOLITH,
-        input_data=act_legacy_dir / "meta/video_train.txt",
-        input_label=act_legacy_dir / "meta/label_dict.json",
+        input=act_legacy_dir / "meta/video_train.txt",
         output=out,
-        input_root=act_legacy_dir,
+        options=vdswitch_options(
+            category=act_legacy_dir / "meta/label_dict.json",
+            root=act_legacy_dir,
+        ),
     )
     data, label = AnnotationReader(
         TaskType.ACTION,
@@ -206,10 +218,12 @@ def test_vdswitch_action_one_jsonl_per_meta_line(
     switch(
         task=TaskType.ACTION,
         source=Source.MONOLITH,
-        input_data=meta_path,
-        input_label=act_legacy_dir / "meta/label_dict.json",
+        input=meta_path,
         output=out,
-        input_root=act_legacy_dir,
+        options=vdswitch_options(
+            category=act_legacy_dir / "meta/label_dict.json",
+            root=act_legacy_dir,
+        ),
     )
     data, _ = AnnotationReader(
         TaskType.ACTION,
@@ -227,10 +241,12 @@ def test_vdswitch_sequence(seq_legacy_dir: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.SEQUENCE,
         source=Source.MONOLITH,
-        input_data=seq_legacy_dir / "meta/train_baseline.jsonl",
-        input_label=seq_legacy_dir / "meta/vocab.txt",
+        input=seq_legacy_dir / "meta/train_baseline.jsonl",
         output=out,
-        input_root=seq_legacy_dir,
+        options=vdswitch_options(
+            category=seq_legacy_dir / "meta/vocab.txt",
+            root=seq_legacy_dir,
+        ),
     )
     data, label = AnnotationReader(
         TaskType.SEQUENCE,
@@ -262,10 +278,12 @@ def test_vdswitch_sequence_same_dir(seq_legacy_dir: Path, tmp_path: Path) -> Non
     switch(
         task=TaskType.SEQUENCE,
         source=Source.MONOLITH,
-        input_data=meta / "train_baseline.jsonl",
-        input_label=meta / "vocab.txt",
+        input=meta / "train_baseline.jsonl",
         output=meta,
-        input_root=tmp_path,
+        options=vdswitch_options(
+            category=meta / "vocab.txt",
+            root=tmp_path,
+        ),
     )
     assert (meta / "train_baseline_vdschema.jsonl").is_file()
     assert (meta / "vocab_vdschema.txt").is_file()
@@ -286,10 +304,12 @@ def test_vdswitch_sequence_mixed_input_dirs(
     switch(
         task=TaskType.SEQUENCE,
         source=Source.MONOLITH,
-        input_data=seq_legacy_dir / "meta/train_baseline.jsonl",
-        input_label=vocab,
+        input=seq_legacy_dir / "meta/train_baseline.jsonl",
         output=out,
-        input_root=seq_legacy_dir,
+        options=vdswitch_options(
+            category=vocab,
+            root=seq_legacy_dir,
+        ),
     )
     assert (out / "train_baseline_vdschema.jsonl").is_file()
     assert (out / "vocab.txt").is_file()

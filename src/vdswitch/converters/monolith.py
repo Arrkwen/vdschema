@@ -7,7 +7,8 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, Name, TaskType
 
-from ..messages import help_hint
+from ..help import help_hint
+from ..options.presets import MONOLITH_PATH_OPTIONS
 from ..utils.jsonl import load_jsonl_object
 from ..utils.kmot import parse_kmot_file
 from ..utils.video_size import VideoSizeResolver, find_video_root
@@ -18,7 +19,7 @@ from .sources import Source
 _MONOLITH_JSONL_LAYOUT = (
     "  meta/train_baseline.jsonl  — annotation JSONL\n"
     "  meta/label_dict.json or vocab.txt  — labels / vocabulary\n"
-    "  images/…                   — media (use --input-root)"
+    "  images/…                   — media (see --option root=)"
 )
 
 
@@ -117,35 +118,39 @@ def _parse_legacy_meta_line(line: str) -> tuple[str, str] | None:
 class MonolithUpDetectionConverter(BaseConverter):
     """Monolith baseline jsonl + label_dict.json → vdschema detection."""
 
-    input_data_help = (
+    converter_options = MONOLITH_PATH_OPTIONS
+    example_input = "/path/to/meta/train_baseline.jsonl"
+    example_category = "/path/to/meta/label_dict.json"
+
+    input_help = (
         "JSONL file: one JSON object per line with filename and instances "
         "(bbox, label or category_id, optional is_ignored)."
     )
-    input_label_help = (
+    category_help = (
         "JSON file: string keys are category ids, values are class names "
         '(e.g. {"1":"person","2":"car"}).'
     )
-    input_data_sample = (
+    input_sample = (
         '{"filename":"img.jpg","instances":[{"id":0,"label":1,"bbox":[10,10,100,100]}]}'
     )
-    input_label_sample = '{"1":"person","2":"car"}'
+    category_sample = '{"1":"person","2":"car"}'
     typical_layout = _MONOLITH_JSONL_LAYOUT
 
     def _convert(self) -> None:
         writer = AnnotationWriter(
             TaskType.DETECTION,
-            label=_load_det_label(self.input_label),
+            label=_load_det_label(self.category),
             task_dir=self.output_dir,
             task_data_filename=self.output_data_filename,
             task_meta_filename=self.output_meta_filename,
         )
 
-        with self.input_data.open(encoding="utf-8") as f:
+        with self.input.open(encoding="utf-8") as f:
             for lineno, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line:
                     continue
-                record = load_jsonl_object(line, path=self.input_data, lineno=lineno)
+                record = load_jsonl_object(line, path=self.input, lineno=lineno)
                 instances = []
                 for idx, inst in enumerate(record.get("instances") or []):
                     item = {
@@ -171,23 +176,25 @@ class MonolithUpDetectionConverter(BaseConverter):
 class MonolithUpClassificationConverter(BaseConverter):
     """Monolith baseline jsonl + label_dict.json → vdschema classification."""
 
-    input_data_help = (
+    converter_options = MONOLITH_PATH_OPTIONS
+    example_input = "/path/to/meta/train_baseline.jsonl"
+    example_category = "/path/to/meta/label_dict.json"
+
+    input_help = (
         "JSONL file: one JSON object per line with filename and attribute.\n"
         "attribute maps each head name to one-hot dict {class_name: 0|1, ...}."
     )
-    input_label_help = (
+    category_help = (
         "JSON file: each key is a classification head (attribute) name; "
         "each value is an ordered list of class names (not numeric id maps)."
     )
-    input_data_sample = (
-        '{"filename":"img.jpg","attribute":{"gender":{"male":0,"female":1}}}'
-    )
-    input_label_sample = '{"gender":["male","female"]}'
+    input_sample = '{"filename":"img.jpg","attribute":{"gender":{"male":0,"female":1}}}'
+    category_sample = '{"gender":["male","female"]}'
     typical_layout = _MONOLITH_JSONL_LAYOUT
 
     def _convert(self) -> None:
-        label_heads = _load_cls_label(self.input_label)
-        with self.input_label.open(encoding="utf-8") as f:
+        label_heads = _load_cls_label(self.category)
+        with self.category.open(encoding="utf-8") as f:
             raw = json.load(f)
         ordered_heads = {str(k): list(v) for k, v in raw.items()}
 
@@ -199,12 +206,12 @@ class MonolithUpClassificationConverter(BaseConverter):
             task_meta_filename=self.output_meta_filename,
         )
 
-        with self.input_data.open(encoding="utf-8") as f:
+        with self.input.open(encoding="utf-8") as f:
             for lineno, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line:
                     continue
-                record = load_jsonl_object(line, path=self.input_data, lineno=lineno)
+                record = load_jsonl_object(line, path=self.input, lineno=lineno)
                 attribute = record.get("attribute") or {}
                 categories = []
                 for attr_name, one_hot in attribute.items():
@@ -238,33 +245,37 @@ class MonolithUpClassificationConverter(BaseConverter):
 class MonolithUpSequenceConverter(BaseConverter):
     """Monolith baseline jsonl + vocab.txt → vdschema sequence."""
 
-    input_data_help = (
+    converter_options = MONOLITH_PATH_OPTIONS
+    example_input = "/path/to/meta/train_baseline.jsonl"
+    example_category = "/path/to/meta/vocab.txt"
+
+    input_help = (
         "JSONL file: one JSON object per line with filename and sequences "
         "(list of token strings from the vocab file)."
     )
-    input_label_help = (
+    category_help = (
         "Plain-text vocab file: one token per line (not JSON). "
         "Copied to vdschema meta as the sequence vocabulary."
     )
-    input_data_sample = '{"filename":"img.jpg","sequences":["B","1","0"]}'
-    input_label_sample = "0\n1\nB\n"
+    input_sample = '{"filename":"img.jpg","sequences":["B","1","0"]}'
+    category_sample = "0\n1\nB\n"
     typical_layout = _MONOLITH_JSONL_LAYOUT
 
     def _convert(self) -> None:
         writer = AnnotationWriter(
             TaskType.SEQUENCE,
-            label=self.input_label,
+            label=self.category,
             task_dir=self.output_dir,
             task_data_filename=self.output_data_filename,
             task_meta_filename=self.output_meta_filename,
         )
 
-        with self.input_data.open(encoding="utf-8") as f:
+        with self.input.open(encoding="utf-8") as f:
             for lineno, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line:
                     continue
-                record = load_jsonl_object(line, path=self.input_data, lineno=lineno)
+                record = load_jsonl_object(line, path=self.input, lineno=lineno)
                 width, height = self.image_size_resolver.resolve(record)
                 writer.append(
                     filename=record["filename"],
@@ -280,18 +291,22 @@ class MonolithUpSequenceConverter(BaseConverter):
 class MonolithUpActionConverter(BaseConverter):
     """Monolith video meta txt + kmot → vdschema action."""
 
-    input_data_help = (
+    converter_options = MONOLITH_PATH_OPTIONS
+    example_input = "/path/to/meta/video_train.txt"
+    example_category = "/path/to/meta/label_dict.json"
+
+    input_help = (
         "Text meta file: one video per line, semicolon-separated fields.\n"
         "Format: video_path;num_frames;start;end;unused;kmot_relative_path\n"
         "kmot paths are resolved relative to the meta file directory."
     )
-    input_label_help = (
+    category_help = (
         'JSON file: either {"action":[{"category_id":1,"category_name":"…"},…]} '
         'or a single head mapping {"head_name":["class_a","class_b",…]} '
         "(class names must match kmot track labels)."
     )
-    input_data_sample = "video/sample.avi;4;443;446;1;kmot/sample.txt"
-    input_label_sample = (
+    input_sample = "video/sample.avi;4;443;446;1;kmot/sample.txt"
+    category_sample = (
         '{"action":[{"category_id":1,"category_name":"package_tossing"}]}\n'
         'or {"package_tossing":["normal","package_tossing"]}'
     )
@@ -299,11 +314,11 @@ class MonolithUpActionConverter(BaseConverter):
         "  meta/video_train.txt       — video list + kmot pointers\n"
         "  meta/kmot/*.txt            — kmot tracks\n"
         "  meta/label_dict.json       — action categories\n"
-        "  video/…                    — media (use --input-root)"
+        "  video/…                    — media (see --option root=)"
     )
 
     def _convert(self) -> None:
-        label, name_to_id = _load_act_label(self.input_label)
+        label, name_to_id = _load_act_label(self.category)
         writer = AnnotationWriter(
             TaskType.ACTION,
             label=label,
@@ -315,11 +330,11 @@ class MonolithUpActionConverter(BaseConverter):
         video_size = VideoSizeResolver(
             find_video_root(
                 output_dir=self.output_dir,
-                input_data=self.input_data,
-                root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
         )
-        with self.input_data.open(encoding="utf-8") as f:
+        with self.input.open(encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -330,7 +345,7 @@ class MonolithUpActionConverter(BaseConverter):
                     continue
                 video_path, kmot_rel = parsed
 
-                kmot_path = (self.input_data.parent / kmot_rel).resolve()
+                kmot_path = (self.input.parent / kmot_rel).resolve()
                 if not kmot_path.is_file():
                     continue
 

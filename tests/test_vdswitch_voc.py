@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
+from tests.helpers import vdswitch_options
 from vdschema import AnnotationReader, Name, Source, TaskType, switch
 from vdswitch.converters.registry import get_converter_class, supported_sources
 from vdswitch.utils.voc_dataset import (
@@ -66,9 +67,9 @@ def test_voc_detection_switch(mini_voc_root: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.VOC,
-        input_data=mini_voc_root / "ImageSets" / "Main" / "train.txt",
+        input=mini_voc_root / "ImageSets" / "Main" / "train.txt",
         output=out,
-        input_root=mini_voc_root,
+        options=vdswitch_options(root=mini_voc_root),
     )
     data, label = AnnotationReader(
         TaskType.DETECTION, out, task_data_filename="train.jsonl"
@@ -84,9 +85,9 @@ def test_voc_segmentation_switch(mini_voc_root: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.SEGMENTATION,
         source=Source.VOC,
-        input_data=mini_voc_root / "ImageSets" / "Main" / "train.txt",
+        input=mini_voc_root / "ImageSets" / "Main" / "train.txt",
         output=out,
-        input_root=mini_voc_root,
+        options=vdswitch_options(root=mini_voc_root),
     )
     data, label = AnnotationReader(
         TaskType.SEGMENTATION, out, task_data_filename="train.jsonl"
@@ -142,7 +143,7 @@ def test_voc_missing_seg_dir(mini_voc_root: Path, tmp_path: Path) -> None:
         switch(
             task=TaskType.SEGMENTATION,
             source=Source.VOC,
-            input_data=broken / "VOC2007" / "ImageSets" / "Main" / "train.txt",
+            input=broken / "VOC2007" / "ImageSets" / "Main" / "train.txt",
             output=tmp_path / "out",
         )
 
@@ -152,7 +153,7 @@ def test_voc_detection_via_voc_root_dir(mini_voc_root: Path, tmp_path: Path) -> 
     switch(
         task=TaskType.DETECTION,
         source=Source.VOC,
-        input_data=mini_voc_root,
+        input=mini_voc_root,
         output=out,
     )
     data, _ = AnnotationReader(
@@ -166,9 +167,9 @@ def test_voc_single_xml_file(mini_voc_root: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.VOC,
-        input_data=mini_voc_root / "Annotations" / "000001.xml",
+        input=mini_voc_root / "Annotations" / "000001.xml",
         output=out,
-        input_root=mini_voc_root,
+        options=vdswitch_options(root=mini_voc_root),
     )
     data, _ = AnnotationReader(
         TaskType.DETECTION, out, task_data_filename="000001.jsonl"
@@ -183,10 +184,12 @@ def test_voc_optional_label_file(mini_voc_root: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.VOC,
-        input_data=mini_voc_root / "ImageSets" / "Main" / "train.txt",
-        input_label=classes,
+        input=mini_voc_root / "ImageSets" / "Main" / "train.txt",
         output=out,
-        input_root=mini_voc_root,
+        options=vdswitch_options(
+            category=classes,
+            root=mini_voc_root,
+        ),
     )
     data, label = AnnotationReader(
         TaskType.DETECTION, out, task_data_filename="train.jsonl"
@@ -220,7 +223,7 @@ def test_voc_iter_and_parse_errors(tmp_path: Path) -> None:
     assert load_optional_class_list(json_label)[1].name == "x"
 
     record = parse_voc_detection_xml(voc / "Annotations" / "a.xml")
-    name = resolve_media_filename(voc, "a", record, input_root=tmp_path)
+    name = resolve_media_filename(voc, "a", record, root=tmp_path)
     assert "a.jpg" in name
 
     with pytest.raises(ValueError, match="cannot infer"):
@@ -245,9 +248,9 @@ def test_voc_segmentation_without_xml(mini_voc_root: Path, tmp_path: Path) -> No
     switch(
         task=TaskType.SEGMENTATION,
         source=Source.VOC,
-        input_data=mini_voc_root / "ImageSets" / "Main" / "train.txt",
+        input=mini_voc_root / "ImageSets" / "Main" / "train.txt",
         output=out,
-        input_root=mini_voc_root,
+        options=vdswitch_options(root=mini_voc_root),
     )
     data, _ = AnnotationReader(
         TaskType.SEGMENTATION, out, task_data_filename="train.jsonl"
@@ -283,9 +286,7 @@ def test_voc_iter_root_dir_and_empty_labels(
     names = collect_detection_class_names(empty_voc, ["z"])
     assert names["object"] == 1
 
-    rel = resolve_media_filename(
-        mini_voc_root, "000001", None, input_root=mini_voc_root
-    )
+    rel = resolve_media_filename(mini_voc_root, "000001", None, root=mini_voc_root)
     assert rel.startswith("JPEGImages/")
 
 
@@ -299,9 +300,9 @@ def test_voc_detection_skips_missing_annotation(
     switch(
         task=TaskType.DETECTION,
         source=Source.VOC,
-        input_data=mini_voc_root / "ImageSets" / "Main" / "train.txt",
+        input=mini_voc_root / "ImageSets" / "Main" / "train.txt",
         output=out,
-        input_root=mini_voc_root,
+        options=vdswitch_options(root=mini_voc_root),
     )
     data, _ = AnnotationReader(
         TaskType.DETECTION, out, task_data_filename="train.jsonl"

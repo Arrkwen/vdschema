@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 _MEDIA_ROOT_HINT = (
-    "pass --input-root as the dataset root; it is joined with media paths in "
+    "pass --option root= as the dataset root; it is joined with media paths in "
     "annotation files to resolve absolute image/video paths"
 )
 
@@ -33,7 +33,7 @@ def _pick_existing_dir(
                 return path
     if root is not None:
         raise FileNotFoundError(
-            f"no {kind} directory under --input-root={root}"
+            f"no {kind} directory under root={root}"
         )  # pragma: no cover
     raise FileNotFoundError(f"could not locate {kind} root; {_MEDIA_ROOT_HINT}")
 
@@ -41,7 +41,7 @@ def _pick_existing_dir(
 def find_image_root(
     *,
     output_dir: Path,
-    input_data: Path,
+    input: Path,
     root: str | Path | None = None,
 ) -> Path:
     """Locate the directory used to join annotation media paths into absolute image paths."""
@@ -54,13 +54,13 @@ def find_image_root(
             allow_empty=True,
         )
 
-    source_root = input_data.parent.parent
+    source_root = input.parent.parent
     return _pick_existing_dir(
         (
             output_dir / "images",
             source_root / "images",
             source_root,
-            input_data.parent / "images",
+            input.parent / "images",
             output_dir.parent / "images",
         ),
         kind="image",
@@ -71,7 +71,7 @@ def find_image_root(
 def find_video_root(
     *,
     output_dir: Path,
-    input_data: Path,
+    input: Path,
     root: str | Path | None = None,
 ) -> Path:
     """Locate the directory used to join annotation media paths into absolute video paths."""
@@ -84,7 +84,7 @@ def find_video_root(
             allow_empty=True,
         )
 
-    source_root = input_data.parent.parent
+    source_root = input.parent.parent
     return _pick_existing_dir(
         (
             output_dir / "video",

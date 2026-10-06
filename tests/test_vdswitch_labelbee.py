@@ -8,10 +8,11 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
+from tests.helpers import vdswitch_options
 from vdschema import AnnotationReader, Source, TaskType, switch
-from vdswitch.cli_help import format_help_text
 from vdswitch.converters.labelbee import LabelBeeDetectionConverter
 from vdswitch.converters.registry import get_converter_class, supported_sources
+from vdswitch.help import format_help_text
 from vdswitch.utils.labelbee_dataset import (
     load_labelbee_document,
     point_list_to_flat,
@@ -81,9 +82,9 @@ def test_labelbee_detection_switch(
     switch(
         task=TaskType.DETECTION,
         source=Source.LABELBEE,
-        input_data=labelbee_detection_dir / "labelbee",
+        input=labelbee_detection_dir / "labelbee",
         output=out,
-        input_root=labelbee_detection_dir,
+        options=vdswitch_options(root=labelbee_detection_dir),
     )
     data, label = AnnotationReader(
         TaskType.DETECTION,
@@ -135,9 +136,9 @@ def test_labelbee_segmentation_polygon(tmp_path: Path) -> None:
     switch(
         task=TaskType.SEGMENTATION,
         source=Source.LABELBEE,
-        input_data=json_dir,
+        input=json_dir,
         output=out,
-        input_root=root,
+        options=vdswitch_options(root=root),
     )
     data, _ = AnnotationReader(
         TaskType.SEGMENTATION,
@@ -175,7 +176,7 @@ def test_labelbee_keypoint(tmp_path: Path) -> None:
     switch(
         task=TaskType.KEYPOINT,
         source=Source.LABELBEE,
-        input_data=json_dir,
+        input=json_dir,
         output=out,
     )
     data, _ = AnnotationReader(
@@ -209,7 +210,7 @@ def test_labelbee_classification_tag(tmp_path: Path) -> None:
     switch(
         task=TaskType.CLASSIFICATION,
         source=Source.LABELBEE,
-        input_data=json_dir,
+        input=json_dir,
         output=out,
     )
     data, label = AnnotationReader(
@@ -254,9 +255,7 @@ def test_labelbee_resolve_filename_from_document(tmp_path: Path) -> None:
     json_path.write_text("{}", encoding="utf-8")
     doc = {"file_name": "custom/dir/pic.png", "width": 1, "height": 1}
     assert (
-        resolve_media_filename(
-            json_path, doc, input_data=tmp_path / "nested", input_root=tmp_path
-        )
+        resolve_media_filename(json_path, doc, input=tmp_path / "nested", root=tmp_path)
         == "custom/dir/pic.png"
     )
 
@@ -291,7 +290,7 @@ def test_labelbee_detection_polygon_tool(tmp_path: Path) -> None:
     switch(
         task=TaskType.DETECTION,
         source=Source.LABELBEE,
-        input_data=json_dir / "poly.json",
+        input=json_dir / "poly.json",
         output=out,
     )
     data, _ = AnnotationReader(
@@ -308,7 +307,7 @@ def test_labelbee_empty_json_dir_raises(tmp_path: Path) -> None:
         switch(
             task=TaskType.DETECTION,
             source=Source.LABELBEE,
-            input_data=empty,
+            input=empty,
             output=tmp_path / "out",
         )
 
@@ -318,7 +317,8 @@ def test_labelbee_invalid_input_data(tmp_path: Path) -> None:
     path.write_text("x", encoding="utf-8")
     with pytest.raises(ValueError, match=".json"):
         LabelBeeDetectionConverter(
-            input_data=path,
+            input=path,
+            category=path,
             output_dir=tmp_path / "out",
         ).run()
 
@@ -334,6 +334,6 @@ def test_labelbee_classification_missing_tags(tmp_path: Path) -> None:
         switch(
             task=TaskType.CLASSIFICATION,
             source=Source.LABELBEE,
-            input_data=json_dir,
+            input=json_dir,
             output=tmp_path / "out",
         )

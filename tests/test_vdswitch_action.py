@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.helpers import vdswitch_options
 from vdschema import Source, TaskType, switch
 from vdswitch.converters.monolith import _load_act_label, _parse_legacy_meta_line
 
@@ -62,8 +63,10 @@ def test_action_label_action_list_format(act_legacy_dir: Path, tmp_path: Path) -
     switch(
         task=TaskType.ACTION,
         source=Source.MONOLITH,
-        input_data=act_legacy_dir / "meta" / "video_train.txt",
-        input_label=label_path,
-        input_root=act_legacy_dir,
+        input=act_legacy_dir / "meta" / "video_train.txt",
         output=tmp_path / "out",
+        options=vdswitch_options(
+            category=label_path,
+            root=act_legacy_dir,
+        ),
     )

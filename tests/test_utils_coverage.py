@@ -72,14 +72,14 @@ def test_find_image_root_from_output_dir(det_legacy_dir: Path, tmp_path: Path) -
         shutil.copy(shutil_copy, out / "images" / "sample.jpg")
     root = find_image_root(
         output_dir=out,
-        input_data=det_legacy_dir / "meta/train_baseline.jsonl",
+        input=det_legacy_dir / "meta/train_baseline.jsonl",
     )
     assert root == out / "images"
     root = tmp_path / "dataset"
     (root / "images").mkdir(parents=True)
     found = find_image_root(
         output_dir=tmp_path / "out",
-        input_data=root / "meta" / "data.jsonl",
+        input=root / "meta" / "data.jsonl",
         root=root,
     )
     assert found == root
@@ -98,7 +98,7 @@ def test_media_root_bad_root(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="--root not found"):
         find_image_root(
             output_dir=tmp_path / "out",
-            input_data=tmp_path / "meta/data.jsonl",
+            input=tmp_path / "meta/data.jsonl",
             root=tmp_path / "nope",
         )
 

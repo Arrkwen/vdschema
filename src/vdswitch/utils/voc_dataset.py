@@ -58,38 +58,38 @@ def voc2012_label_dict() -> dict[int, Name]:
     return {idx + 1: Name(name) for idx, name in enumerate(VOC2012_CLASS_NAMES)}
 
 
-def resolve_voc_root(input_data: Path, input_root: Path | None) -> Path:
-    if input_data.is_dir() and (input_data / "Annotations").is_dir():
-        return input_data.resolve()
-    if input_root is not None:
-        root = input_root.expanduser().resolve()
+def resolve_voc_root(input: Path, root: Path | None) -> Path:
+    if input.is_dir() and (input / "Annotations").is_dir():
+        return input.resolve()
+    if root is not None:
+        root = root.expanduser().resolve()
         if (root / "Annotations").is_dir():
             return root
-    if input_data.is_file() and "ImageSets" in input_data.parts:
-        candidate = input_data.parent.parent.parent
+    if input.is_file() and "ImageSets" in input.parts:
+        candidate = input.parent.parent.parent
         if (candidate / "Annotations").is_dir():
             return candidate.resolve()
     raise ValueError(
-        "cannot infer PASCAL VOC root; pass --input-root to the VOC year folder "
+        "cannot infer PASCAL VOC root; pass --option root= to the VOC year folder "
         "(containing Annotations/, JPEGImages/)"
     )
 
 
-def iter_voc_image_ids(input_data: Path, voc_root: Path) -> list[str]:
-    if input_data.is_file() and input_data.suffix.lower() == ".txt":
+def iter_voc_image_ids(input: Path, voc_root: Path) -> list[str]:
+    if input.is_file() and input.suffix.lower() == ".txt":
         return [
             line.strip()
-            for line in input_data.read_text(encoding="utf-8").splitlines()
+            for line in input.read_text(encoding="utf-8").splitlines()
             if line.strip() and not line.strip().startswith("#")
         ]
-    if input_data.is_file() and input_data.suffix.lower() == ".xml":
-        return [input_data.stem]
+    if input.is_file() and input.suffix.lower() == ".xml":
+        return [input.stem]
     ann_dir = voc_root / "Annotations"
-    if input_data.is_dir() and input_data.resolve() == ann_dir.resolve():
-        return sorted(p.stem for p in input_data.glob("*.xml"))
-    if input_data.is_dir():
+    if input.is_dir() and input.resolve() == ann_dir.resolve():
+        return sorted(p.stem for p in input.glob("*.xml"))
+    if input.is_dir():
         return sorted(p.stem for p in ann_dir.glob("*.xml"))
-    raise ValueError(f"unsupported VOC --input-data: {input_data}")
+    raise ValueError(f"unsupported VOC --input: {input}")
 
 
 def voc_annotation_xml_path(voc_root: Path, image_id: str) -> Path:
@@ -191,7 +191,7 @@ def resolve_media_filename(
     image_id: str,
     record: VocDetectionRecord | None,
     *,
-    input_root: Path | None,
+    root: Path | None,
 ) -> str:
     if record is not None and record.filename:
         text = record.filename.replace("\\", "/")
@@ -199,7 +199,7 @@ def resolve_media_filename(
             candidate = voc_root / "JPEGImages" / Path(text).name
             if candidate.is_file():
                 text = f"JPEGImages/{Path(text).name}"
-        rel_root = input_root or voc_root.parent
+        rel_root = root or voc_root.parent
         try:
             return (
                 (voc_root / text).resolve().relative_to(rel_root.resolve()).as_posix()
@@ -211,7 +211,7 @@ def resolve_media_filename(
         candidate = voc_root / "JPEGImages" / f"{image_id}{suffix}"
         if candidate.is_file():
             rel = f"JPEGImages/{image_id}{suffix}"
-            rel_root = input_root or voc_root.parent
+            rel_root = root or voc_root.parent
             try:
                 return candidate.resolve().relative_to(rel_root.resolve()).as_posix()
             except ValueError:

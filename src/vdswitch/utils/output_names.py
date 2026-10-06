@@ -16,15 +16,15 @@ def output_filename(source: Path, *, same_dir: bool) -> str:
 
 def resolve_output_filenames(
     *,
-    input_data: Path,
-    input_label: Path,
+    input: Path,
+    category: Path,
     output_dir: Path,
 ) -> tuple[str, str]:
     """Map legacy input files to vdschema output filenames under ``output_dir``."""
-    input_data = Path(input_data).expanduser().resolve()
-    input_label = Path(input_label).expanduser().resolve()
+    input = Path(input).expanduser().resolve()
+    category = Path(category).expanduser().resolve()
     output_dir = Path(output_dir).expanduser().resolve()
     return (
-        output_filename(input_data, same_dir=output_dir == input_data.parent),
-        output_filename(input_label, same_dir=output_dir == input_label.parent),
+        output_filename(input, same_dir=output_dir == input.parent),
+        output_filename(category, same_dir=output_dir == category.parent),
     )

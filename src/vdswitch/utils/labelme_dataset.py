@@ -32,10 +32,10 @@ def load_labelme_document(path: Path) -> dict[str, Any]:
     return raw
 
 
-def iter_labelme_json_paths(input_data: Path) -> list[Path]:
-    if input_data.is_file():
-        return [input_data]
-    return sorted(p for p in input_data.rglob("*.json") if p.is_file())
+def iter_labelme_json_paths(input: Path) -> list[Path]:
+    if input.is_file():
+        return [input]
+    return sorted(p for p in input.rglob("*.json") if p.is_file())
 
 
 def iter_shapes(document: dict[str, Any]) -> Iterator[dict[str, Any]]:
@@ -86,26 +86,26 @@ def resolve_media_filename(
     json_path: Path,
     document: dict[str, Any],
     *,
-    input_data: Path,
-    input_root: Path | None,
+    input: Path,
+    root: Path | None,
 ) -> str:
     image_path = document.get("imagePath")
     if image_path:
         text = str(image_path).replace("\\", "/")
         path = Path(text)
         if path.is_absolute():
-            root = (input_root or input_data.parent).resolve()
+            root = (root or input.parent).resolve()
             try:
                 return path.resolve().relative_to(root).as_posix()
             except ValueError:
                 return path.name
         return text
 
-    root = input_root or input_data.parent
+    root = root or input.parent
     stem = json_path.stem
     search_roots = [
         json_path.parent,
-        input_data,
+        input,
         root,
         root / "images",
         json_path.parent.parent,
@@ -123,8 +123,8 @@ def resolve_media_filename(
                 except ValueError:
                     return candidate.name
 
-    if json_path.is_file() and input_data.is_dir():
-        return json_path.relative_to(input_data).with_suffix(".jpg").as_posix()
+    if json_path.is_file() and input.is_dir():
+        return json_path.relative_to(input).with_suffix(".jpg").as_posix()
     return f"{stem}.jpg"
 
 

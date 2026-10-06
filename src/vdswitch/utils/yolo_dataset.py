@@ -6,7 +6,7 @@ from pathlib import Path
 
 from vdschema import Name, TaskType
 
-from ..messages import help_hint
+from ..help import help_hint
 
 
 def load_yolo_class_names(path: Path) -> dict[int, Name]:

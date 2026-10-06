@@ -8,6 +8,7 @@ from PIL import Image
 
 from vdschema import AnnotationWriter, Name, TaskType
 
+from ..options.presets import VOC_OPTIONS
 from ..utils.voc_dataset import (
     collect_detection_class_names,
     detection_instances_from_record,
@@ -38,49 +39,47 @@ _VOC_LAYOUT = (
 class _VocConverterBase(BaseConverter):
     source_note = "PASCAL VOC devkit (XML detection + SegmentationClass PNG)."
 
-    input_data_help = (
+    input_help = (
         "VOC ImageSets list (e.g. ImageSets/Main/train.txt), a single "
         "Annotations/*.xml, or the Annotations/ directory."
     )
-    input_label_help = (
-        "Optional. Omit when same as --input-data. Detection: infer class "
+    category_help = (
+        "Optional. Omit when same as --input. Detection: infer class "
         "names from XML. Segmentation: VOC2012 20-class ids 1–20. "
         "Or a text file with one class name per line (line index + 1 = id)."
     )
-    input_data_sample = "ImageSets/Main/train.txt"
-    input_label_sample = "(optional) classes.txt — one VOC class name per line"
+    input_sample = "ImageSets/Main/train.txt"
+    category_sample = "(optional) classes.txt — one VOC class name per line"
     typical_layout = _VOC_LAYOUT
-    input_label_same_as_data = True
-    input_root_optional = True
+    converter_options = VOC_OPTIONS
+    example_input = "/path/to/VOC2007/ImageSets/Main/train.txt"
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        same_dir = self.output_dir == self.input_data.parent
-        stem = (
-            self.input_data.stem if self.input_data.is_file() else self.input_data.name
-        )
+        same_dir = self.output_dir == self.input.parent
+        stem = self.input.stem if self.input.is_file() else self.input.name
         self.output_data_filename = (
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
         self.output_meta_filename = "annotation_meta.json"
 
     def _ensure_inputs(self) -> None:
-        if not self.input_data.exists():
-            raise FileNotFoundError(f"input data not found: {self.input_data}")
+        if not self.input.exists():
+            raise FileNotFoundError(f"input data not found: {self.input}")
 
     def _voc_root(self) -> Path:
-        return resolve_voc_root(self.input_data, self.input_root)
+        return resolve_voc_root(self.input, self.root)
 
     def _image_ids(self, voc_root: Path) -> list[str]:
-        ids = iter_voc_image_ids(self.input_data, voc_root)
+        ids = iter_voc_image_ids(self.input, voc_root)
         if not ids:
-            raise ValueError(f"no VOC image ids from {self.input_data}")
+            raise ValueError(f"no VOC image ids from {self.input}")
         return ids
 
     def _optional_class_list(self) -> dict[int, Name] | None:
-        if self.input_label.resolve() == self.input_data.resolve():
+        if self.category.resolve() == self.input.resolve():
             return None
-        return load_optional_class_list(self.input_label)
+        return load_optional_class_list(self.category)
 
 
 @register_converter(task=TaskType.DETECTION, source=Source.VOC)
@@ -114,7 +113,7 @@ class VocDetectionConverter(_VocConverterBase):
                 voc_root,
                 image_id,
                 record,
-                input_root=self.input_root,
+                root=self.root,
             )
             writer.append(
                 filename=filename,
@@ -158,7 +157,7 @@ class VocSegmentationConverter(_VocConverterBase):
                     voc_root,
                     image_id,
                     record,
-                    input_root=self.input_root,
+                    root=self.root,
                 )
             else:
                 jpeg = voc_root / "JPEGImages" / f"{image_id}.jpg"
@@ -167,7 +166,7 @@ class VocSegmentationConverter(_VocConverterBase):
                 with Image.open(jpeg) as img:
                     width, height = img.size
                 filename = resolve_media_filename(
-                    voc_root, image_id, None, input_root=self.input_root
+                    voc_root, image_id, None, root=self.root
                 )
             writer.append(
                 filename=filename,

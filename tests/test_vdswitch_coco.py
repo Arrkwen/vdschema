@@ -9,8 +9,8 @@ import pytest
 
 from vdschema import AnnotationReader, Source, TaskType, switch
 from vdswitch.cli import main
-from vdswitch.cli_help import _example_command, format_help_text
 from vdswitch.converters.registry import get_converter_class
+from vdswitch.help import _example_command, format_help_text
 from vdswitch.utils.coco_dataset import (
     coco_bbox_xyxy,
     coco_segmentation_rle,
@@ -55,22 +55,19 @@ def test_vdswitch_coco_detection_without_input_label(
     switch(
         task=TaskType.DETECTION,
         source=Source.COCO,
-        input_data=coco_instances_path,
+        input=coco_instances_path,
         output=out,
     )
     assert (out / "instances.jsonl").is_file()
 
 
 def test_vdswitch_coco_detection(coco_instances_path: Path, tmp_path: Path) -> None:
-    root = coco_instances_path.parent.parent
     out = tmp_path / "vdschema_coco_det"
     switch(
         task=TaskType.DETECTION,
         source=Source.COCO,
-        input_data=coco_instances_path,
-        input_label=coco_instances_path,
+        input=coco_instances_path,
         output=out,
-        input_root=root,
     )
     data, label = AnnotationReader(
         TaskType.DETECTION,
@@ -87,20 +84,14 @@ def test_vdswitch_coco_detection(coco_instances_path: Path, tmp_path: Path) -> N
     assert data[0].instances[1].is_ignored is True
 
 
-def test_vdswitch_coco_detection_separate_categories(
+def test_vdswitch_coco_detection_categories_in_json(
     coco_instances_path: Path, tmp_path: Path
 ) -> None:
-    categories = tmp_path / "categories.json"
-    categories.write_text(
-        json.dumps({"categories": [{"id": 1, "name": "cat"}]}),
-        encoding="utf-8",
-    )
     out = tmp_path / "out"
     switch(
         task=TaskType.DETECTION,
         source=Source.COCO,
-        input_data=coco_instances_path,
-        input_label=categories,
+        input=coco_instances_path,
         output=out,
     )
     assert (out / "instances.jsonl").is_file()
@@ -114,8 +105,7 @@ def test_vdswitch_coco_keypoint(
     switch(
         task=TaskType.KEYPOINT,
         source=Source.COCO,
-        input_data=coco_keypoint_instances_path,
-        input_label=coco_keypoint_instances_path,
+        input=coco_keypoint_instances_path,
         output=out,
     )
     data, _ = AnnotationReader(
@@ -136,8 +126,7 @@ def test_vdswitch_coco_segmentation(coco_instances_path: Path, tmp_path: Path) -
     switch(
         task=TaskType.SEGMENTATION,
         source=Source.COCO,
-        input_data=coco_instances_path,
-        input_label=coco_instances_path,
+        input=coco_instances_path,
         output=out,
     )
     data, _ = AnnotationReader(
@@ -173,9 +162,7 @@ def test_vdswitch_cli_coco_detection(coco_instances_path: Path, tmp_path: Path) 
                 "detection",
                 "--source",
                 "coco",
-                "--input-data",
-                str(coco_instances_path),
-                "--input-label",
+                "--input",
                 str(coco_instances_path),
                 "--output",
                 str(out),
@@ -193,6 +180,11 @@ def test_vdswitch_help_coco_detection() -> None:
     assert "instances_train2017.json" in example
     assert "--input-label" not in example
     assert "--input-root" not in example
+    assert "category_id_contiguous" in text
+    assert "category=" not in text
+    assert "root=" not in text
+    assert "--option category_id_contiguous=0" in example
+    assert "--option category_id_start=1" in example
     assert main(["help", "--task", "detection", "--source", "coco"]) == 0
 
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.helpers import vdswitch_options
 from vdschema import AnnotationReader, Source, TaskType, switch
 from vdswitch.converters.registry import get_converter_class
 from vdswitch.utils.ocr_dataset import iter_ocr_lines, tokenize_label
@@ -27,10 +28,12 @@ def test_vdswitch_ocr_sequence(ocr_legacy_dir: Path, tmp_path: Path) -> None:
     switch(
         task=TaskType.SEQUENCE,
         source=Source.OCR,
-        input_data=ocr_legacy_dir / "anno.txt",
-        input_label=ocr_legacy_dir / "vocab.txt",
+        input=ocr_legacy_dir / "anno.txt",
         output=out,
-        input_root=ocr_legacy_dir,
+        options=vdswitch_options(
+            category=ocr_legacy_dir / "vocab.txt",
+            root=ocr_legacy_dir,
+        ),
     )
     data, label = AnnotationReader(
         TaskType.SEQUENCE,

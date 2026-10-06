@@ -6,6 +6,7 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, TaskType
 
+from ..options.presets import OPTIONAL_ROOT
 from ..utils.labelme_dataset import (
     DETECTION_SHAPE_TYPES,
     KEYPOINT_SHAPE_TYPES,
@@ -30,54 +31,51 @@ _DOC_LINK = "https://github.com/wkentaro/labelme"
 class _LabelMeConverterBase(BaseConverter):
     source_note = f"LabelMe per-image JSON (`shapes[]`, `imagePath`) — {_DOC_LINK}."
 
-    input_data_help = (
+    input_help = (
         "Directory of LabelMe `.json` files (typically one JSON per image), or a "
         "single annotation JSON with `shapes`, `imagePath`, `imageWidth`, "
         "`imageHeight`."
     )
-    input_label_help = (
-        "Optional. Defaults to --input-data; class names come from each shape's "
+    category_help = (
+        "Optional. Defaults to --input; class names come from each shape's "
         "`label` field."
     )
-    input_data_sample = (
+    input_sample = (
         '{"imagePath":"img.jpg","imageWidth":640,"imageHeight":480,'
         '"shapes":[{"label":"cat","shape_type":"rectangle","points":[[0,0],[10,10]]}]}'
     )
-    input_label_sample = "(same as --input-data; shape labels define annotation_meta)"
+    category_sample = "(same as --input; shape labels define annotation_meta)"
     typical_layout = (
         "  annotations/*.json   — LabelMe export (paired with images)\n"
-        "  images/…           — paths in imagePath (--input-root when relative)"
+        "  images/…           — paths in imagePath (--option root= when relative)"
     )
-    input_label_same_as_data = True
-    input_root_optional = True
+    converter_options = OPTIONAL_ROOT
+    example_input = "/path/to/labelme/json"
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        same_dir = self.output_dir == self.input_data.parent
-        stem = (
-            self.input_data.stem if self.input_data.is_file() else self.input_data.name
-        )
+        same_dir = self.output_dir == self.input.parent
+        stem = self.input.stem if self.input.is_file() else self.input.name
         self.output_data_filename = (
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
         self.output_meta_filename = "annotation_meta.json"
 
     def _ensure_inputs(self) -> None:
-        if not self.input_data.exists():
-            raise FileNotFoundError(f"input data not found: {self.input_data}")
-        if self.input_data.is_file():
-            if self.input_data.suffix.lower() != ".json":
+        if not self.input.exists():
+            raise FileNotFoundError(f"input data not found: {self.input}")
+        if self.input.is_file():
+            if self.input.suffix.lower() != ".json":
                 raise ValueError(
-                    f"LabelMe --input-data must be a .json file or directory: "
-                    f"{self.input_data}"
+                    f"LabelMe --input must be a .json file or directory: {self.input}"
                 )
-        elif not self.input_data.is_dir():
-            raise FileNotFoundError(f"input data not found: {self.input_data}")
+        elif not self.input.is_dir():
+            raise FileNotFoundError(f"input data not found: {self.input}")
 
     def _json_paths(self) -> list[Path]:
-        paths = iter_labelme_json_paths(self.input_data)
+        paths = iter_labelme_json_paths(self.input)
         if not paths:
-            raise ValueError(f"no LabelMe JSON files under {self.input_data}")
+            raise ValueError(f"no LabelMe JSON files under {self.input}")
         return paths
 
 
@@ -104,8 +102,8 @@ class LabelMeDetectionConverter(_LabelMeConverterBase):
             filename = resolve_media_filename(
                 json_path,
                 doc,
-                input_data=self.input_data,
-                input_root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
             writer.append(
                 filename=filename,
@@ -141,8 +139,8 @@ class LabelMeSegmentationConverter(_LabelMeConverterBase):
             filename = resolve_media_filename(
                 json_path,
                 doc,
-                input_data=self.input_data,
-                input_root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
             writer.append(
                 filename=filename,
@@ -176,8 +174,8 @@ class LabelMeKeypointConverter(_LabelMeConverterBase):
             filename = resolve_media_filename(
                 json_path,
                 doc,
-                input_data=self.input_data,
-                input_root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
             writer.append(
                 filename=filename,

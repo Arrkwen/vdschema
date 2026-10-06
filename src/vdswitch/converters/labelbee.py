@@ -6,6 +6,7 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, TaskType
 
+from ..options.presets import OPTIONAL_ROOT
 from ..utils.labelbee_dataset import (
     classification_categories_from_document,
     collect_detection_attributes,
@@ -30,53 +31,50 @@ _DOC_LINK = "https://github.com/open-mmlab/labelbee-client/tree/main/docs/annota
 class _LabelBeeConverterBase(BaseConverter):
     source_note = f"LabelBee General Data JSON exports ({_DOC_LINK})."
 
-    input_data_help = (
+    input_help = (
         "Directory tree of LabelBee `.json` files (one per image), or a single "
         "annotation JSON. Each file contains width, height, and `step_N` blocks "
         "with `toolName` / `result`."
     )
-    input_label_help = (
-        "Optional. Defaults to --input-data; category names are taken from each "
+    category_help = (
+        "Optional. Defaults to --input; category names are taken from each "
         "result's `attribute` (or tagTool option strings for classification)."
     )
-    input_data_sample = (
+    input_sample = (
         '{"width":640,"height":480,"step_1":{"toolName":"rectTool","result":[]}}'
     )
-    input_label_sample = "(same as --input-data; attributes define label_dict)"
+    category_sample = "(same as --input; attributes define label_dict)"
     typical_layout = (
         "  labelbee/json/**/*.json   — General Data export, one file per image\n"
-        "  images/…                  — paired by filename stem (--input-root)"
+        "  images/…                  — paired by filename stem (--option root=)"
     )
-    input_label_same_as_data = True
-    input_root_optional = True
+    converter_options = OPTIONAL_ROOT
+    example_input = "/path/to/labelbee/json"
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        same_dir = self.output_dir == self.input_data.parent
-        stem = (
-            self.input_data.stem if self.input_data.is_file() else self.input_data.name
-        )
+        same_dir = self.output_dir == self.input.parent
+        stem = self.input.stem if self.input.is_file() else self.input.name
         self.output_data_filename = (
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
         self.output_meta_filename = "annotation_meta.json"
 
     def _ensure_inputs(self) -> None:
-        if not self.input_data.exists():
-            raise FileNotFoundError(f"input data not found: {self.input_data}")
-        if self.input_data.is_file():
-            if self.input_data.suffix.lower() != ".json":
+        if not self.input.exists():
+            raise FileNotFoundError(f"input data not found: {self.input}")
+        if self.input.is_file():
+            if self.input.suffix.lower() != ".json":
                 raise ValueError(
-                    f"LabelBee --input-data must be a .json file or directory: "
-                    f"{self.input_data}"
+                    f"LabelBee --input must be a .json file or directory: {self.input}"
                 )
-        elif not self.input_data.is_dir():
-            raise FileNotFoundError(f"input data not found: {self.input_data}")
+        elif not self.input.is_dir():
+            raise FileNotFoundError(f"input data not found: {self.input}")
 
     def _json_paths(self) -> list[Path]:
-        paths = iter_labelbee_json_paths(self.input_data)
+        paths = iter_labelbee_json_paths(self.input)
         if not paths:
-            raise ValueError(f"no LabelBee JSON files under {self.input_data}")
+            raise ValueError(f"no LabelBee JSON files under {self.input}")
         return paths
 
 
@@ -102,8 +100,8 @@ class LabelBeeDetectionConverter(_LabelBeeConverterBase):
             filename = resolve_media_filename(
                 json_path,
                 doc,
-                input_data=self.input_data,
-                input_root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
             writer.append(
                 filename=filename,
@@ -136,8 +134,8 @@ class LabelBeeSegmentationConverter(_LabelBeeConverterBase):
             filename = resolve_media_filename(
                 json_path,
                 doc,
-                input_data=self.input_data,
-                input_root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
             writer.append(
                 filename=filename,
@@ -170,8 +168,8 @@ class LabelBeeKeypointConverter(_LabelBeeConverterBase):
             filename = resolve_media_filename(
                 json_path,
                 doc,
-                input_data=self.input_data,
-                input_root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
             writer.append(
                 filename=filename,
@@ -191,7 +189,7 @@ class LabelBeeClassificationConverter(_LabelBeeConverterBase):
         heads = collect_tag_heads(paths)
         if not heads:
             raise ValueError(
-                f"no tagTool results found in LabelBee JSON under {self.input_data}"
+                f"no tagTool results found in LabelBee JSON under {self.input}"
             )
         writer = AnnotationWriter(
             TaskType.CLASSIFICATION,
@@ -208,8 +206,8 @@ class LabelBeeClassificationConverter(_LabelBeeConverterBase):
             filename = resolve_media_filename(
                 json_path,
                 doc,
-                input_data=self.input_data,
-                input_root=self.input_root,
+                input=self.input,
+                root=self.root,
             )
             writer.append(
                 filename=filename,

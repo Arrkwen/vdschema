@@ -8,6 +8,7 @@ from PIL import Image
 
 from vdschema import AnnotationWriter, TaskType
 
+from ..options.presets import YOLO_PATH_OPTIONS
 from ..utils.yolo_dataset import (
     iter_image_list,
     load_yolo_class_names,
@@ -25,15 +26,19 @@ class YoloDetectionConverter(BaseConverter):
 
     source_note = "Ultralytics / Darknet YOLO layout (normalized cxcywh label txts)."
 
-    input_data_help = (
+    converter_options = YOLO_PATH_OPTIONS
+    example_input = "/path/to/train.txt"
+    example_category = "/path/to/classes.txt"
+
+    input_help = (
         "Text file listing one image path per line (e.g. train.txt). "
-        "Paths are relative to --input-root when set."
+        "Paths are relative to --option root= when set."
     )
-    input_label_help = (
+    category_help = (
         "classes.txt: one class name per line; line index is YOLO class_id (0-based)."
     )
-    input_data_sample = "images/train/sample.jpg"
-    input_label_sample = "person\ncar\n"
+    input_sample = "images/train/sample.jpg"
+    category_sample = "person\ncar\n"
     typical_layout = (
         "  train.txt              — image paths, one per line\n"
         "  classes.txt            — class names (0-based ids)\n"
@@ -43,23 +48,23 @@ class YoloDetectionConverter(BaseConverter):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        same_dir = self.output_dir == self.input_data.parent
-        stem = self.input_data.stem
+        same_dir = self.output_dir == self.input.parent
+        stem = self.input.stem
         self.output_data_filename = (
             f"{stem}_vdschema.jsonl" if same_dir else f"{stem}.jsonl"
         )
         self.output_meta_filename = "label_dict.json"
 
     def _media_relative(self, image_path: Path, list_relative: str) -> str:
-        if self.input_root is not None:
+        if self.root is not None:
             try:
-                return image_path.resolve().relative_to(self.input_root).as_posix()
+                return image_path.resolve().relative_to(self.root).as_posix()
             except ValueError:
                 pass
         return list_relative
 
     def _convert(self) -> None:
-        label = load_yolo_class_names(self.input_label)
+        label = load_yolo_class_names(self.category)
         writer = AnnotationWriter(
             TaskType.DETECTION,
             label=label,
@@ -67,9 +72,7 @@ class YoloDetectionConverter(BaseConverter):
             task_data_filename=self.output_data_filename,
             task_meta_filename=self.output_meta_filename,
         )
-        for image_path, list_relative in iter_image_list(
-            self.input_data, root=self.input_root
-        ):
+        for image_path, list_relative in iter_image_list(self.input, root=self.root):
             if not image_path.is_file():
                 continue
             with Image.open(image_path) as img:

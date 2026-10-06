@@ -10,9 +10,10 @@ from typing import TextIO
 from vdschema import AnnotationFormatError
 
 from . import converters  # noqa: F401 — register built-in converters
-from .cli_help import format_help_text
 from .converters.registry import parse_task, supported_sources, supported_tasks
 from .converters.sources import Source
+from .help import format_help_text
+from .options import parse_option_pairs
 from .switch import DEFAULT_OUTPUT_DIR, switch
 
 _USAGE_INDENT = " " * 16
@@ -88,10 +89,9 @@ def _convert_usage(
         "vdswitch [-h]\n"
         f"{i}--task {tasks}\n"
         f"{i}--source {sources}\n"
-        f"{i}--input-data PATH [PATH ...]\n"
-        f"{i}[--input-label PATH]\n"
-        f"{i}[--input-root INPUT_ROOT]\n"
-        f"{i}[--output OUTPUT]"
+        f"{i}--input PATH [PATH ...]\n"
+        f"{i}[--output OUTPUT]\n"
+        f"{i}[--option KEY=VALUE ...]"
     )
 
 
@@ -127,30 +127,23 @@ def build_convert_parser() -> argparse.ArgumentParser:
         help="Third party source (monolith, coco, yolo, …)",
     )
     parser.add_argument(
-        "--input-data",
+        "--input",
         required=True,
         nargs="+",
         metavar="PATH",
-        help="Annotation data file path(s)",
-    )
-    parser.add_argument(
-        "--input-label",
-        default=None,
-        metavar="PATH",
-        help="Label or vocab path; optional when embedded in --input-data (see help)",
-    )
-    parser.add_argument(
-        "--input-root",
-        default=None,
-        help=(
-            "Dataset root for relative media paths; optional when paths are "
-            "absolute or layout is inferable (see vdswitch help)"
-        ),
+        help="Annotation data path(s) (file, directory, or manifest)",
     )
     parser.add_argument(
         "--output",
         default=DEFAULT_OUTPUT_DIR,
         help="Output directory for vdschema annotation data and dictionary",
+    )
+    parser.add_argument(
+        "--option",
+        action="append",
+        metavar="KEY=VALUE",
+        default=None,
+        help="Converter option (repeatable); keys depend on --task and --source",
     )
     return parser
 
@@ -161,7 +154,7 @@ def build_help_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vdswitch help",
         usage=_help_subcommand_usage(task_choices, source_choices),
-        description="Show expected --input-data and --input-label formats for a task.",
+        description="Show expected --input and --option formats for a task/source.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -201,13 +194,13 @@ def run_help(argv: list[str]) -> int:
 def run_convert(argv: list[str]) -> int:
     args = build_convert_parser().parse_args(argv)
     try:
+        options = parse_option_pairs(args.option)
         out = switch(
             task=parse_task(args.task),
             source=Source.parse(args.source),
-            input_data=args.input_data,
-            input_label=args.input_label,
+            input=args.input,
             output=args.output,
-            input_root=args.input_root,
+            options=options,
         )
     except (AnnotationFormatError, ValueError, FileNotFoundError, OSError) as exc:
         print(f"vdswitch: error: {exc}", file=sys.stderr)

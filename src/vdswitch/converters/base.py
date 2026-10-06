@@ -7,8 +7,10 @@ from functools import cached_property
 from pathlib import Path
 from typing import ClassVar
 
-from vdschema import AnnotationReader, TaskType
+from vdschema import AnnotationReader, Name, TaskType
 
+from ..options import ConvertOptions, map_category_id, prepare_category_label
+from ..options.spec import ConverterOptionSpec
 from ..utils.image_size import ImageSizeResolver, find_image_root
 from ..utils.output_names import resolve_output_filenames
 from .sources import Source
@@ -20,56 +22,48 @@ class BaseConverter(ABC):
     task_type: ClassVar[TaskType]
     source: ClassVar[Source]
 
-    #: Shown by ``vdswitch help``.
+    converter_options: ClassVar[tuple[ConverterOptionSpec, ...]] = ()
+
     source_note: ClassVar[str] = "Monolith legacy on-disk layout (JSONL / meta / kmot)."
-    input_data_help: ClassVar[str] = ""
-    input_label_help: ClassVar[str] = ""
-    input_data_sample: ClassVar[str] = ""
-    input_label_sample: ClassVar[str] = ""
+    input_help: ClassVar[str] = ""
+    category_help: ClassVar[str] = ""
+    input_sample: ClassVar[str] = ""
+    category_sample: ClassVar[str] = ""
     typical_layout: ClassVar[str] = ""
-    #: Omit ``--input-label`` on CLI; defaults to each ``--input-data`` path.
-    input_label_same_as_data: ClassVar[bool] = False
-    #: ``--input-data`` is a directory (ImageNet-style).
-    input_data_is_dir: ClassVar[bool] = False
-    #: Minimal ``vdswitch help`` example omits ``--input-root``.
-    input_root_optional: ClassVar[bool] = False
+    example_input: ClassVar[str] = "/path/to/data"
+    example_category: ClassVar[str | None] = None
+    input_is_dir: ClassVar[bool] = False
 
     def __init__(
         self,
         *,
-        input_data: str | Path,
-        input_label: str | Path | None = None,
+        input: str | Path,
+        category: str | Path,
         output_dir: str | Path,
-        input_root: str | Path | None = None,
+        root: str | Path | None = None,
+        convert_options: ConvertOptions | None = None,
     ) -> None:
-        self.input_data = Path(input_data).expanduser().resolve()
-        if input_label is None:
-            if type(self).input_label_same_as_data:
-                input_label = self.input_data
-            else:
-                raise ValueError(
-                    f"--input-label is required for source="
-                    f"{type(self).source.value!r}; "
-                    f"see: vdswitch help --task {type(self).task_type.value} "
-                    f"--source {type(self).source.value}"
-                )
-        self.input_label = Path(input_label).expanduser().resolve()
+        self.convert_options = convert_options or ConvertOptions()
+        self.input = Path(input).expanduser().resolve()
+        self.category = Path(category).expanduser().resolve()
         self.output_dir = Path(output_dir).expanduser().resolve()
-        self.input_root = (
-            Path(input_root).expanduser().resolve() if input_root is not None else None
-        )
+        self.root = Path(root).expanduser().resolve() if root is not None else None
         self.output_data_filename, self.output_meta_filename = resolve_output_filenames(
-            input_data=self.input_data,
-            input_label=self.input_label,
+            input=self.input,
+            category=self.category,
             output_dir=self.output_dir,
         )
+
+    @classmethod
+    def category_defaults_to_input(cls) -> bool:
+        return not any(spec.key == "category" for spec in cls.converter_options)
 
     @cached_property
     def image_size_resolver(self) -> ImageSizeResolver:
         image_root = find_image_root(
             output_dir=self.output_dir,
-            input_data=self.input_data,
-            root=self.input_root,
+            input=self.input,
+            root=self.root,
         )
         return ImageSizeResolver(image_root)
 
@@ -87,15 +81,26 @@ class BaseConverter(ABC):
         return self.output_dir
 
     def _ensure_inputs(self) -> None:
-        if type(self).input_data_is_dir:
-            if not self.input_data.is_dir():
-                raise FileNotFoundError(f"input data not found: {self.input_data}")
-        elif not self.input_data.is_file():
-            raise FileNotFoundError(f"input data not found: {self.input_data}")
-        if type(self).input_label_same_as_data:
+        if type(self).input_is_dir:
+            if not self.input.is_dir():
+                raise FileNotFoundError(f"input not found: {self.input}")
+        elif not self.input.is_file():
+            raise FileNotFoundError(f"input not found: {self.input}")
+        if type(self).category_defaults_to_input():
             return
-        if not self.input_label.is_file():
-            raise FileNotFoundError(f"input label not found: {self.input_label}")
+        if self.category.resolve() == self.input.resolve():
+            return
+        if not self.category.is_file():
+            raise FileNotFoundError(f"category file not found: {self.category}")
+
+    def _prepare_category_label(
+        self, label: dict[int, Name]
+    ) -> tuple[dict[int, Name], dict[int, int] | None]:
+        return prepare_category_label(label, self.convert_options)
+
+    @staticmethod
+    def _map_category_id(raw_id: int, id_map: dict[int, int] | None) -> int:
+        return map_category_id(raw_id, id_map)
 
     @abstractmethod
     def _convert(self) -> None:

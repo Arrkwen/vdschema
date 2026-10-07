@@ -11,8 +11,11 @@ from vdschema import AnnotationReader, Name, Source, TaskType, switch
 from vdswitch.cli import main
 from vdswitch.converters.registry import get_converter_class
 from vdswitch.options import (
+    ConverterOptionSpec,
     ConvertOptions,
     densify_label_map,
+    example_option_command_lines,
+    map_category_id,
     parse_option_pairs,
     prepare_category_label,
     resolve_converter_inputs,
@@ -26,6 +29,11 @@ def test_parse_option_pairs_unknown_key_allowed_at_parse() -> None:
 def test_parse_option_pairs_bad_format() -> None:
     with pytest.raises(ValueError, match="KEY=VALUE"):
         parse_option_pairs(["noseparator"])
+
+
+def test_parse_option_pairs_empty_key() -> None:
+    with pytest.raises(ValueError, match="KEY=VALUE"):
+        parse_option_pairs(["=value"])
 
 
 def test_parse_option_pairs_empty_value() -> None:
@@ -77,6 +85,128 @@ def test_prepare_category_label_noop() -> None:
     out, id_map = prepare_category_label(label, ConvertOptions())
     assert out is label
     assert id_map is None
+
+
+def test_prepare_category_label_densifies() -> None:
+    label = {3: Name("a")}
+    out, id_map = prepare_category_label(
+        label, ConvertOptions(category_id_contiguous=True, category_id_start=0)
+    )
+    assert id_map == {3: 0}
+    assert out[0].name == "a"
+
+
+def test_convert_options_from_mapping_bool_and_start() -> None:
+    opts = ConvertOptions.from_mapping(
+        {
+            "category_id_contiguous": "false",
+            "category_id_start": "0",
+        }
+    )
+    assert opts.category_id_contiguous is False
+    assert opts.category_id_start == 0
+
+
+def test_convert_options_from_mapping_true_aliases() -> None:
+    assert ConvertOptions.from_mapping(
+        {"category_id_contiguous": "yes"}
+    ).category_id_contiguous
+    assert ConvertOptions.from_mapping(
+        {"category_id_contiguous": "on"}
+    ).category_id_contiguous
+
+
+def test_convert_options_invalid_bool() -> None:
+    with pytest.raises(ValueError, match="category_id_contiguous"):
+        ConvertOptions.from_mapping({"category_id_contiguous": "maybe"})
+
+
+def test_convert_options_invalid_start() -> None:
+    with pytest.raises(ValueError, match="category_id_start"):
+        ConvertOptions.from_mapping({"category_id_start": "2"})
+
+
+def test_densify_label_map_invalid_start() -> None:
+    with pytest.raises(ValueError, match="category_id_start"):
+        densify_label_map({1: Name("a")}, start=2)
+
+
+def test_densify_label_map_empty() -> None:
+    with pytest.raises(ValueError, match="empty"):
+        densify_label_map({}, start=1)
+
+
+def test_map_category_id_passthrough_and_unknown() -> None:
+    assert map_category_id(7, None) == 7
+    assert map_category_id(1, {1: 10}) == 10
+    with pytest.raises(ValueError, match="category_id=99"):
+        map_category_id(99, {1: 1})
+
+
+def test_resolve_converter_inputs_missing_required_category() -> None:
+    cls = get_converter_class(TaskType.DETECTION, Source.MONOLITH)
+    with pytest.raises(ValueError, match="missing required --option category"):
+        resolve_converter_inputs(
+            cls,
+            input=Path("/data/train.jsonl"),
+            options={"root": "/data/root"},
+        )
+
+
+def test_resolve_converter_inputs_missing_required_root() -> None:
+    cls = get_converter_class(TaskType.DETECTION, Source.MONOLITH)
+    with pytest.raises(ValueError, match="missing required --option root"):
+        resolve_converter_inputs(
+            cls,
+            input=Path("/data/train.jsonl"),
+            options={"category": "/data/label.json"},
+        )
+
+
+def test_resolve_converter_inputs_optional_category_defaults_to_input() -> None:
+    cls = get_converter_class(TaskType.DETECTION, Source.VOC)
+    resolved = resolve_converter_inputs(
+        cls,
+        input=Path("/data/VOC2007"),
+        options={"root": "/data/VOC2007"},
+    )
+    assert resolved.category == Path("/data/VOC2007").resolve()
+
+
+def test_example_option_command_lines_skips_and_fills() -> None:
+    class _Skips:
+        converter_options = (
+            ConverterOptionSpec("category", "help", required=False),
+            ConverterOptionSpec("root", "help", required=False),
+            ConverterOptionSpec("custom", "help", required=True),
+            ConverterOptionSpec("optional_empty", "help", required=False),
+        )
+
+    assert (
+        example_option_command_lines(
+            _Skips,
+            input_path="/in/data",
+            category_path=None,
+        )
+        == []
+    )
+
+    class _RootRequired:
+        converter_options = (ConverterOptionSpec("root", "help", required=True),)
+
+    assert example_option_command_lines(
+        _RootRequired,
+        input_path="/in/data",
+        category_path=None,
+    ) == ["  --option root=/path/to/dataset \\"]
+
+    coco = get_converter_class(TaskType.DETECTION, Source.COCO)
+    coco_lines = example_option_command_lines(
+        coco,
+        input_path="/ann/instances.json",
+        category_path=None,
+    )
+    assert any("category_id_contiguous=0" in line for line in coco_lines)
 
 
 def test_vdswitch_coco_contiguous_category_ids(tmp_path: Path) -> None:

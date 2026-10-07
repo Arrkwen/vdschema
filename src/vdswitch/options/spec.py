@@ -57,23 +57,13 @@ def resolve_converter_inputs(
                 f"{cls.task_type.value} --source {cls.source.value}"
             )
 
-    if "category" in specs:
-        if "category" in raw:
-            category = Path(raw.pop("category")).expanduser()
-        elif specs["category"].required:
-            raise ValueError("missing required --option category=…")
-        else:
-            category = input
+    if "category" in specs and "category" in raw:
+        category = Path(raw.pop("category")).expanduser()
     else:
         category = input
 
-    if "root" in specs:
-        if "root" in raw:
-            root: Path | None = Path(raw.pop("root")).expanduser()
-        elif specs["root"].required:
-            raise ValueError("missing required --option root=…")
-        else:
-            root = None
+    if "root" in specs and "root" in raw:
+        root: Path | None = Path(raw.pop("root")).expanduser()
     else:
         root = None
 

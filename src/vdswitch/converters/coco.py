@@ -93,7 +93,7 @@ class CocoDetectionConverter(_CocoConverter):
                     item["is_ignored"] = True
                 instances.append(item)
             writer.append(
-                filename=image.file_name,
+                filename=self.prefix_media_filename(image.file_name),
                 width=image.width,
                 height=image.height,
                 instances=instances,
@@ -139,7 +139,7 @@ class CocoKeypointConverter(_CocoConverter):
                     item["is_ignored"] = True
                 instances.append(item)
             writer.append(
-                filename=image.file_name,
+                filename=self.prefix_media_filename(image.file_name),
                 width=image.width,
                 height=image.height,
                 instances=instances,
@@ -190,7 +190,7 @@ class CocoSegmentationConverter(_CocoConverter):
                     item["is_ignored"] = True
                 instances.append(item)
             writer.append(
-                filename=image.file_name,
+                filename=self.prefix_media_filename(image.file_name),
                 width=image.width,
                 height=image.height,
                 instances=instances,

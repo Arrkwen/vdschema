@@ -116,7 +116,7 @@ class VocDetectionConverter(_VocConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=record.width,
                 height=record.height,
                 instances=instances,
@@ -169,7 +169,7 @@ class VocSegmentationConverter(_VocConverterBase):
                     voc_root, image_id, None, root=self.root
                 )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=width,
                 height=height,
                 instances=instances,

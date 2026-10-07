@@ -62,7 +62,7 @@ class OcrSequenceConverter(BaseConverter):
             with Image.open(image_path) as img:
                 width, height = img.size
             writer.append(
-                filename=list_relative,
+                filename=self.prefix_media_filename(list_relative),
                 width=width,
                 height=height,
                 sequences=tokens,

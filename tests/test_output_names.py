@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from vdschema import TaskType
+from vdswitch.converters.base import BaseConverter
+from vdswitch.converters.sources import Source
 from vdswitch.utils import output_filename, resolve_output_filenames
 
 
@@ -64,3 +67,27 @@ def test_resolve_output_filenames_mixed_dirs(tmp_path: Path) -> None:
     )
     assert data_name == "train_baseline_vdschema.jsonl"
     assert label_name == "vocab.txt"
+
+
+def test_prefix_media_filename() -> None:
+    class _Stub(BaseConverter):
+        task_type = TaskType.CLASSIFICATION
+        source = Source.IMAGENET
+
+        def _convert(self) -> None:
+            pass
+
+    bare = _Stub(
+        input="/x",
+        category="/x",
+        output_dir="/out",
+        prefix=None,
+    )
+    assert bare.prefix_media_filename("1.jpg") == "1.jpg"
+    prefixed = _Stub(
+        input="/x",
+        category="/x",
+        output_dir="/out",
+        prefix="split/v1",
+    )
+    assert prefixed.prefix_media_filename("1.jpg") == "split/v1/1.jpg"

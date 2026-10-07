@@ -69,7 +69,7 @@ class ImagenetClassificationConverter(BaseConverter):
                     width, height = img.size
                 filename = image_path.relative_to(dataset_root).as_posix()
                 writer.append(
-                    filename=filename,
+                    filename=self.prefix_media_filename(filename),
                     width=width,
                     height=height,
                     categories=[

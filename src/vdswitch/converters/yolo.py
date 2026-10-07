@@ -80,7 +80,9 @@ class YoloDetectionConverter(BaseConverter):
             label_path = yolo_label_path_for_image(image_path)
             instances = parse_yolo_label_file(label_path, width=width, height=height)
             writer.append(
-                filename=self._media_relative(image_path, list_relative),
+                filename=self.prefix_media_filename(
+                    self._media_relative(image_path, list_relative)
+                ),
                 width=width,
                 height=height,
                 instances=instances,

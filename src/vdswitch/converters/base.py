@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
@@ -42,12 +43,14 @@ class BaseConverter(ABC):
         output_dir: str | Path,
         root: str | Path | None = None,
         convert_options: ConvertOptions | None = None,
+        prefix: str | None = None,
     ) -> None:
         self.convert_options = convert_options or ConvertOptions()
         self.input = Path(input).expanduser().resolve()
         self.category = Path(category).expanduser().resolve()
         self.output_dir = Path(output_dir).expanduser().resolve()
         self.root = Path(root).expanduser().resolve() if root is not None else None
+        self.prefix = prefix
         self.output_data_filename, self.output_meta_filename = resolve_output_filenames(
             input=self.input,
             category=self.category,
@@ -66,6 +69,12 @@ class BaseConverter(ABC):
             root=self.root,
         )
         return ImageSizeResolver(image_root)
+
+    def prefix_media_filename(self, filename: str) -> str:
+        """Prepend ``prefix`` to annotation ``filename`` fields when set."""
+        if not self.prefix:
+            return filename
+        return os.path.join(self.prefix, filename)
 
     def run(self) -> Path:
         """Validate inputs, convert, and verify vdschema output."""

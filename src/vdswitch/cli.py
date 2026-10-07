@@ -91,6 +91,7 @@ def _convert_usage(
         f"{i}--source {sources}\n"
         f"{i}--input PATH [PATH ...]\n"
         f"{i}[--output OUTPUT]\n"
+        f"{i}[--prefix PREFIX]\n"
         f"{i}[--option KEY=VALUE ...]"
     )
 
@@ -137,6 +138,12 @@ def build_convert_parser() -> argparse.ArgumentParser:
         "--output",
         default=DEFAULT_OUTPUT_DIR,
         help="Output directory for vdschema annotation data and dictionary",
+    )
+    parser.add_argument(
+        "--prefix",
+        default=None,
+        metavar="PREFIX",
+        help="Optional path prefix for each annotation row's filename field",
     )
     parser.add_argument(
         "--option",
@@ -201,6 +208,7 @@ def run_convert(argv: list[str]) -> int:
             input=args.input,
             output=args.output,
             options=options,
+            prefix=args.prefix,
         )
     except (AnnotationFormatError, ValueError, FileNotFoundError, OSError) as exc:
         print(f"vdswitch: error: {exc}", file=sys.stderr)

@@ -163,7 +163,7 @@ class MonolithUpDetectionConverter(BaseConverter):
                     instances.append(item)
                 width, height = self.image_size_resolver.resolve(record)
                 writer.append(
-                    filename=record["filename"],
+                    filename=self.prefix_media_filename(record["filename"]),
                     width=width,
                     height=height,
                     instances=instances,
@@ -232,7 +232,7 @@ class MonolithUpClassificationConverter(BaseConverter):
                     )
                 width, height = self.image_size_resolver.resolve(record)
                 writer.append(
-                    filename=record["filename"],
+                    filename=self.prefix_media_filename(record["filename"]),
                     width=width,
                     height=height,
                     categories=categories,
@@ -278,7 +278,7 @@ class MonolithUpSequenceConverter(BaseConverter):
                 record = load_jsonl_object(line, path=self.input, lineno=lineno)
                 width, height = self.image_size_resolver.resolve(record)
                 writer.append(
-                    filename=record["filename"],
+                    filename=self.prefix_media_filename(record["filename"]),
                     width=width,
                     height=height,
                     sequences=list(record.get("sequences") or []),
@@ -360,7 +360,7 @@ class MonolithUpActionConverter(BaseConverter):
 
                 width, height = video_size.resolve(video_path)
                 writer.append(
-                    filename=video_path,
+                    filename=self.prefix_media_filename(video_path),
                     width=width,
                     height=height,
                     actions=actions,

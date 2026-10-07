@@ -1,6 +1,6 @@
 [project]
 name = "vdschema"
-version = "0.7.0"
+version = "0.7.1"
 description = "Unified annotation schema and JSONL IO for vision datasets."
 readme = "README.md"
 authors = [

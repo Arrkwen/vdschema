@@ -18,6 +18,28 @@ def test_build_imagenet_head(imagenet_legacy_dir: Path) -> None:
     assert name_to_id["dog"] == 2
 
 
+def test_vdswitch_imagenet_annotation_filename_prefix(
+    imagenet_legacy_dir: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "out"
+    switch(
+        task=TaskType.CLASSIFICATION,
+        source=Source.IMAGENET,
+        input=imagenet_legacy_dir,
+        output=out,
+        prefix="split/v1",
+    )
+    data, _ = AnnotationReader(
+        TaskType.CLASSIFICATION,
+        out,
+        task_data_filename="train.jsonl",
+        task_meta_filename="label_dict.json",
+    ).load()
+    assert len(data) == 2
+    assert all(row.filename.startswith("split/v1/") for row in data)
+    assert (out / "train.jsonl").is_file()
+
+
 def test_vdswitch_imagenet_minimal_args(
     imagenet_legacy_dir: Path, tmp_path: Path
 ) -> None:

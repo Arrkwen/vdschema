@@ -106,7 +106,7 @@ class LabelMeDetectionConverter(_LabelMeConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=width,
                 height=height,
                 instances=instances,
@@ -143,7 +143,7 @@ class LabelMeSegmentationConverter(_LabelMeConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=width,
                 height=height,
                 instances=instances,
@@ -178,7 +178,7 @@ class LabelMeKeypointConverter(_LabelMeConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=width,
                 height=height,
                 instances=instances,

@@ -104,7 +104,7 @@ class LabelBeeDetectionConverter(_LabelBeeConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=int(doc["width"]),
                 height=int(doc["height"]),
                 instances=instances,
@@ -138,7 +138,7 @@ class LabelBeeSegmentationConverter(_LabelBeeConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=int(doc["width"]),
                 height=int(doc["height"]),
                 instances=instances,
@@ -172,7 +172,7 @@ class LabelBeeKeypointConverter(_LabelBeeConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=int(doc["width"]),
                 height=int(doc["height"]),
                 instances=instances,
@@ -210,7 +210,7 @@ class LabelBeeClassificationConverter(_LabelBeeConverterBase):
                 root=self.root,
             )
             writer.append(
-                filename=filename,
+                filename=self.prefix_media_filename(filename),
                 width=int(doc["width"]),
                 height=int(doc["height"]),
                 categories=categories,

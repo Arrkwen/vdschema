@@ -58,7 +58,7 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
 [tool.uv]
-constraint-dependencies = ["cryptography>=50.0.1"]
+constraint-dependencies = ["cryptography>=50.0.1", "urllib3>=2.8.0"]
 
 [tool.coverage.run]
 source = ["src/vdschema", "src/vdswitch"]

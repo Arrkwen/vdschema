@@ -6,7 +6,7 @@ from PIL import Image
 
 from vdschema import AnnotationWriter, TaskType
 
-from ..options.presets import OCR_PATH_OPTIONS
+from ..options.presets import OCR_OPTIONS
 from ..utils.ocr_dataset import iter_ocr_lines
 from .base import BaseConverter
 from .registry import register_converter
@@ -19,7 +19,7 @@ class OcrSequenceConverter(BaseConverter):
 
     source_note = "Classic OCR list file: one sample per line (path TAB label text)."
 
-    converter_options = OCR_PATH_OPTIONS
+    converter_options = OCR_OPTIONS
     example_input = "/path/to/anno.txt"
     example_category = "/path/to/vocab.txt"
 
@@ -27,11 +27,7 @@ class OcrSequenceConverter(BaseConverter):
         "Text manifest: each line is ``<image_path>\\t<label>`` (or space-separated). "
         "Label string is split into character tokens for the sequence."
     )
-    category_help = (
-        "vocab.txt: one token per line (character or subword in the label alphabet)."
-    )
     input_sample = "images/001.jpg\thello"
-    category_sample = "h\ne\nl\no\n"
     typical_layout = (
         "  anno.txt                 — image path + transcription per line\n"
         "  vocab.txt                — allowed tokens\n"

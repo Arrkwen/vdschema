@@ -6,7 +6,7 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, TaskType
 
-from ..options.presets import OPTIONAL_ROOT
+from ..options.presets import LABELME_OPTIONS
 from ..utils.labelme_dataset import (
     DETECTION_SHAPE_TYPES,
     KEYPOINT_SHAPE_TYPES,
@@ -36,20 +36,15 @@ class _LabelMeConverterBase(BaseConverter):
         "single annotation JSON with `shapes`, `imagePath`, `imageWidth`, "
         "`imageHeight`."
     )
-    category_help = (
-        "Optional. Defaults to --input; class names come from each shape's "
-        "`label` field."
-    )
     input_sample = (
         '{"imagePath":"img.jpg","imageWidth":640,"imageHeight":480,'
         '"shapes":[{"label":"cat","shape_type":"rectangle","points":[[0,0],[10,10]]}]}'
     )
-    category_sample = "(same as --input; shape labels define annotation_meta)"
     typical_layout = (
         "  annotations/*.json   — LabelMe export (paired with images)\n"
         "  images/…           — paths in imagePath (--option root= when relative)"
     )
-    converter_options = OPTIONAL_ROOT
+    converter_options = LABELME_OPTIONS
     example_input = "/path/to/labelme/json"
 
     def __init__(self, **kwargs) -> None:

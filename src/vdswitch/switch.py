@@ -38,7 +38,6 @@ def switch(
     input: str | Path | Sequence[str | Path],
     output: str | Path = DEFAULT_OUTPUT_DIR,
     options: Mapping[str, str] | None = None,
-    prefix: str | None = None,
 ) -> Path:
     """Convert third party annotations to vdschema.
 
@@ -46,8 +45,8 @@ def switch(
     the CLI). Allowed keys depend on ``task`` and ``source``; see
     ``vdswitch help --task … --source …``.
 
-    When ``prefix`` is set, each written annotation's ``filename`` field becomes
-    ``os.path.join(prefix, filename)`` (media path inside JSONL, not output paths).
+    Use ``--option prefix=PATH`` (all sources) to prepend each JSONL row's
+    ``filename`` field.
 
     Each ``input`` file is converted in order into the same ``output``
     directory; when multiple files are passed, later conversions overwrite
@@ -68,7 +67,7 @@ def switch(
             output_dir=output_dir,
             root=resolved.root,
             convert_options=resolved.convert_options,
-            prefix=prefix,
+            prefix=resolved.prefix,
         ).run()
     return output_dir
 

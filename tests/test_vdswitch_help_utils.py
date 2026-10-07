@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from vdschema import TaskType
+from vdswitch.converters.registry import supported_sources, supported_tasks
 from vdswitch.converters.sources import Source
 from vdswitch.help import format_help_text
 from vdswitch.utils.coco_dataset import (
@@ -32,9 +33,21 @@ def test_format_help_all_tasks() -> None:
     assert "classification" in text
 
 
+def test_format_help_prefix_documented_for_every_converter() -> None:
+    for task in supported_tasks():
+        for source in supported_sources(task):
+            text = format_help_text(task=task, source=source)
+            assert "prefix=VALUE" in text
+            assert "Required\n" in text
+            assert "Optional --option" in text
+            assert "--option prefix=" in text
+
+
 def test_format_help_yolo_detection() -> None:
     text = format_help_text(task=TaskType.DETECTION, source=Source.YOLO)
     assert "train.txt" in text
+    assert "prefix=VALUE" in text
+    assert "--option prefix=" in text
 
 
 def test_format_help_imagenet() -> None:

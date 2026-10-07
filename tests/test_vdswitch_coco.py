@@ -185,6 +185,8 @@ def test_vdswitch_help_coco_detection() -> None:
     assert "root=" not in text
     assert "--option category_id_contiguous=0" in example
     assert "--option category_id_start=1" in example
+    assert "prefix=VALUE" in text
+    assert "--option prefix=split/v1" in example
     assert main(["help", "--task", "detection", "--source", "coco"]) == 0
 
 

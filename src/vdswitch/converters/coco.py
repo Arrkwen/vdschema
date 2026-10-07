@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from vdschema import AnnotationWriter, TaskType
 
-from ..options.presets import COCO_CATEGORY_OPTIONS
+from ..options.presets import COCO_OPTIONS
 from ..utils.coco_dataset import (
     coco_bbox_xyxy,
     coco_keypoints_flat,
@@ -22,10 +22,6 @@ _COCO_INPUT_DATA_HELP = (
     "COCO instances JSON: images[], annotations[], categories[] "
     "(standard MS COCO detection / keypoint / segmentation export)."
 )
-_COCO_INPUT_LABEL_HELP = (
-    "Optional. Defaults to --input (categories[] in the same JSON). "
-    "Or a JSON file with only categories[]."
-)
 _COCO_TYPICAL = (
     "  annotations/instances_*.json  — COCO export (categories inside)\n"
     "  images/…  — paths in JSON are often absolute; categories live in the JSON"
@@ -35,17 +31,15 @@ _COCO_TYPICAL = (
 class _CocoConverter(BaseConverter):
     source_note = "MS COCO instance JSON (pycocotools-compatible layout)."
 
-    converter_options = COCO_CATEGORY_OPTIONS
+    converter_options = COCO_OPTIONS
 
     input_help = _COCO_INPUT_DATA_HELP
-    category_help = _COCO_INPUT_LABEL_HELP
     input_sample = (
         '{"images":[{"id":1,"file_name":"a.jpg","width":640,"height":480}],'
         '"categories":[{"id":1,"name":"person"}],'
         '"annotations":[{"id":1,"image_id":1,"category_id":1,'
         '"bbox":[10,20,100,200]}]}'
     )
-    category_sample = 'Same file as --input, or {"categories":[…]}'
     typical_layout = _COCO_TYPICAL
 
     def __init__(self, **kwargs) -> None:

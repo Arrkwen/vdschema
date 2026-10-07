@@ -43,13 +43,7 @@ class _VocConverterBase(BaseConverter):
         "VOC ImageSets list (e.g. ImageSets/Main/train.txt), a single "
         "Annotations/*.xml, or the Annotations/ directory."
     )
-    category_help = (
-        "Optional. Omit when same as --input. Detection: infer class "
-        "names from XML. Segmentation: VOC2012 20-class ids 1–20. "
-        "Or a text file with one class name per line (line index + 1 = id)."
-    )
     input_sample = "ImageSets/Main/train.txt"
-    category_sample = "(optional) classes.txt — one VOC class name per line"
     typical_layout = _VOC_LAYOUT
     converter_options = VOC_OPTIONS
     example_input = "/path/to/VOC2007/ImageSets/Main/train.txt"

@@ -1,10 +1,38 @@
-"""Shared ``converter_options`` tuples."""
+"""Per-source ``converter_options`` (source-specific keys + shared globals)."""
 
 from __future__ import annotations
 
 from .spec import ConverterOptionSpec
 
-MONOLITH_PATH_OPTIONS: tuple[ConverterOptionSpec, ...] = (
+_GLOBAL: tuple[ConverterOptionSpec, ...] = (
+    ConverterOptionSpec(
+        "prefix",
+        "Prepended to each JSONL row filename (e.g. split/v1/1.jpg).",
+        example="split/v1",
+    ),
+)
+
+
+def _options(*specs: ConverterOptionSpec) -> tuple[ConverterOptionSpec, ...]:
+    declared = {spec.key for spec in specs}
+    extra = [item for item in _GLOBAL if item.key not in declared]
+    return (*specs, *extra)
+
+
+COCO_OPTIONS: tuple[ConverterOptionSpec, ...] = _options(
+    ConverterOptionSpec(
+        "category_id_contiguous",
+        "0|1 — keep source ids (0, default) or contiguous remap by sorted id (1).",
+        example="0",
+    ),
+    ConverterOptionSpec(
+        "category_id_start",
+        "0|1 — first remapped id when contiguous=1 (default 1).",
+        example="1",
+    ),
+)
+
+MONOLITH_OPTIONS: tuple[ConverterOptionSpec, ...] = _options(
     ConverterOptionSpec(
         "category",
         "Label or vocab file (JSON or plain text).",
@@ -18,7 +46,7 @@ MONOLITH_PATH_OPTIONS: tuple[ConverterOptionSpec, ...] = (
     ),
 )
 
-YOLO_PATH_OPTIONS: tuple[ConverterOptionSpec, ...] = (
+YOLO_OPTIONS: tuple[ConverterOptionSpec, ...] = _options(
     ConverterOptionSpec(
         "category",
         "classes.txt — one class name per line (0-based class id).",
@@ -33,7 +61,7 @@ YOLO_PATH_OPTIONS: tuple[ConverterOptionSpec, ...] = (
     ),
 )
 
-OCR_PATH_OPTIONS: tuple[ConverterOptionSpec, ...] = (
+OCR_OPTIONS: tuple[ConverterOptionSpec, ...] = _options(
     ConverterOptionSpec(
         "category",
         "Plain-text vocabulary (one token per line).",
@@ -48,28 +76,23 @@ OCR_PATH_OPTIONS: tuple[ConverterOptionSpec, ...] = (
     ),
 )
 
-COCO_CATEGORY_OPTIONS: tuple[ConverterOptionSpec, ...] = (
-    ConverterOptionSpec(
-        "category_id_contiguous",
-        "0|1 — keep source ids (0, default) or contiguous remap by sorted id (1).",
-        example="0",
-    ),
-    ConverterOptionSpec(
-        "category_id_start",
-        "0|1 — first remapped id when contiguous=1 (default 1).",
-        example="1",
-    ),
-)
-
-OPTIONAL_ROOT: tuple[ConverterOptionSpec, ...] = (
+LABELME_OPTIONS: tuple[ConverterOptionSpec, ...] = _options(
     ConverterOptionSpec(
         "root",
-        "Dataset root when media paths in annotations are relative.",
+        "Dataset root when `imagePath` in JSON is relative to --input.",
         example="/path/to/dataset",
     ),
 )
 
-VOC_OPTIONS: tuple[ConverterOptionSpec, ...] = (
+LABELBEE_OPTIONS: tuple[ConverterOptionSpec, ...] = _options(
+    ConverterOptionSpec(
+        "root",
+        "Dataset root for image files paired with LabelBee JSON by stem.",
+        example="/path/to/dataset",
+    ),
+)
+
+VOC_OPTIONS: tuple[ConverterOptionSpec, ...] = _options(
     ConverterOptionSpec(
         "root",
         "PASCAL VOC year folder when layout cannot be inferred.",
@@ -80,3 +103,7 @@ VOC_OPTIONS: tuple[ConverterOptionSpec, ...] = (
         "Optional classes.txt (defaults to categories from --input layout).",
     ),
 )
+
+GLOBAL_ONLY_OPTIONS: tuple[ConverterOptionSpec, ...] = _options()
+
+IMAGENET_OPTIONS = GLOBAL_ONLY_OPTIONS

@@ -106,7 +106,7 @@ vdswitch \
 | `--task`       | `detection`, `classification`, `action`, `sequence`, …                      | vdschema task type                      |
 | `--source`     | `monolith`, `coco`, `yolo`, …                                               | dataset format                          |
 | `--input` | one or more paths                                                           | annotation data                         |
-| `--option`     | `KEY=VALUE` (repeatable)                                                    | per-source; see `vdswitch help`         |
+| `--option`     | `KEY=VALUE` (repeatable)                                                    | per-source; all sources support optional `prefix=…` (JSONL row `filename`); see `vdswitch help` |
 | `--output`     | directory (default: `output`)                                               | output directory                        |
 
 

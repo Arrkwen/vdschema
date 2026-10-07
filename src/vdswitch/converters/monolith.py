@@ -8,7 +8,7 @@ from pathlib import Path
 from vdschema import AnnotationWriter, Name, TaskType
 
 from ..help import help_hint
-from ..options.presets import MONOLITH_PATH_OPTIONS
+from ..options.presets import MONOLITH_OPTIONS
 from ..utils.jsonl import load_jsonl_object
 from ..utils.kmot import parse_kmot_file
 from ..utils.video_size import VideoSizeResolver, find_video_root
@@ -118,7 +118,7 @@ def _parse_legacy_meta_line(line: str) -> tuple[str, str] | None:
 class MonolithUpDetectionConverter(BaseConverter):
     """Monolith baseline jsonl + label_dict.json → vdschema detection."""
 
-    converter_options = MONOLITH_PATH_OPTIONS
+    converter_options = MONOLITH_OPTIONS
     example_input = "/path/to/meta/train_baseline.jsonl"
     example_category = "/path/to/meta/label_dict.json"
 
@@ -126,14 +126,9 @@ class MonolithUpDetectionConverter(BaseConverter):
         "JSONL file: one JSON object per line with filename and instances "
         "(bbox, label or category_id, optional is_ignored)."
     )
-    category_help = (
-        "JSON file: string keys are category ids, values are class names "
-        '(e.g. {"1":"person","2":"car"}).'
-    )
     input_sample = (
         '{"filename":"img.jpg","instances":[{"id":0,"label":1,"bbox":[10,10,100,100]}]}'
     )
-    category_sample = '{"1":"person","2":"car"}'
     typical_layout = _MONOLITH_JSONL_LAYOUT
 
     def _convert(self) -> None:
@@ -176,7 +171,7 @@ class MonolithUpDetectionConverter(BaseConverter):
 class MonolithUpClassificationConverter(BaseConverter):
     """Monolith baseline jsonl + label_dict.json → vdschema classification."""
 
-    converter_options = MONOLITH_PATH_OPTIONS
+    converter_options = MONOLITH_OPTIONS
     example_input = "/path/to/meta/train_baseline.jsonl"
     example_category = "/path/to/meta/label_dict.json"
 
@@ -184,12 +179,7 @@ class MonolithUpClassificationConverter(BaseConverter):
         "JSONL file: one JSON object per line with filename and attribute.\n"
         "attribute maps each head name to one-hot dict {class_name: 0|1, ...}."
     )
-    category_help = (
-        "JSON file: each key is a classification head (attribute) name; "
-        "each value is an ordered list of class names (not numeric id maps)."
-    )
     input_sample = '{"filename":"img.jpg","attribute":{"gender":{"male":0,"female":1}}}'
-    category_sample = '{"gender":["male","female"]}'
     typical_layout = _MONOLITH_JSONL_LAYOUT
 
     def _convert(self) -> None:
@@ -245,7 +235,7 @@ class MonolithUpClassificationConverter(BaseConverter):
 class MonolithUpSequenceConverter(BaseConverter):
     """Monolith baseline jsonl + vocab.txt → vdschema sequence."""
 
-    converter_options = MONOLITH_PATH_OPTIONS
+    converter_options = MONOLITH_OPTIONS
     example_input = "/path/to/meta/train_baseline.jsonl"
     example_category = "/path/to/meta/vocab.txt"
 
@@ -253,12 +243,7 @@ class MonolithUpSequenceConverter(BaseConverter):
         "JSONL file: one JSON object per line with filename and sequences "
         "(list of token strings from the vocab file)."
     )
-    category_help = (
-        "Plain-text vocab file: one token per line (not JSON). "
-        "Copied to vdschema meta as the sequence vocabulary."
-    )
     input_sample = '{"filename":"img.jpg","sequences":["B","1","0"]}'
-    category_sample = "0\n1\nB\n"
     typical_layout = _MONOLITH_JSONL_LAYOUT
 
     def _convert(self) -> None:
@@ -291,7 +276,7 @@ class MonolithUpSequenceConverter(BaseConverter):
 class MonolithUpActionConverter(BaseConverter):
     """Monolith video meta txt + kmot → vdschema action."""
 
-    converter_options = MONOLITH_PATH_OPTIONS
+    converter_options = MONOLITH_OPTIONS
     example_input = "/path/to/meta/video_train.txt"
     example_category = "/path/to/meta/label_dict.json"
 
@@ -300,16 +285,7 @@ class MonolithUpActionConverter(BaseConverter):
         "Format: video_path;num_frames;start;end;unused;kmot_relative_path\n"
         "kmot paths are resolved relative to the meta file directory."
     )
-    category_help = (
-        'JSON file: either {"action":[{"category_id":1,"category_name":"…"},…]} '
-        'or a single head mapping {"head_name":["class_a","class_b",…]} '
-        "(class names must match kmot track labels)."
-    )
     input_sample = "video/sample.avi;4;443;446;1;kmot/sample.txt"
-    category_sample = (
-        '{"action":[{"category_id":1,"category_name":"package_tossing"}]}\n'
-        'or {"package_tossing":["normal","package_tossing"]}'
-    )
     typical_layout = (
         "  meta/video_train.txt       — video list + kmot pointers\n"
         "  meta/kmot/*.txt            — kmot tracks\n"

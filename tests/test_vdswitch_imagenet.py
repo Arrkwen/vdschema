@@ -27,7 +27,7 @@ def test_vdswitch_imagenet_annotation_filename_prefix(
         source=Source.IMAGENET,
         input=imagenet_legacy_dir,
         output=out,
-        prefix="split/v1",
+        options={"prefix": "split/v1"},
     )
     data, _ = AnnotationReader(
         TaskType.CLASSIFICATION,

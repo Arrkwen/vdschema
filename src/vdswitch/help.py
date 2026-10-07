@@ -7,7 +7,11 @@ from vdschema import TaskType
 from .converters.base import BaseConverter
 from .converters.registry import get_converter_class, supported_sources, supported_tasks
 from .converters.sources import Source
-from .options.spec import example_option_command_lines, format_option_help_lines
+from .options.spec import (
+    example_option_command_lines,
+    format_option_spec_help_lines,
+    partition_converter_options,
+)
 
 
 def help_hint(task: TaskType) -> str:
@@ -64,25 +68,47 @@ def _converter_class_for_task(task: TaskType) -> type[BaseConverter]:
     return get_converter_class(task, _default_source_for_task(task))
 
 
-def _input_spec_sections(cls: type[BaseConverter]) -> list[str]:
-    sections = [
-        "",
-        "--input",
-        cls.input_help or "(see converter docstring)",
-    ]
-    if cls.input_sample:
-        sections.append(f"  e.g. {cls.input_sample}")
-    if cls.category_defaults_to_input():
-        return sections
+def _param_block(
+    label: str,
+    description: str,
+    *,
+    example: str | None = None,
+) -> list[str]:
+    lines = [f"  {label}", f"      {description.strip()}"]
+    if example:
+        lines.append(f"      e.g. {example}")
+    return lines
+
+
+def _required_and_optional_sections(cls: type[BaseConverter]) -> list[str]:
+    sections: list[str] = ["", "Required"]
     sections.extend(
-        [
-            "",
-            "--option category",
-            cls.category_help or "(see converter docstring)",
-        ]
+        _param_block(
+            "--input PATH",
+            cls.input_help or "(see converter docstring)",
+            example=cls.input_sample or None,
+        )
     )
-    if cls.category_sample:
-        sections.append(f"  e.g. {cls.category_sample}")
+    sections.extend(
+        _param_block(
+            "--output DIR",
+            "Directory for vdschema task JSONL and meta files.",
+        )
+    )
+
+    required_opts, optional_opts = partition_converter_options(cls)
+    if required_opts:
+        sections.extend(["", "Required --option (repeatable)"])
+        for spec in required_opts:
+            sections.extend(format_option_spec_help_lines(spec))
+
+    optional_lines: list[str] = []
+    for spec in optional_opts:
+        optional_lines.extend(format_option_spec_help_lines(spec))
+
+    if optional_lines:
+        sections.extend(["", "Optional --option (repeatable)", *optional_lines])
+
     return sections
 
 
@@ -131,16 +157,7 @@ def format_help_text(*, task: TaskType | None, source: Source | None) -> str:
         f"Source: {source_line}",
         cls.source_note,
     ]
-    option_lines = format_option_help_lines(cls)
-    if option_lines:
-        sections.extend(
-            [
-                "",
-                "Options (--option KEY=VALUE, repeatable):",
-                *option_lines,
-            ]
-        )
-    sections.extend(_input_spec_sections(cls))
+    sections.extend(_required_and_optional_sections(cls))
     if cls.typical_layout:
         sections.extend(["", "Typical paths under dataset root:", cls.typical_layout])
     sections.extend(

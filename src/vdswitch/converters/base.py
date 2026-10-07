@@ -11,6 +11,7 @@ from typing import ClassVar
 from vdschema import AnnotationReader, Name, TaskType
 
 from ..options import ConvertOptions, map_category_id, prepare_category_label
+from ..options.presets import GLOBAL_ONLY_OPTIONS
 from ..options.spec import ConverterOptionSpec
 from ..utils.image_size import ImageSizeResolver, find_image_root
 from ..utils.output_names import resolve_output_filenames
@@ -23,13 +24,11 @@ class BaseConverter(ABC):
     task_type: ClassVar[TaskType]
     source: ClassVar[Source]
 
-    converter_options: ClassVar[tuple[ConverterOptionSpec, ...]] = ()
+    converter_options: ClassVar[tuple[ConverterOptionSpec, ...]] = GLOBAL_ONLY_OPTIONS
 
     source_note: ClassVar[str] = "Monolith legacy on-disk layout (JSONL / meta / kmot)."
     input_help: ClassVar[str] = ""
-    category_help: ClassVar[str] = ""
     input_sample: ClassVar[str] = ""
-    category_sample: ClassVar[str] = ""
     typical_layout: ClassVar[str] = ""
     example_input: ClassVar[str] = "/path/to/data"
     example_category: ClassVar[str | None] = None

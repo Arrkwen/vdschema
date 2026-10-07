@@ -6,7 +6,7 @@ from pathlib import Path
 
 from vdschema import AnnotationWriter, TaskType
 
-from ..options.presets import OPTIONAL_ROOT
+from ..options.presets import LABELBEE_OPTIONS
 from ..utils.labelbee_dataset import (
     classification_categories_from_document,
     collect_detection_attributes,
@@ -36,19 +36,14 @@ class _LabelBeeConverterBase(BaseConverter):
         "annotation JSON. Each file contains width, height, and `step_N` blocks "
         "with `toolName` / `result`."
     )
-    category_help = (
-        "Optional. Defaults to --input; category names are taken from each "
-        "result's `attribute` (or tagTool option strings for classification)."
-    )
     input_sample = (
         '{"width":640,"height":480,"step_1":{"toolName":"rectTool","result":[]}}'
     )
-    category_sample = "(same as --input; attributes define label_dict)"
     typical_layout = (
         "  labelbee/json/**/*.json   — General Data export, one file per image\n"
         "  images/…                  — paired by filename stem (--option root=)"
     )
-    converter_options = OPTIONAL_ROOT
+    converter_options = LABELBEE_OPTIONS
     example_input = "/path/to/labelbee/json"
 
     def __init__(self, **kwargs) -> None:

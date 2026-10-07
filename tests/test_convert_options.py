@@ -20,6 +20,7 @@ from vdswitch.options import (
     prepare_category_label,
     resolve_converter_inputs,
 )
+from vdswitch.options.presets import GLOBAL_ONLY_OPTIONS
 
 
 def test_parse_option_pairs_unknown_key_allowed_at_parse() -> None:
@@ -173,6 +174,26 @@ def test_resolve_converter_inputs_optional_category_defaults_to_input() -> None:
     assert resolved.category == Path("/data/VOC2007").resolve()
 
 
+def test_resolve_converter_inputs_prefix_option() -> None:
+    cls = get_converter_class(TaskType.DETECTION, Source.COCO)
+    resolved = resolve_converter_inputs(
+        cls,
+        input=Path("/data/instances.json"),
+        options={"prefix": "split/v1"},
+    )
+    assert resolved.prefix == "split/v1"
+
+
+def test_resolve_converter_inputs_empty_prefix_rejected() -> None:
+    cls = get_converter_class(TaskType.CLASSIFICATION, Source.IMAGENET)
+    with pytest.raises(ValueError, match="prefix"):
+        resolve_converter_inputs(
+            cls,
+            input=Path("/data/train"),
+            options={"prefix": "  "},
+        )
+
+
 def test_example_option_command_lines_skips_and_fills() -> None:
     class _Skips:
         converter_options = (
@@ -180,25 +201,29 @@ def test_example_option_command_lines_skips_and_fills() -> None:
             ConverterOptionSpec("root", "help", required=False),
             ConverterOptionSpec("custom", "help", required=True),
             ConverterOptionSpec("optional_empty", "help", required=False),
-        )
+        ) + GLOBAL_ONLY_OPTIONS
 
-    assert (
-        example_option_command_lines(
-            _Skips,
-            input_path="/in/data",
-            category_path=None,
-        )
-        == []
+    skip_lines = example_option_command_lines(
+        _Skips,
+        input_path="/in/data",
+        category_path=None,
     )
+    assert "  --option root=/path/to/dataset \\" in skip_lines
+    assert "  --option prefix=split/v1 \\" in skip_lines
+    assert not any("custom=" in line for line in skip_lines)
 
     class _RootRequired:
-        converter_options = (ConverterOptionSpec("root", "help", required=True),)
+        converter_options = (
+            ConverterOptionSpec("root", "help", required=True),
+        ) + GLOBAL_ONLY_OPTIONS
 
-    assert example_option_command_lines(
+    root_lines = example_option_command_lines(
         _RootRequired,
         input_path="/in/data",
         category_path=None,
-    ) == ["  --option root=/path/to/dataset \\"]
+    )
+    assert "  --option root=/path/to/dataset \\" in root_lines
+    assert "  --option prefix=split/v1 \\" in root_lines
 
     coco = get_converter_class(TaskType.DETECTION, Source.COCO)
     coco_lines = example_option_command_lines(
@@ -207,6 +232,9 @@ def test_example_option_command_lines_skips_and_fills() -> None:
         category_path=None,
     )
     assert any("category_id_contiguous=0" in line for line in coco_lines)
+    assert any("category_id_start=" in line for line in coco_lines)
+    assert any("prefix=split/v1" in line for line in coco_lines)
+    assert not any("category=" in line for line in coco_lines)
 
 
 def test_vdswitch_coco_contiguous_category_ids(tmp_path: Path) -> None:

@@ -8,7 +8,7 @@ from PIL import Image
 
 from vdschema import AnnotationWriter, TaskType
 
-from ..options.presets import YOLO_PATH_OPTIONS
+from ..options.presets import YOLO_OPTIONS
 from ..utils.yolo_dataset import (
     iter_image_list,
     load_yolo_class_names,
@@ -26,7 +26,7 @@ class YoloDetectionConverter(BaseConverter):
 
     source_note = "Ultralytics / Darknet YOLO layout (normalized cxcywh label txts)."
 
-    converter_options = YOLO_PATH_OPTIONS
+    converter_options = YOLO_OPTIONS
     example_input = "/path/to/train.txt"
     example_category = "/path/to/classes.txt"
 
@@ -34,11 +34,7 @@ class YoloDetectionConverter(BaseConverter):
         "Text file listing one image path per line (e.g. train.txt). "
         "Paths are relative to --option root= when set."
     )
-    category_help = (
-        "classes.txt: one class name per line; line index is YOLO class_id (0-based)."
-    )
     input_sample = "images/train/sample.jpg"
-    category_sample = "person\ncar\n"
     typical_layout = (
         "  train.txt              — image paths, one per line\n"
         "  classes.txt            — class names (0-based ids)\n"

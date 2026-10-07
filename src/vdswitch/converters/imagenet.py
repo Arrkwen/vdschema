@@ -31,9 +31,7 @@ class ImagenetClassificationConverter(BaseConverter):
         "Directory whose immediate subfolders are class names "
         "(e.g. train/n01440764/*.JPEG)."
     )
-    category_help = "Optional. Defaults to --input (class names from subfolder names)."
     input_sample = "train/n01440764/sample.JPEG"
-    category_sample = "(same directory as --input)"
     typical_layout = (
         "  train/<class_name>/*.jpg   — one folder per category\n"
         "  --input points at train/ (dataset root defaults to its parent)"
